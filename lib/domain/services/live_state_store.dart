@@ -23,9 +23,9 @@ class LiveStateStore {
   Stream<LiveState> watch(String lightId) async* {
     var last = of(lightId);
     yield last;
-    yield* _all.stream.map((all) => all[lightId] ?? LiveState.initial).where((
-      next,
-    ) {
+    yield* _all.stream.map((all) => all[lightId] ?? LiveState.initial)
+    // The last mutation is safe because this generator stream has exactly one listener.
+    .where((next) {
       if (next == last) return false;
       last = next;
       return true;
