@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../entities/entities.dart';
 import '../repositories/home_repository.dart';
 import '../repositories/settings_repository.dart';
@@ -25,13 +27,13 @@ class CreateHome {
   Future<Home> call(String name, {String? subnet}) async {
     var trimmed = name.trim();
     if (trimmed.isEmpty) throw const EmptyNameException();
-    var count = (await _homes.getAll()).length;
+    var existing = await _homes.getAll();
     var home = Home(
       id: _ids.next(),
       name: trimmed,
       subnet: subnet,
       createdAt: _clock.now(),
-      sortIndex: count,
+      sortIndex: _nextIndex(existing.map((h) => h.sortIndex)),
     );
     await _homes.insert(home);
     await _settings.save(
@@ -39,4 +41,9 @@ class CreateHome {
     );
     return home;
   }
+
+  /// Above the current maximum, not the count: a non-tail delete must not
+  /// hand out an index that collides with a survivor.
+  int _nextIndex(Iterable<int> existing) =>
+      existing.isEmpty ? 0 : existing.reduce(math.max) + 1;
 }

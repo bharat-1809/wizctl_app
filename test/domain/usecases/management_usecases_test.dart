@@ -223,4 +223,67 @@ void main() {
     expect((await homes.get('h'))!.subnet, '192.168.1');
     await learn('missing', '10.0.0');
   });
+
+  test('sort indexes stay unique after a delete in the middle', () async {
+    var createHome = CreateHome(
+      homes: homes,
+      settings: settings,
+      ids: ids,
+      clock: clock,
+    );
+    var deleteHome = DeleteHome(homes: homes, settings: settings);
+    await createHome('H1');
+    var h2 = await createHome('H2');
+    await createHome('H3');
+    await deleteHome(h2.id);
+    var h4 = await createHome('H4');
+    expect(h4.sortIndex, 3);
+
+    var addRoom = AddRoom(rooms: rooms, ids: ids);
+    var deleteRoom = DeleteRoom(rooms: rooms, lights: lights);
+    await addRoom('h', 'R1', RoomGlyph.sofa);
+    var r2 = await addRoom('h', 'R2', RoomGlyph.sofa);
+    await addRoom('h', 'R3', RoomGlyph.sofa);
+    await deleteRoom(r2.id);
+    var r4 = await addRoom('h', 'R4', RoomGlyph.sofa);
+    expect(r4.sortIndex, 3);
+
+    var save = SaveDiscoveredLight(
+      lights: lights,
+      store: store,
+      ids: ids,
+      clock: clock,
+    );
+    var forget = ForgetLight(lights: lights, store: store);
+    await save(
+      homeId: 'h',
+      roomId: 'r',
+      device: const DiscoveredDevice(ip: 'i1', mac: 'm1'),
+      alias: 'L1',
+      fixture: Fixture.bulb,
+    );
+    var l2 = await save(
+      homeId: 'h',
+      roomId: 'r',
+      device: const DiscoveredDevice(ip: 'i2', mac: 'm2'),
+      alias: 'L2',
+      fixture: Fixture.bulb,
+    );
+    await save(
+      homeId: 'h',
+      roomId: 'r',
+      device: const DiscoveredDevice(ip: 'i3', mac: 'm3'),
+      alias: 'L3',
+      fixture: Fixture.bulb,
+    );
+    await forget(l2.id);
+    var l4 = await save(
+      homeId: 'h',
+      roomId: 'r',
+      device: const DiscoveredDevice(ip: 'i4', mac: 'm4'),
+      alias: 'L4',
+      fixture: Fixture.bulb,
+    );
+    expect(l4.sortIndex, 3);
+  });
 }

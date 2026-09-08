@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:equatable/equatable.dart';
 
 import '../entities/entities.dart';
@@ -102,12 +104,13 @@ class FinishOnboarding {
     var name = result.homeName.trim();
     if (name.isEmpty) throw const EmptyNameException();
     var now = _clock.now();
+    var existingHomes = await _homes.getAll();
     var home = Home(
       id: _ids.next(),
       name: name,
       subnet: result.subnet,
       createdAt: now,
-      sortIndex: (await _homes.getAll()).length,
+      sortIndex: _nextIndex(existingHomes.map((h) => h.sortIndex)),
     );
     await _homes.insert(home);
 
@@ -154,4 +157,9 @@ class FinishOnboarding {
     );
     return home;
   }
+
+  /// Above the current maximum, not the count: a non-tail delete must not
+  /// hand out an index that collides with a survivor.
+  int _nextIndex(Iterable<int> existing) =>
+      existing.isEmpty ? 0 : existing.reduce(math.max) + 1;
 }

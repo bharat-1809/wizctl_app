@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../entities/entities.dart';
 import '../repositories/light_repository.dart';
 import '../services/clock.dart';
@@ -35,7 +37,7 @@ class SaveDiscoveredLight {
       throw const AlreadySavedException();
     }
     var name = alias.trim().isEmpty ? device.displayName : alias.trim();
-    var count = (await _lights.getByHome(homeId)).length;
+    var existing = await _lights.getByHome(homeId);
     var light = Light(
       id: _ids.next(),
       homeId: homeId,
@@ -47,11 +49,16 @@ class SaveDiscoveredLight {
       bulbClass: device.bulbClass,
       fixture: fixture,
       fwVersion: device.fwVersion,
-      sortIndex: count,
+      sortIndex: _nextIndex(existing.map((l) => l.sortIndex)),
       addedAt: _clock.now(),
     );
     await _lights.insert(light);
     if (initial != null) _store.put(light.id, initial);
     return light;
   }
+
+  /// Above the current maximum, not the count: a non-tail delete must not
+  /// hand out an index that collides with a survivor.
+  int _nextIndex(Iterable<int> existing) =>
+      existing.isEmpty ? 0 : existing.reduce(math.max) + 1;
 }
