@@ -48,10 +48,11 @@ void main() {
     const s = LiveState.initial;
     expect(s.isOn, isFalse);
     expect(s.brightness, 60);
-    expect(s.kelvin, LiveState.defaultKelvin);
+    expect(LiveState.defaultKelvin, 2700);
+    expect(s.kelvin, 2700);
     expect(s.rgb, Rgb.warm);
     expect(s.sceneId, 6);
-    expect(s.speed, defaultSpeed);
+    expect(s.speed, 100);
     expect(s.active, ActiveChannel.white);
     expect(s.reachable, isFalse);
   });
