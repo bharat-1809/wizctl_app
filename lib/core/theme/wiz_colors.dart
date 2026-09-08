@@ -131,6 +131,10 @@ class WizColors {
   final Color ivoryHi = const Color(0xFFFBFAF7);
   final Color ivoryLo = const Color(0xFFC9C5BD);
 
+  // Slider fill ends (SLIDER_FILLS in Slider.jsx)
+  final Color railDark = const Color(0xFF3A3A42);
+  final Color railMid = const Color(0xFF8C8C96);
+
   /// The four stops of the toggle cap's glossy radial gradient, lit to
   /// shaded: Toggle.jsx `radial-gradient(circle at 38% 26%,#FFFFFF,#F1EEE8
   /// 42%,#C8C4BB 78%,#A8A49B)`.
