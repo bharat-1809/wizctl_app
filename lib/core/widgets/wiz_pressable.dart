@@ -1,0 +1,237 @@
+import 'package:flutter/material.dart';
+
+import '../feedback/feedback_kind.dart';
+import '../feedback/feedback_scope.dart';
+import '../theme/wiz_colors.dart';
+import '../theme/wiz_theme.dart';
+
+/// What the builder can react to.
+@immutable
+class WizPressState {
+  final bool pressed;
+  final bool hovered;
+  final bool focused;
+
+  const WizPressState({
+    this.pressed = false,
+    this.hovered = false,
+    this.focused = false,
+  });
+}
+
+typedef WizPressBuilder = Widget Function(
+  BuildContext context,
+  WizPressState state,
+);
+
+/// The one press recipe for every clickable thing: on pointer down the part
+/// sinks [travel] and scales to [scale] in 80 ms and fires [feedback]; on
+/// release it springs back on the settle curve in 140 ms. Hover brightens
+/// raised parts on desktop; focus draws the amber ring. Selection itself
+/// never animates, the press does.
+class WizPressable extends StatefulWidget {
+  final WizPressBuilder builder;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final FeedbackKind feedback;
+  final double? scale;
+  final double? travel;
+  final bool enabled;
+  final String? semanticsLabel;
+  final bool hover;
+  final MouseCursor? cursor;
+
+  /// Extra transparent hit area around the visual, for controls drawn
+  /// smaller than the 44 minimum.
+  final EdgeInsets? hitPadding;
+
+  /// Whether the press waits for the gesture arena instead of firing on the
+  /// raw pointer down.
+  ///
+  /// False (the default) is the tactile ideal: a [Listener] sinks the part
+  /// and fires [feedback] the instant the finger lands, before any recogniser
+  /// has claimed the gesture. True hands both to [GestureDetector]'s tap
+  /// callbacks, so a pressable *wrapping* other controls — a device card with
+  /// its own toggle and slider — stays still when a child wins the arena.
+  ///
+  /// The arena only tells this widget apart from its children once one of
+  /// them claims the gesture. Until then a resting finger still counts as a
+  /// press on this one after `kPressTimeout` (100 ms), because that is when
+  /// [GestureDetector] reports the tap down. A child that claims the gesture
+  /// later — a slider taking a drag — releases the sink through `onTapCancel`.
+  final bool arenaResolved;
+
+  const WizPressable({
+    super.key,
+    required this.builder,
+    this.onTap,
+    this.onLongPress,
+    this.feedback = FeedbackKind.press,
+    this.scale,
+    this.travel,
+    this.enabled = true,
+    this.semanticsLabel,
+    this.hover = true,
+    this.cursor,
+    this.hitPadding,
+    this.arenaResolved = false,
+  });
+
+  @override
+  State<WizPressable> createState() => _WizPressableState();
+}
+
+class _WizPressableState extends State<WizPressable> {
+  /// Owned rather than left to [FocusableActionDetector] so keyboard focus
+  /// can be driven and asserted from outside the widget.
+  final FocusNode _focusNode = FocusNode(debugLabel: 'WizPressable');
+
+  bool _pressed = false;
+  bool _hovered = false;
+  bool _focused = false;
+
+  /// Focus ring thickness, design system §11.2 ("Focus: 2 px amber ring").
+  static const double _focusRingWidth = 2;
+
+  /// CSS `filter: brightness(1.08)` as a colour matrix.
+  static List<double> _brightness(double b) => [
+    b, 0, 0, 0, 0, //
+    0, b, 0, 0, 0, //
+    0, 0, b, 0, 0, //
+    0, 0, 0, 1, 0, //
+  ];
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// [silent] re-takes a sink the part already had, without a second cue.
+  void _down({bool silent = false}) {
+    if (!widget.enabled) return;
+    setState(() => _pressed = true);
+    if (!silent) context.feedback.play(widget.feedback);
+  }
+
+  void _up() {
+    if (_pressed) setState(() => _pressed = false);
+  }
+
+  void _activate() {
+    if (!widget.enabled) return;
+    context.feedback.play(widget.feedback);
+    widget.onTap?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var motion = context.wiz.motion;
+    var colors = context.wiz.colors;
+    var scale = widget.scale ?? motion.pressScale;
+    var travel = widget.travel ?? motion.pressTravel;
+    var state = WizPressState(
+      pressed: _pressed,
+      hovered: _hovered,
+      focused: _focused,
+    );
+
+    Widget visual = widget.builder(context, state);
+    if (widget.hover && _hovered && !_pressed && widget.enabled) {
+      visual = ColorFiltered(
+        colorFilter: ColorFilter.matrix(_brightness(motion.hoverBrightness)),
+        child: visual,
+      );
+    }
+    if (_focused) {
+      visual = DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(context.wiz.space.r3),
+          border: Border.all(color: colors.focusRing, width: _focusRingWidth),
+        ),
+        child: visual,
+      );
+    }
+    visual = TweenAnimationBuilder<double>(
+      tween: Tween(end: _pressed ? 1 : 0),
+      duration: _pressed ? motion.press : motion.release,
+      curve: _pressed ? motion.pressCurve : motion.settle,
+      builder: (context, t, child) => Transform.translate(
+        offset: Offset(0, travel * t),
+        child: Transform.scale(scale: 1 - (1 - scale) * t, child: child),
+      ),
+      child: visual,
+    );
+    if (!widget.enabled) {
+      visual = Opacity(opacity: WizColors.disabledAlpha, child: visual);
+    }
+    if (widget.hitPadding != null) {
+      visual = Padding(padding: widget.hitPadding!, child: visual);
+    }
+
+    var armed = widget.enabled;
+    var byArena = armed && widget.arenaResolved;
+    // A long press winning the arena rejects the tap recogniser under it, so
+    // the sink has to be handed over or the part would pop back up with the
+    // finger still down. Both setState calls land in one event dispatch and
+    // so coalesce into a single rebuild, and the hand-over is silent.
+    var handsOverToLongPress = byArena && widget.onLongPress != null;
+    Widget gestures = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: byArena ? (_) => _down() : null,
+      onTapUp: byArena ? (_) => _up() : null,
+      onTapCancel: byArena ? _up : null,
+      onLongPressStart: handsOverToLongPress
+          ? (_) => _down(silent: true)
+          : null,
+      onLongPressEnd: handsOverToLongPress ? (_) => _up() : null,
+      onTap: armed ? widget.onTap : null,
+      onLongPress: armed ? widget.onLongPress : null,
+      child: visual,
+    );
+    if (!widget.arenaResolved) {
+      gestures = Listener(
+        onPointerDown: (_) => _down(),
+        onPointerUp: (_) => _up(),
+        onPointerCancel: (_) => _up(),
+        child: gestures,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: widget.semanticsLabel,
+      onTap: armed ? _activate : null,
+      child: FocusableActionDetector(
+        focusNode: _focusNode,
+        enabled: widget.enabled,
+        mouseCursor:
+            widget.cursor ??
+            (widget.enabled
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.forbidden),
+        onShowHoverHighlight: (v) => setState(() => _hovered = v),
+        onShowFocusHighlight: (v) => setState(() => _focused = v),
+        actions: <Type, Action<Intent>>{
+          // Enter and Space both reach here through the app's default
+          // shortcuts; web maps Enter to ButtonActivateIntent instead.
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              _activate();
+              return null;
+            },
+          ),
+          ButtonActivateIntent: CallbackAction<ButtonActivateIntent>(
+            onInvoke: (_) {
+              _activate();
+              return null;
+            },
+          ),
+        },
+        child: gestures,
+      ),
+    );
+  }
+}
