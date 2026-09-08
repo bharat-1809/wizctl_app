@@ -50,4 +50,7 @@ class WizSpace {
   final double tabBar = 72, tabBarFloat = 18;
 
   final double hairline = 1, keyBorder = 1.5;
+
+  /// Keyboard focus ring thickness (spec §11.2, "Focus: 2 px amber ring").
+  final double focusRing = 2;
 }

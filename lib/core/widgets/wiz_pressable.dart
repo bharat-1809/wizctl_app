@@ -111,9 +111,6 @@ class _WizPressableState extends State<WizPressable> {
   /// sink before any recogniser has claimed the gesture.
   Offset? _downAt;
 
-  /// Focus ring thickness, design system §11.2 ("Focus: 2 px amber ring").
-  static const double _focusRingWidth = 2;
-
   /// CSS `filter: brightness(1.08)` as a colour matrix.
   static List<double> _brightness(double b) => [
     b, 0, 0, 0, 0, //
@@ -172,7 +169,10 @@ class _WizPressableState extends State<WizPressable> {
         decoration: BoxDecoration(
           borderRadius:
               widget.focusRadius ?? BorderRadius.circular(context.wiz.space.r3),
-          border: Border.all(color: colors.focusRing, width: _focusRingWidth),
+          border: Border.all(
+            color: colors.focusRing,
+            width: context.wiz.space.focusRing,
+          ),
         ),
         child: visual,
       );
