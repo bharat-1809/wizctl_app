@@ -2309,7 +2309,7 @@ class DeviceCommandPipeline {
     }
     if (key != null) _inFlight.add(key);
     try {
-      await _send(attempts, _describe(batch));
+      await _send(attempts, _describe(batch), key);
     } finally {
       if (key != null) {
         _inFlight.remove(key);
@@ -2325,9 +2325,10 @@ class DeviceCommandPipeline {
     }
   }
 
-  Future<void> _send(List<_Attempt> attempts, String description) async {
+  Future<void> _send(List<_Attempt> attempts, String description, String? key) async {
     var id = _ids.next();
     _emit(CommandPending(id, [for (var a in attempts) a.item.light.id], description));
+    if (key != null) _lastSent[key] = _clock.now();
     var results = await Future.wait(attempts.map((a) => _sendOne(id, a)));
     if (results.every((ok) => ok)) _emit(CommandSucceeded(id));
   }
@@ -2336,7 +2337,6 @@ class DeviceCommandPipeline {
     var light = a.item.light;
     try {
       await _gateway.send(light.ip, a.item.signal);
-      _lastSent[light.id] = _clock.now();
       _store.update(light.id, (s) => s.copyWith(reachable: true, updatedAt: _clock.now()));
       return true;
     } on DeviceException catch (e) {
@@ -2376,8 +2376,6 @@ class DeviceCommandPipeline {
   void dispose() => _reports.close();
 }
 ```
-
-Note on the throttle: `_lastSent` is keyed per light id inside `_sendOne` but read per throttle key in `run`; change `_sendOne` to also record `_lastSent[key]` by passing the key through `_send(attempts, description, key)`. Implement it that way so the spacing rule works.
 
 - [ ] **Step 4: Run, format, analyze, commit**
 
@@ -3032,6 +3030,13 @@ class SyncCoordinator {
     await _refresh.forHome(homeId);
   }
 
+  /// One light now (after a retry, or when a detail screen opens), if it
+  /// still exists.
+  Future<void> refreshLight(String lightId) async {
+    if (await _lights.get(lightId) == null) return;
+    await _refresh([lightId]);
+  }
+
   void _restart() {
     _timer?.cancel();
     if (_background || _homeId == null) return;
@@ -3052,7 +3057,7 @@ class SyncCoordinator {
 }
 ```
 
-Add `export 'refresh_states.dart';` to `lib/domain/usecases/usecases.dart`. Note: `_lights` is retained for Plan 4's `refreshLight(id)` convenience; if the analyzer flags it unused, add `Future<void> refreshLight(String id) => _refresh([id]);` which Plan 4 uses.
+Add `export 'refresh_states.dart';` to `lib/domain/usecases/usecases.dart`.
 
 - [ ] **Step 4: Run, format, analyze, commit**
 
@@ -4075,7 +4080,6 @@ git commit -m "feat(domain): home, room, light and onboarding use cases"
 `test/data/db/app_database_test.dart`:
 
 ```dart
-import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/data/db/app_database.dart';
 
@@ -5172,7 +5176,7 @@ import '../../support/fakes.dart';
 class _CountingExporter extends CliConfigExporter {
   int exports = 0;
   List<Light> lastLights = [];
-  _CountingExporter() : super(homeDirectory: Directory.systemTemp);
+  _CountingExporter() : super(homeDirectory: () => Directory.systemTemp);
   @override
   Future<void> export({required List<Light> lights, required List<Room> rooms}) async {
     exports++;
