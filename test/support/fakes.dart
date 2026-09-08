@@ -31,9 +31,14 @@ class _Replay<T> {
 class FakeHomeRepository implements HomeRepository {
   final Map<String, Home> _homes = {};
   late final _Replay<List<Home>> _all = _Replay(_list());
-  List<Home> _list() =>
-      _homes.values.toList()
-        ..sort((a, b) => a.sortIndex.compareTo(b.sortIndex));
+
+  /// Sorted by `(sortIndex, id)`: `List.sort` is not stable, so homes
+  /// sharing a `sortIndex` need the id tie-break for a deterministic order.
+  List<Home> _list() => _homes.values.toList()
+    ..sort((a, b) {
+      var bySortIndex = a.sortIndex.compareTo(b.sortIndex);
+      return bySortIndex != 0 ? bySortIndex : a.id.compareTo(b.id);
+    });
   void _notify() => _all.set(_list());
   void seed(List<Home> homes) {
     for (var h in homes) {
@@ -73,9 +78,13 @@ class FakeRoomRepository implements RoomRepository {
     _changes.add(null);
   }
 
+  /// Sorted by `(sortIndex, id)`: `List.sort` is not stable, so rooms
+  /// sharing a `sortIndex` need the id tie-break for a deterministic order.
   List<Room> _byHome(String homeId) =>
-      _rooms.values.where((r) => r.homeId == homeId).toList()
-        ..sort((a, b) => a.sortIndex.compareTo(b.sortIndex));
+      _rooms.values.where((r) => r.homeId == homeId).toList()..sort((a, b) {
+        var bySortIndex = a.sortIndex.compareTo(b.sortIndex);
+        return bySortIndex != 0 ? bySortIndex : a.id.compareTo(b.id);
+      });
   @override
   Stream<List<Room>> watchByHome(String homeId) async* {
     yield _byHome(homeId);
