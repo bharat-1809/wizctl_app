@@ -41,10 +41,9 @@ class _Attempt {
   const _Attempt(this.item, this.previous, this.optimistic);
 }
 
-/// A batch that lost the race for its throttle key, waiting to be sent once
-/// the in-flight one (and the throttle window) clears. Its attempts were
-/// already computed — previous/optimistic snapshots and all — when it was
-/// queued, so re-sending it never re-reads or re-patches the store.
+/// A batch waiting for its throttle key to clear. Attempts (previous and
+/// optimistic snapshots included) were already computed when queued, so
+/// re-sending never re-reads or re-patches the store.
 typedef _Queued = ({List<_Attempt> attempts, String description});
 
 /// Every write goes through here: optimistic in the store, honest in the
@@ -73,11 +72,9 @@ class DeviceCommandPipeline {
   final Map<String, _Queued> _waiting = {};
   final Map<String, DateTime> _lastSent = {};
 
-  // A named parameter can't start with `_` (that's a compile error, not a
-  // style choice), so `this._gateway` etc. can't be used here while keeping
-  // the public `gateway:`/`store:`/… names the API requires — the fields
-  // stay private, assigned explicitly instead. See the fix report for the
-  // `dart analyze` evidence behind these `ignore`s.
+  // A named parameter can't start with `_`, so `this._gateway` etc. can't be
+  // used while keeping the public `gateway:`/`store:`/… names the API
+  // requires — the fields stay private, assigned explicitly instead.
   DeviceCommandPipeline({
     required DeviceGateway gateway,
     required LiveStateStore store,
@@ -104,10 +101,9 @@ class DeviceCommandPipeline {
   /// Patches [batch] into the store immediately, then sends it — coalescing
   /// with any other batch sharing [CommandBatch.throttleKey] that's already
   /// in flight. Off network, this fails fast with a single [CommandFailed]
-  /// and touches neither the store nor the gateway. This returns once this
-  /// call's own send (and, if something coalesced behind it, the throttle
-  /// wait) has been dealt with — a resend for the same key may still be in
-  /// flight when it does.
+  /// and touches neither the store nor the gateway. Returns once this call's
+  /// own send (and throttle wait, if something coalesced) is dealt with — a
+  /// resend for the same key may still be in flight when it does.
   Future<void> run(CommandBatch batch) async {
     if (batch.items.isEmpty) return;
     var home = await _homeSubnet();
@@ -155,20 +151,26 @@ class DeviceCommandPipeline {
     List<_Attempt> attempts,
     String description,
   ) async {
-    await _send(attempts, description, key);
-    if (key == null) return;
-    var next = _waiting.remove(key);
-    if (next == null) {
-      _inFlight.remove(key);
-      return;
+    // Once handed off, the nested call owns releasing `key`; otherwise
+    // (including an unexpected throw from `_send` or the clock) this call
+    // releases it itself, so `key` is never leaked.
+    var handedOff = false;
+    try {
+      await _send(attempts, description, key);
+      if (key == null) return;
+      var next = _waiting.remove(key);
+      if (next == null) return;
+      var since = _clock.now().difference(_lastSent[key] ?? _clock.now());
+      if (since < throttle) await _clock.delay(throttle - since);
+      // A run arriving during that wait replaced (or re-replaced) what's
+      // queued — re-check rather than send the value captured before we
+      // waited, so the batch actually sent is always the latest one.
+      var latest = _waiting.remove(key) ?? next;
+      handedOff = true;
+      unawaited(_sendAndDrain(key, latest.attempts, latest.description));
+    } finally {
+      if (key != null && !handedOff) _inFlight.remove(key);
     }
-    var since = _clock.now().difference(_lastSent[key] ?? _clock.now());
-    if (since < throttle) await _clock.delay(throttle - since);
-    // A run arriving during that wait replaced (or re-replaced) what's
-    // queued — re-check rather than send the value captured before we
-    // waited, so the batch actually sent is always the latest one.
-    var latest = _waiting.remove(key) ?? next;
-    unawaited(_sendAndDrain(key, latest.attempts, latest.description));
   }
 
   Future<void> _send(
@@ -197,9 +199,10 @@ class DeviceCommandPipeline {
   }
 
   /// Re-sends every light that failed under [reportId], once each, then
-  /// forgets the entry (spec §5.11.7).
+  /// forgets the entry (spec §5.11.7). Off network fails fast without
+  /// consuming the entry, so a later retry can still resend it.
   Future<void> retry(String reportId) async {
-    var failed = _failed.remove(reportId);
+    var failed = _failed[reportId];
     if (failed == null || failed.isEmpty) return;
     var home = await _homeSubnet();
     if (_network.isOffNetwork(home)) {
@@ -209,6 +212,7 @@ class DeviceCommandPipeline {
       }
       return;
     }
+    _failed.remove(reportId);
     var attempts = <_Attempt>[];
     for (var a in failed) {
       var previous = _store.of(a.item.light.id);
@@ -253,10 +257,32 @@ class DeviceCommandPipeline {
     }
   }
 
+  /// True when [current] is [a]'s own optimistic value, modulo the
+  /// pipeline's own `reachable`/`updatedAt` bookkeeping (a successful send
+  /// elsewhere, e.g. an earlier batch sharing this attempt's throttle key,
+  /// may have already rewritten those on top of it). Normalizes by
+  /// overriding [a.optimistic]'s bookkeeping fields with [current]'s, not
+  /// the reverse: `LiveState.copyWith` can't null out `updatedAt` (`?? this.
+  /// updatedAt` keeps the old value for a `null` argument), and an
+  /// unreached light's optimistic value legitimately has a `null`
+  /// `updatedAt` — normalizing the other way would never clear a real one.
+  bool _stillOptimistic(_Attempt a, LiveState current) =>
+      a.optimistic.copyWith(
+        reachable: current.reachable,
+        updatedAt: current.updatedAt,
+      ) ==
+      current;
+
   void _revert(_Attempt a) {
     var light = a.item.light;
-    if (_store.of(light.id) == a.optimistic) {
-      _store.put(light.id, a.previous.copyWith(reachable: false));
+    var current = _store.of(light.id);
+    if (_stillOptimistic(a, current)) {
+      // Keep the bookkeeping a later, unrelated success left behind rather
+      // than resurrecting this attempt's own, possibly stale, snapshot.
+      _store.put(
+        light.id,
+        a.previous.copyWith(reachable: false, updatedAt: current.updatedAt),
+      );
     } else {
       _store.update(light.id, (s) => s.copyWith(reachable: false));
     }

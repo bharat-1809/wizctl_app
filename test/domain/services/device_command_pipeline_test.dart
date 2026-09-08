@@ -194,7 +194,7 @@ void main() {
   });
 
   test(
-    'retry also fails fast off network without touching the gateway',
+    'retry also fails fast off network, leaving the entry for a later retry',
     () async {
       gateway.failing['192.168.1.1'] = const TimeoutFailure('192.168.1.1', 3);
       await pipeline.run(batch([light('1')], 70));
@@ -209,6 +209,18 @@ void main() {
       expect(gateway.sends, isEmpty);
       expect(reports.last, isA<CommandRetryFailed>());
       expect((reports.last as CommandRetryFailed).lightId, '1');
+
+      // The off-network attempt didn't consume the entry: back on network,
+      // the same report id can still be retried.
+      net.subnet = '192.168.1';
+      await monitor.refresh();
+      gateway.failing.clear();
+      await pipeline.retry('id1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(store.of('1').brightness, 70);
+      expect(store.of('1').reachable, isTrue);
+      expect(reports.last, const CommandSucceeded('id1'));
     },
   );
 
@@ -239,6 +251,28 @@ void main() {
       async.elapse(const Duration(milliseconds: 2)); // t=12ms: B succeeds.
       expect(store.of('1').brightness, 80);
       expect(store.of('1').reachable, isTrue);
+    });
+  });
+
+  test('a queued send that fails reverts past the earlier send\'s own '
+      'reachable/updatedAt bookkeeping', () {
+    fakeAsync((async) {
+      gateway.sendLatency = const Duration(milliseconds: 10);
+      var target = light('1');
+      unawaited(pipeline.run(batch([target], 20, key: 'b')));
+      unawaited(pipeline.run(batch([target], 40, key: 'b')));
+      async.flushMicrotasks();
+      // 20 is in flight; 40 is queued behind it.
+
+      async.elapse(const Duration(milliseconds: 10)); // 20's send succeeds.
+      expect(store.of('1').brightness, 40); // 40's own optimistic patch.
+      expect(store.of('1').reachable, isTrue); // 20's success marked it.
+
+      // Now make the queued (40) send fail.
+      gateway.failing['192.168.1.1'] = const TimeoutFailure('192.168.1.1', 3);
+      async.elapse(const Duration(milliseconds: 200));
+      expect(store.of('1').brightness, 20);
+      expect(store.of('1').reachable, isFalse);
     });
   });
 
