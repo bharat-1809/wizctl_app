@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
+import 'package:wizctl_app/domain/services/clock.dart';
 import 'package:wizctl_app/domain/services/device_command_pipeline.dart';
 import 'package:wizctl_app/domain/services/live_state_store.dart';
 import 'package:wizctl_app/domain/services/network_monitor.dart';
@@ -14,6 +15,30 @@ class _Net implements NetworkInfo {
   String? subnet = '192.168.1';
   @override
   Future<String?> currentSubnet() async => subnet;
+}
+
+/// A [Clock] whose [delay] doesn't resolve until the test explicitly
+/// completes it via [completeDelay] — lets a test pause exactly inside the
+/// pipeline's throttle wait to observe (and act on) the state at that point.
+class _GatedClock implements Clock {
+  final DateTime _now = DateTime(2026, 9, 8, 12);
+  Completer<void>? _pending;
+
+  @override
+  DateTime now() => _now;
+
+  @override
+  Future<void> delay(Duration duration) {
+    var completer = Completer<void>();
+    _pending = completer;
+    return completer.future;
+  }
+
+  void completeDelay() {
+    var completer = _pending;
+    _pending = null;
+    completer?.complete();
+  }
 }
 
 Light light(String id, {String? name}) => Light(
@@ -168,6 +193,55 @@ void main() {
     expect((reports.single as CommandFailed).failure, isA<OffNetworkFailure>());
   });
 
+  test(
+    'retry also fails fast off network without touching the gateway',
+    () async {
+      gateway.failing['192.168.1.1'] = const TimeoutFailure('192.168.1.1', 3);
+      await pipeline.run(batch([light('1')], 70));
+      await Future<void>.delayed(Duration.zero);
+      gateway.sends.clear();
+
+      net.subnet = '10.0.0';
+      await monitor.refresh();
+      await pipeline.retry('id1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(gateway.sends, isEmpty);
+      expect(reports.last, isA<CommandRetryFailed>());
+      expect((reports.last as CommandRetryFailed).lightId, '1');
+    },
+  );
+
+  test('a failure only reverts a light if it still holds this attempt\'s '
+      'own optimistic value', () {
+    fakeAsync((async) {
+      gateway.failing['192.168.1.1'] = const TimeoutFailure('192.168.1.1', 3);
+      gateway.sendLatency = const Duration(milliseconds: 10);
+      var target = light('1');
+
+      // A patches to 70 and starts sending (it will fail), due at t=10ms.
+      unawaited(pipeline.run(batch([target], 70)));
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 1));
+      // B patches to 80 — an unkeyed batch overlapping on the same light —
+      // and starts sending, due at t=11ms: strictly after A.
+      unawaited(pipeline.run(batch([target], 80)));
+      async.flushMicrotasks();
+      expect(store.of('1').brightness, 80);
+
+      async.elapse(const Duration(milliseconds: 9)); // t=10ms: A fails.
+      // A's failure must not clobber B's value with A's stale snapshot.
+      expect(store.of('1').brightness, 80);
+      expect(store.of('1').reachable, isFalse);
+
+      // Now let B's own send succeed.
+      gateway.failing.clear();
+      async.elapse(const Duration(milliseconds: 2)); // t=12ms: B succeeds.
+      expect(store.of('1').brightness, 80);
+      expect(store.of('1').reachable, isTrue);
+    });
+  });
+
   test('batches with one throttle key coalesce to first and last', () {
     fakeAsync((async) {
       gateway.sendLatency = const Duration(milliseconds: 50);
@@ -183,5 +257,39 @@ void main() {
       // elapsed time: FakeClock.delay completes immediately (spec §5.11).
       expect(clock.delays, [const Duration(milliseconds: 120)]);
     });
+  });
+
+  test('a run arriving during the throttle delay replaces the queued batch, '
+      'not the one already sent', () async {
+    var gate = _GatedClock();
+    pipeline = DeviceCommandPipeline(
+      gateway: gateway,
+      store: store,
+      network: monitor,
+      homeSubnet: () async => '192.168.1',
+      clock: gate,
+      ids: SequenceIds(),
+    );
+    reports = [];
+    pipeline.reports.listen(reports.add);
+
+    var target = light('1');
+    unawaited(pipeline.run(batch([target], 20, key: 'b')));
+    unawaited(pipeline.run(batch([target], 40, key: 'b')));
+    await Future<void>.delayed(Duration.zero);
+    // 20 has already been sent; 40 is queued and the pipeline is now
+    // parked inside the (gated) throttle delay before resending.
+    expect(gateway.sends.map((s) => s.$2.dimming), [20]);
+
+    // A run arriving during that delay must replace the queued batch
+    // rather than bypass it and send out of order.
+    unawaited(pipeline.run(batch([target], 65, key: 'b')));
+    await Future<void>.delayed(Duration.zero);
+
+    gate.completeDelay();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(gateway.sends.map((s) => s.$2.dimming), [20, 65]);
+    expect(store.of('1').brightness, 65);
   });
 }

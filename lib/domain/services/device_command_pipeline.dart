@@ -31,13 +31,21 @@ class CommandBatch {
   const CommandBatch({required this.items, this.description, this.throttleKey});
 }
 
-/// A light's signal and the store state it had before the optimistic patch,
-/// kept so a failure can be reverted and, later, retried.
+/// A light's signal, the store state it had before the optimistic patch, and
+/// the state the patch produced — kept so a failure can be reverted (but
+/// only if nothing else has since changed the light) and, later, retried.
 class _Attempt {
   final CommandItem item;
   final LiveState previous;
-  const _Attempt(this.item, this.previous);
+  final LiveState optimistic;
+  const _Attempt(this.item, this.previous, this.optimistic);
 }
+
+/// A batch that lost the race for its throttle key, waiting to be sent once
+/// the in-flight one (and the throttle window) clears. Its attempts were
+/// already computed — previous/optimistic snapshots and all — when it was
+/// queued, so re-sending it never re-reads or re-patches the store.
+typedef _Queued = ({List<_Attempt> attempts, String description});
 
 /// Every write goes through here: optimistic in the store, honest in the
 /// reports (spec §5.11).
@@ -62,12 +70,14 @@ class DeviceCommandPipeline {
   /// [retry] can re-send all of them (not just the last one to fail).
   final Map<String, List<_Attempt>> _failed = {};
   final Set<String> _inFlight = {};
-  final Map<String, CommandBatch> _waiting = {};
+  final Map<String, _Queued> _waiting = {};
   final Map<String, DateTime> _lastSent = {};
 
-  // Named initializing formals can't start with `_` (a named parameter
-  // can't be private), so the public `gateway`/`store`/… names are assigned
-  // to the private fields explicitly instead.
+  // A named parameter can't start with `_` (that's a compile error, not a
+  // style choice), so `this._gateway` etc. can't be used here while keeping
+  // the public `gateway:`/`store:`/… names the API requires — the fields
+  // stay private, assigned explicitly instead. See the fix report for the
+  // `dart analyze` evidence behind these `ignore`s.
   DeviceCommandPipeline({
     required DeviceGateway gateway,
     required LiveStateStore store,
@@ -91,6 +101,13 @@ class DeviceCommandPipeline {
           ? 'Sending to ${batch.items.single.light.name}'
           : 'Sending to ${batch.items.length} lights');
 
+  /// Patches [batch] into the store immediately, then sends it — coalescing
+  /// with any other batch sharing [CommandBatch.throttleKey] that's already
+  /// in flight. Off network, this fails fast with a single [CommandFailed]
+  /// and touches neither the store nor the gateway. This returns once this
+  /// call's own send (and, if something coalesced behind it, the throttle
+  /// wait) has been dealt with — a resend for the same key may still be in
+  /// flight when it does.
   Future<void> run(CommandBatch batch) async {
     if (batch.items.isEmpty) return;
     var home = await _homeSubnet();
@@ -108,33 +125,50 @@ class DeviceCommandPipeline {
       return;
     }
     // Optimistic: the UI shows the new value at once, whatever happens next.
-    var attempts = [
-      for (var item in batch.items) _Attempt(item, _store.of(item.light.id)),
-    ];
-    for (var a in attempts) {
-      _store.update(a.item.light.id, a.item.patch);
+    var attempts = <_Attempt>[];
+    for (var item in batch.items) {
+      var previous = _store.of(item.light.id);
+      var optimistic = item.patch(previous);
+      attempts.add(_Attempt(item, previous, optimistic));
+      _store.put(item.light.id, optimistic);
     }
     var key = batch.throttleKey;
+    var description = _describe(batch);
     if (key != null && _inFlight.contains(key)) {
-      _waiting[key] = batch;
+      // Last value wins: replace whatever was already waiting.
+      _waiting[key] = (attempts: attempts, description: description);
       return;
     }
     if (key != null) _inFlight.add(key);
-    try {
-      await _send(attempts, _describe(batch), key);
-    } finally {
-      if (key != null) {
-        _inFlight.remove(key);
-        var next = _waiting.remove(key);
-        if (next != null) {
-          var since = _clock.now().difference(_lastSent[key] ?? _clock.now());
-          if (since < throttle) await _clock.delay(throttle - since);
-          // Re-run resolves the latest value for this key; its patches were
-          // already applied when it was queued, so re-applying is harmless.
-          unawaited(run(next));
-        }
-      }
+    await _sendAndDrain(key, attempts, description);
+  }
+
+  /// Sends [attempts], then — for a keyed batch — keeps [key] marked as
+  /// in flight through the whole coalescing cycle: if something queued
+  /// behind this send, waits out the throttle window and hands the next
+  /// send off in the background, only releasing [key] once nothing is left
+  /// waiting. A [run] arriving at any point in that cycle (including during
+  /// the throttle wait) sees [key] as in flight and queues instead of
+  /// jumping ahead of the coalesced resend.
+  Future<void> _sendAndDrain(
+    String? key,
+    List<_Attempt> attempts,
+    String description,
+  ) async {
+    await _send(attempts, description, key);
+    if (key == null) return;
+    var next = _waiting.remove(key);
+    if (next == null) {
+      _inFlight.remove(key);
+      return;
     }
+    var since = _clock.now().difference(_lastSent[key] ?? _clock.now());
+    if (since < throttle) await _clock.delay(throttle - since);
+    // A run arriving during that wait replaced (or re-replaced) what's
+    // queued — re-check rather than send the value captured before we
+    // waited, so the batch actually sent is always the latest one.
+    var latest = _waiting.remove(key) ?? next;
+    unawaited(_sendAndDrain(key, latest.attempts, latest.description));
   }
 
   Future<void> _send(
@@ -154,42 +188,33 @@ class DeviceCommandPipeline {
   }
 
   Future<bool> _sendOne(String id, _Attempt a) async {
+    var failure = await _sendSignal(a);
+    if (failure == null) return true;
     var light = a.item.light;
-    try {
-      await _gateway.send(light.ip, a.item.signal);
-      _store.update(
-        light.id,
-        (s) => s.copyWith(reachable: true, updatedAt: _clock.now()),
-      );
-      return true;
-    } on DeviceException catch (e) {
-      _store.put(light.id, a.previous.copyWith(reachable: false));
-      (_failed[id] ??= <_Attempt>[]).add(a);
-      _emit(CommandFailed(id, light.id, light.name, light.ip, e.failure));
-      return false;
-    } catch (e) {
-      _store.put(light.id, a.previous.copyWith(reachable: false));
-      (_failed[id] ??= <_Attempt>[]).add(a);
-      _emit(
-        CommandFailed(
-          id,
-          light.id,
-          light.name,
-          light.ip,
-          UnreachableFailure(light.ip, '$e'),
-        ),
-      );
-      return false;
-    }
+    (_failed[id] ??= <_Attempt>[]).add(a);
+    _emit(CommandFailed(id, light.id, light.name, light.ip, failure));
+    return false;
   }
 
   /// Re-sends every light that failed under [reportId], once each, then
   /// forgets the entry (spec §5.11.7).
   Future<void> retry(String reportId) async {
-    var attempts = _failed.remove(reportId);
-    if (attempts == null || attempts.isEmpty) return;
-    for (var a in attempts) {
-      _store.update(a.item.light.id, a.item.patch);
+    var failed = _failed.remove(reportId);
+    if (failed == null || failed.isEmpty) return;
+    var home = await _homeSubnet();
+    if (_network.isOffNetwork(home)) {
+      for (var a in failed) {
+        var light = a.item.light;
+        _emit(CommandRetryFailed(reportId, light.id, light.name));
+      }
+      return;
+    }
+    var attempts = <_Attempt>[];
+    for (var a in failed) {
+      var previous = _store.of(a.item.light.id);
+      var optimistic = a.item.patch(previous);
+      attempts.add(_Attempt(a.item, previous, optimistic));
+      _store.put(a.item.light.id, optimistic);
     }
     var results = await Future.wait(
       attempts.map((a) => _retryOne(reportId, a)),
@@ -198,6 +223,19 @@ class DeviceCommandPipeline {
   }
 
   Future<bool> _retryOne(String reportId, _Attempt a) async {
+    var failure = await _sendSignal(a);
+    if (failure == null) return true;
+    var light = a.item.light;
+    _emit(CommandRetryFailed(reportId, light.id, light.name));
+    return false;
+  }
+
+  /// Sends [a]'s signal, returning `null` on success or the [DeviceFailure]
+  /// on failure. A failure reverts the light — but only if it still holds
+  /// the optimistic value this very attempt applied; if something else has
+  /// since changed it (a concurrent unkeyed batch on the same light), that
+  /// value is left alone and only its `reachable` flag is corrected.
+  Future<DeviceFailure?> _sendSignal(_Attempt a) async {
     var light = a.item.light;
     try {
       await _gateway.send(light.ip, a.item.signal);
@@ -205,11 +243,22 @@ class DeviceCommandPipeline {
         light.id,
         (s) => s.copyWith(reachable: true, updatedAt: _clock.now()),
       );
-      return true;
-    } catch (_) {
+      return null;
+    } on DeviceException catch (e) {
+      _revert(a);
+      return e.failure;
+    } catch (e) {
+      _revert(a);
+      return UnreachableFailure(light.ip, '$e');
+    }
+  }
+
+  void _revert(_Attempt a) {
+    var light = a.item.light;
+    if (_store.of(light.id) == a.optimistic) {
       _store.put(light.id, a.previous.copyWith(reachable: false));
-      _emit(CommandRetryFailed(reportId, light.id, light.name));
-      return false;
+    } else {
+      _store.update(light.id, (s) => s.copyWith(reachable: false));
     }
   }
 
@@ -217,5 +266,9 @@ class DeviceCommandPipeline {
     if (!_reports.isClosed) _reports.add(report);
   }
 
-  void dispose() => _reports.close();
+  void dispose() {
+    _reports.close();
+    _waiting.clear();
+    _failed.clear();
+  }
 }
