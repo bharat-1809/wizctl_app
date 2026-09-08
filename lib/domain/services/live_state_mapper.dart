@@ -10,10 +10,20 @@ class LiveStateMapper {
   static const int kelvinStep = 50;
 
   static int snapKelvin(int kelvin) =>
-      ((kelvin / kelvinStep).round() * kelvinStep).clamp(typicalMinTemperature, typicalMaxTemperature);
+      ((kelvin / kelvinStep).round() * kelvinStep).clamp(
+        typicalMinTemperature,
+        typicalMaxTemperature,
+      );
 
-  static LiveState fromLightState(LightState state, {required LiveState previous, required DateTime now}) {
-    var brightness = (state.dimming ?? previous.brightness).clamp(minBrightness, maxBrightness);
+  static LiveState fromLightState(
+    LightState state, {
+    required LiveState previous,
+    required DateTime now,
+  }) {
+    var brightness = (state.dimming ?? previous.brightness).clamp(
+      minBrightness,
+      maxBrightness,
+    );
     var base = previous.copyWith(
       isOn: state.isOn,
       brightness: brightness,
@@ -31,10 +41,16 @@ class LiveStateMapper {
     }
     var temperature = state.temperature;
     if (temperature != null) {
-      return base.copyWith(active: ActiveChannel.white, kelvin: snapKelvin(temperature));
+      return base.copyWith(
+        active: ActiveChannel.white,
+        kelvin: snapKelvin(temperature),
+      );
     }
     if (state.r != null && state.g != null && state.b != null) {
-      return base.copyWith(active: ActiveChannel.colour, rgb: Rgb(state.r!, state.g!, state.b!));
+      return base.copyWith(
+        active: ActiveChannel.colour,
+        rgb: Rgb(state.r!, state.g!, state.b!),
+      );
     }
     return base.copyWith(active: ActiveChannel.white);
   }

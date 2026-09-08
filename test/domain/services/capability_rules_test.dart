@@ -25,8 +25,23 @@ void main() {
     expect(CapabilityRules.isDynamicScene(6), isFalse);
     expect(CapabilityRules.isDynamicScene(1000), isTrue);
     expect(CapabilityRules.isDynamicScene(999), isFalse);
-    expect(CapabilityRules.speed(LiveState.initial.copyWith(active: ActiveChannel.scene, sceneId: 1)), isTrue);
-    expect(CapabilityRules.speed(LiveState.initial.copyWith(active: ActiveChannel.scene, sceneId: 6)), isFalse);
-    expect(CapabilityRules.speed(LiveState.initial.copyWith(active: ActiveChannel.white, sceneId: 1)), isFalse);
+    expect(
+      CapabilityRules.speed(
+        LiveState.initial.copyWith(active: ActiveChannel.scene, sceneId: 1),
+      ),
+      isTrue,
+    );
+    expect(
+      CapabilityRules.speed(
+        LiveState.initial.copyWith(active: ActiveChannel.scene, sceneId: 6),
+      ),
+      isFalse,
+    );
+    expect(
+      CapabilityRules.speed(
+        LiveState.initial.copyWith(active: ActiveChannel.white, sceneId: 1),
+      ),
+      isFalse,
+    );
   });
 }

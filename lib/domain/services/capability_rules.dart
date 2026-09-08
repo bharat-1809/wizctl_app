@@ -16,8 +16,10 @@ class CapabilityRules {
 
   static bool scenes(BulbClass? c) => c != BulbClass.socket;
 
-  static bool isDynamicScene(int sceneId) => WizScene.fromId(sceneId)?.isDynamic ?? false;
+  static bool isDynamicScene(int sceneId) =>
+      WizScene.fromId(sceneId)?.isDynamic ?? false;
 
   /// The speed rail exists only while the bulb is on a dynamic scene.
-  static bool speed(LiveState state) => state.active == ActiveChannel.scene && isDynamicScene(state.sceneId);
+  static bool speed(LiveState state) =>
+      state.active == ActiveChannel.scene && isDynamicScene(state.sceneId);
 }
