@@ -12,11 +12,12 @@ import 'wiz_type.dart';
 class WizTheme extends ThemeExtension<WizTheme> {
   final WizColors colors;
 
-  /// Shadows [ThemeExtension.type] (used internally to key the theme's
-  /// extensions map), so [WizTheme.of] does not rely on
-  /// `ThemeData.extension<WizTheme>()` — see the comment there.
-  @override
-  final WizType type;
+  /// Named `typography`, not `type`: [ThemeExtension.type] is the key
+  /// `ThemeData` uses to store and pair up extensions (in its `extensions`
+  /// map and in `lerp`), so a field named `type` would shadow it and break
+  /// that contract for anyone calling `Theme.of(context).extension<
+  /// WizTheme>()` directly.
+  final WizType typography;
   final WizSpace space;
   final WizElevation elevation;
   final WizMotion motion;
@@ -29,29 +30,20 @@ class WizTheme extends ThemeExtension<WizTheme> {
   /// whether the constructor itself is `const`.
   WizTheme({
     WizColors? colors,
-    WizType? type,
+    WizType? typography,
     WizSpace? space,
     WizElevation? elevation,
     WizMotion? motion,
   }) : colors = colors ?? WizColors.standard,
-       type = type ?? WizType.standard,
+       typography = typography ?? WizType.standard,
        space = space ?? WizSpace.standard,
        elevation = elevation ?? WizElevation.standard,
        motion = motion ?? WizMotion.standard;
 
   static final WizTheme standard = WizTheme();
 
-  /// Not `Theme.of(context).extension<WizTheme>()`: that keys its lookup by
-  /// each extension's [type] getter, which [WizTheme.type] shadows with the
-  /// [WizType] token group instead of the `WizTheme` runtime type the
-  /// framework expects there. Scanning `extensions.values` finds the
-  /// installed [WizTheme] regardless.
-  static WizTheme of(BuildContext context) {
-    for (final extension in Theme.of(context).extensions.values) {
-      if (extension is WizTheme) return extension;
-    }
-    return standard;
-  }
+  static WizTheme of(BuildContext context) =>
+      Theme.of(context).extension<WizTheme>() ?? standard;
 
   @override
   WizTheme copyWith() => this;
@@ -70,7 +62,7 @@ extension WizThemeContext on BuildContext {
 ThemeData buildWizThemeData() {
   final wiz = WizTheme.standard;
   final c = wiz.colors;
-  final t = wiz.type;
+  final t = wiz.typography;
   final scheme = ColorScheme.dark(
     surface: c.surfaceApp,
     onSurface: c.textPrimary,

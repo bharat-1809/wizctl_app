@@ -9,11 +9,13 @@ import '../../support/wiz_test_app.dart';
 void main() {
   testWidgets('context.wiz exposes every token group', (tester) async {
     late WizTheme wiz;
+    late BuildContext capturedContext;
     await tester.pumpWidget(
       wizTestApp(
         Builder(
           builder: (context) {
             wiz = context.wiz;
+            capturedContext = context;
             return const SizedBox();
           },
         ),
@@ -22,8 +24,11 @@ void main() {
     expect(wiz.colors.amber500, const Color(0xFFFFB020));
     expect(wiz.space.hitMin, 44);
     expect(wiz.motion.press.inMilliseconds, 80);
-    expect(wiz.type.body.fontFamily, 'HankenGrotesk');
+    expect(wiz.typography.body.fontFamily, 'HankenGrotesk');
     expect(wiz.elevation.panel.outer, isNotEmpty);
+    // The extension contract itself must work: `type` is no longer shadowed,
+    // so the standard framework lookup finds the installed WizTheme.
+    expect(Theme.of(capturedContext).extension<WizTheme>(), isNotNull);
   });
 
   testWidgets('the theme paints the app surface and warm ink', (tester) async {
@@ -65,11 +70,11 @@ void main() {
   testWidgets('context.wiz finds the installed WizTheme, not always standard', (
     tester,
   ) async {
-    // WizTheme.type shadows ThemeExtension.type, which ThemeData uses to
-    // key its extensions map; a naive Theme.of(context).extension<
-    // WizTheme>() would key on that shadowed getter and always miss,
-    // silently falling back to WizTheme.standard even when a different
-    // WizTheme is installed. Prove context.wiz actually finds this one.
+    // `ThemeExtension.type` is the key `ThemeData` uses for its extensions
+    // map, and `WizTheme` no longer shadows it with a field of its own
+    // (that field is `typography`, not `type`), so the standard
+    // `Theme.of(context).extension<WizTheme>()` lookup finds a non-default
+    // installed WizTheme rather than always falling back to `standard`.
     final installed = WizTheme(colors: WizColors.standard);
     late WizTheme found;
     await tester.pumpWidget(
