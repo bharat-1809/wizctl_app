@@ -58,6 +58,9 @@ class WizIconKey extends StatelessWidget {
       enabled: enabled && onPressed != null,
       scale: wiz.motion.smallKeyScale,
       semanticsLabel: semanticsLabel,
+      // The ring traces the cap: circular on a circle, squircle on a
+      // squircle, rather than a rounded box around either.
+      focusRadius: radius,
       // A key drawn smaller than the touch minimum still has to be as easy
       // to hit; the cap keeps its diameter and the hit area grows around it.
       hitPadding: d >= wiz.space.hitMin

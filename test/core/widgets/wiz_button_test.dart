@@ -35,11 +35,24 @@ void main() {
           ),
         ),
       );
-      var heights = tester
+      var boxes = tester
           .widgetList(find.byType(WizButton))
           .map((w) => tester.getSize(find.byWidget(w)).height)
           .toList();
-      expect(heights, [36, 48, 56]);
+      expect(boxes, [
+        44,
+        48,
+        56,
+      ], reason: 'the small cap is padded out to the touch minimum');
+      var caps = find.descendant(
+        of: find.byType(WizButton),
+        matching: find.byType(WizSurface),
+      );
+      expect(List.generate(3, (i) => tester.getSize(caps.at(i)).height), [
+        36,
+        48,
+        56,
+      ], reason: 'the cap itself keeps the height its size calls for');
       expect(find.text('CREATE HOME'), findsNWidgets(3));
     },
   );
@@ -135,41 +148,87 @@ void main() {
   });
 
   testWidgets('icon keys are square and chips are pills', (tester) async {
-    // Disposed inline, not in a tear-down: flutter_test verifies that no
+    // Disposed in a finally, not a tear-down: flutter_test verifies that no
     // semantics handle is still open at the end of the test body, which runs
-    // before any tear-down.
+    // before any tear-down, and a failing expect must not leak one either.
     var handle = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        wizTestApp(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              WizIconKey(
+                icon: WizIcons.house,
+                onPressed: () {},
+                semanticsLabel: 'Homes',
+              ),
+              WizChip(label: 'Living Room', selected: true, onTap: () {}),
+            ],
+          ),
+        ),
+      );
+      expect(tester.getSize(find.byType(WizIconKey)), const Size(44, 44));
+      expect(
+        tester
+            .getSize(
+              find
+                  .descendant(
+                    of: find.byType(WizChip),
+                    matching: find.byType(WizSurface),
+                  )
+                  .first,
+            )
+            .height,
+        WizSpace.standard.controlSm,
+      );
+      expect(find.bySemanticsLabel('Homes'), findsOneWidget);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets('the focus ring traces a circular icon key', (tester) async {
+    var previous = FocusManager.instance.highlightStrategy;
+    FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = previous);
+
     await tester.pumpWidget(
       wizTestApp(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            WizIconKey(
-              icon: WizIcons.house,
-              onPressed: () {},
-              semanticsLabel: 'Homes',
-            ),
-            WizChip(label: 'Living Room', selected: true, onTap: () {}),
-          ],
+        WizIconKey(
+          icon: WizIcons.house,
+          onPressed: () {},
+          semanticsLabel: 'Homes',
         ),
       ),
     );
-    expect(tester.getSize(find.byType(WizIconKey)), const Size(44, 44));
+    tester
+        .widget<FocusableActionDetector>(
+          find.descendant(
+            of: find.byType(WizIconKey),
+            matching: find.byType(FocusableActionDetector),
+          ),
+        )
+        .focusNode!
+        .requestFocus();
+    await tester.pumpAndSettle();
+
+    var ring = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(WizIconKey),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .firstWhere((decoration) => decoration.border != null);
     expect(
-      tester
-          .getSize(
-            find
-                .descendant(
-                  of: find.byType(WizChip),
-                  matching: find.byType(WizSurface),
-                )
-                .first,
-          )
-          .height,
-      WizSpace.standard.controlSm,
+      ring.borderRadius,
+      BorderRadius.circular(WizSpace.standard.hitMin / 2),
+      reason: 'a circular key gets a circular ring, not a rounded box',
     );
-    expect(find.bySemanticsLabel('Homes'), findsOneWidget);
-    handle.dispose();
   });
 
   testWidgets('a chip keeps the full hit minimum around its 36 pt cap', (

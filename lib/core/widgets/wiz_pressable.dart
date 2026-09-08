@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../feedback/feedback_kind.dart';
@@ -45,6 +46,12 @@ class WizPressable extends StatefulWidget {
   /// smaller than the 44 minimum.
   final EdgeInsets? hitPadding;
 
+  /// Shape of the focus ring. Defaults to `space.r3`, which is right for a
+  /// button cap; controls that are another shape pass their own, so the ring
+  /// traces the part rather than a rounded box around it — a circular
+  /// [WizIconKey] passes `d / 2`, a [WizChip] passes the pill radius.
+  final BorderRadius? focusRadius;
+
   /// Whether the press waits for the gesture arena instead of firing on the
   /// raw pointer down.
   ///
@@ -74,6 +81,7 @@ class WizPressable extends StatefulWidget {
     this.hover = true,
     this.cursor,
     this.hitPadding,
+    this.focusRadius,
     this.arenaResolved = false,
   });
 
@@ -89,6 +97,10 @@ class _WizPressableState extends State<WizPressable> {
   bool _pressed = false;
   bool _hovered = false;
   bool _focused = false;
+
+  /// Where the finger landed, so a drag past the touch slop can release the
+  /// sink before any recogniser has claimed the gesture.
+  Offset? _downAt;
 
   /// Focus ring thickness, design system §11.2 ("Focus: 2 px amber ring").
   static const double _focusRingWidth = 2;
@@ -147,7 +159,8 @@ class _WizPressableState extends State<WizPressable> {
       visual = DecoratedBox(
         position: DecorationPosition.foreground,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(context.wiz.space.r3),
+          borderRadius:
+              widget.focusRadius ?? BorderRadius.circular(context.wiz.space.r3),
           border: Border.all(color: colors.focusRing, width: _focusRingWidth),
         ),
         child: visual,
@@ -175,26 +188,62 @@ class _WizPressableState extends State<WizPressable> {
     // A long press winning the arena rejects the tap recogniser under it, so
     // the sink has to be handed over or the part would pop back up with the
     // finger still down. Both setState calls land in one event dispatch and
-    // so coalesce into a single rebuild, and the hand-over is silent.
-    var handsOverToLongPress = byArena && widget.onLongPress != null;
+    // so coalesce into a single rebuild, and the hand-over is silent. This
+    // applies in both modes: the tap recogniser is in the arena either way,
+    // and `onTapCancel` releases the sink either way.
+    var handsOverToLongPress = armed && widget.onLongPress != null;
     Widget gestures = GestureDetector(
       behavior: HitTestBehavior.opaque,
+      // The outer Semantics is the tappable node; a second one here would
+      // give every control two.
+      excludeFromSemantics: true,
       onTapDown: byArena ? (_) => _down() : null,
       onTapUp: byArena ? (_) => _up() : null,
-      onTapCancel: byArena ? _up : null,
+      // Not gated on the mode: whenever the tap is lost — a scroll view
+      // taking the drag, a finger sliding off — the part has to come back up,
+      // and in Listener mode nothing else reports that.
+      onTapCancel: _up,
       onLongPressStart: handsOverToLongPress
           ? (_) => _down(silent: true)
           : null,
       onLongPressEnd: handsOverToLongPress ? (_) => _up() : null,
+      // A pointer cancelled after the long press was accepted reports here,
+      // never through onLongPressEnd.
+      onLongPressCancel: handsOverToLongPress ? _up : null,
       onTap: armed ? widget.onTap : null,
       onLongPress: armed ? widget.onLongPress : null,
       child: visual,
     );
     if (!widget.arenaResolved) {
+      // The distance `TapGestureRecognizer` itself resolves to, so the visual
+      // and the tap always agree about when the gesture got away. It is the
+      // same for a mouse as for a finger: the recogniser's slop comes from
+      // the device's gesture settings, not from the pointer kind.
+      var slop =
+          MediaQuery.maybeGestureSettingsOf(context)?.touchSlop ?? kTouchSlop;
       gestures = Listener(
-        onPointerDown: (_) => _down(),
-        onPointerUp: (_) => _up(),
-        onPointerCancel: (_) => _up(),
+        onPointerDown: (event) {
+          _downAt = event.position;
+          _down();
+        },
+        // A flick can drag the pointer past the slop before any recogniser
+        // has claimed it, so `onTapCancel` never comes. Releasing here is
+        // what stops a control staying depressed for a whole scroll.
+        onPointerMove: (event) {
+          var from = _downAt;
+          if (from != null && (event.position - from).distance > slop) {
+            _downAt = null;
+            _up();
+          }
+        },
+        onPointerUp: (_) {
+          _downAt = null;
+          _up();
+        },
+        onPointerCancel: (_) {
+          _downAt = null;
+          _up();
+        },
         child: gestures,
       );
     }

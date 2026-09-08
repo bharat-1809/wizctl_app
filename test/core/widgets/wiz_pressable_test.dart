@@ -77,6 +77,123 @@ void main() {
     );
   });
 
+  testWidgets('sliding a finger off releases the press without tapping', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    var taps = 0;
+    var pressed = false;
+    await tester.pumpWidget(
+      wizTestApp(
+        WizPressable(
+          onTap: () => taps++,
+          builder: (context, state) {
+            pressed = state.pressed;
+            return const SizedBox(width: 60, height: 44, key: Key('k'));
+          },
+        ),
+        feedback: feedback,
+      ),
+    );
+    var start = tester.getCenter(find.byKey(const Key('k')));
+    var gesture = await tester.startGesture(start);
+    await tester.pump();
+    expect(pressed, isTrue);
+
+    // Well past kTouchSlop, before any recogniser has claimed the gesture.
+    await gesture.moveTo(start + const Offset(0, 30));
+    await tester.pump();
+    expect(
+      pressed,
+      isFalse,
+      reason: 'a control must not stay depressed for a whole scroll',
+    );
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(taps, 0, reason: 'the finger left the part, so it was not a tap');
+    expect(feedback.played, [FeedbackKind.press]);
+  });
+
+  testWidgets(
+    'a mouse drift inside the slop keeps the press and the tap in step',
+    (tester) async {
+      var taps = 0;
+      var pressed = false;
+      await tester.pumpWidget(
+        wizTestApp(
+          WizPressable(
+            onTap: () => taps++,
+            builder: (context, state) {
+              pressed = state.pressed;
+              return const SizedBox(width: 60, height: 44, key: Key('k'));
+            },
+          ),
+        ),
+      );
+      var start = tester.getCenter(find.byKey(const Key('k')));
+      var mouse = await tester.startGesture(
+        start,
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      expect(pressed, isTrue);
+
+      // TapGestureRecognizer's slop comes from the device gesture settings, not
+      // from the pointer kind, so a 5 px mouse drift is still a tap — and the
+      // part must not look released while the tap is still live.
+      await mouse.moveTo(start + const Offset(5, 0));
+      await tester.pump();
+      expect(pressed, isTrue);
+
+      await mouse.up();
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+      expect(pressed, isFalse);
+    },
+  );
+
+  testWidgets('a competing drag releases the press in both modes', (
+    tester,
+  ) async {
+    for (var arenaResolved in [false, true]) {
+      var pressed = false;
+      await tester.pumpWidget(
+        wizTestApp(
+          ListView(
+            children: [
+              WizPressable(
+                key: ValueKey(arenaResolved),
+                arenaResolved: arenaResolved,
+                onTap: () {},
+                builder: (context, state) {
+                  pressed = state.pressed;
+                  return const SizedBox(width: 60, height: 300);
+                },
+              ),
+              const SizedBox(height: 600),
+            ],
+          ),
+        ),
+      );
+      var start = tester.getCenter(find.byType(WizPressable));
+      var gesture = await tester.startGesture(start);
+      // Past kPressTimeout, so the tap recogniser has reported its down and
+      // the sink is on in both modes.
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(pressed, isTrue, reason: 'arenaResolved: $arenaResolved');
+      await gesture.moveTo(start - const Offset(0, 80));
+      await tester.pump();
+      expect(
+        pressed,
+        isFalse,
+        reason: 'the list took the drag (arenaResolved: $arenaResolved)',
+      );
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+  });
+
   testWidgets('hovering brightens an enabled pressable', (tester) async {
     var previous = FocusManager.instance.highlightStrategy;
     FocusManager.instance.highlightStrategy =
@@ -333,26 +450,60 @@ void main() {
     expect(pressed, isFalse);
   });
 
+  testWidgets('a cancelled long press releases the press', (tester) async {
+    var pressed = false;
+    await tester.pumpWidget(
+      wizTestApp(
+        WizPressable(
+          arenaResolved: true,
+          onTap: () {},
+          onLongPress: () {},
+          builder: (context, state) {
+            pressed = state.pressed;
+            return const SizedBox(width: 60, height: 44, key: Key('k'));
+          },
+        ),
+      ),
+    );
+    var gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('k'))),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(pressed, isTrue);
+    // After the long press is accepted a cancelled pointer reports through
+    // onLongPressCancel, never onLongPressEnd.
+    await gesture.cancel();
+    await tester.pumpAndSettle();
+    expect(
+      pressed,
+      isFalse,
+      reason: 'a cancelled pointer must not leave the part stuck down',
+    );
+  });
+
   testWidgets('the semantics tap action activates exactly once', (
     tester,
   ) async {
     var handle = tester.ensureSemantics();
     var feedback = RecordingFeedbackService();
     var taps = 0;
-    await tester.pumpWidget(
-      wizTestApp(
-        WizPressable(
-          onTap: () => taps++,
-          semanticsLabel: 'Go',
-          builder: (_, _) => const SizedBox(width: 60, height: 44),
+    try {
+      await tester.pumpWidget(
+        wizTestApp(
+          WizPressable(
+            onTap: () => taps++,
+            semanticsLabel: 'Go',
+            builder: (_, _) => const SizedBox(width: 60, height: 44),
+          ),
+          feedback: feedback,
         ),
-        feedback: feedback,
-      ),
-    );
-    tester.semantics.tap(find.semantics.byLabel('Go'));
-    await tester.pumpAndSettle();
-    expect(taps, 1);
-    expect(feedback.played, [FeedbackKind.press]);
-    handle.dispose();
+      );
+      tester.semantics.tap(find.semantics.byLabel('Go'));
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+      expect(feedback.played, [FeedbackKind.press]);
+    } finally {
+      handle.dispose();
+    }
   });
 }

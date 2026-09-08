@@ -101,6 +101,12 @@ class WizButton extends StatelessWidget {
       feedback: feedback,
       scale: wiz.motion.keyScale,
       semanticsLabel: label,
+      focusRadius: radius,
+      // The cap keeps the height its size calls for; a cap smaller than the
+      // touch minimum has its hit area padded out, the way a chip's is.
+      hitPadding: EdgeInsets.symmetric(
+        vertical: (wiz.space.hitMin - height).clamp(0, wiz.space.hitMin) / 2,
+      ),
       builder: (context, state) => WizSurface(
         spec: state.pressed ? wiz.elevation.pressed : spec,
         radius: radius,

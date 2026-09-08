@@ -39,19 +39,22 @@ class WizChip extends StatelessWidget {
     var ink = selected
         ? c.textOnAccent
         : (accentText ? c.amber400 : c.textSecondary);
+    var radius = BorderRadius.circular(wiz.space.pill);
     return WizPressable(
       onTap: onTap,
       enabled: enabled && onTap != null,
       feedback: FeedbackKind.tick,
       scale: wiz.motion.keyScale,
       semanticsLabel: label,
+      // The ring traces the pill, not a rounded box around it.
+      focusRadius: radius,
       // The cap stays 36 tall; the hit area is padded out to the minimum.
       hitPadding: EdgeInsets.symmetric(
         vertical: (wiz.space.hitMin - h).clamp(0, wiz.space.hitMin) / 2,
       ),
       builder: (context, state) => WizSurface(
         spec: state.pressed ? wiz.elevation.pressed : wiz.elevation.raised,
-        radius: BorderRadius.circular(wiz.space.pill),
+        radius: radius,
         gradient: selected
             ? wizVertical(c.amber400, c.amber600)
             : wizVertical(c.surfaceKey, c.surfaceRaised),
