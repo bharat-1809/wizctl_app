@@ -35,3 +35,36 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: NeumaticCompressed
+      fonts:
+        - asset: assets/fonts/NeumaticCompressed-Light.otf
+          weight: 300
+        - asset: assets/fonts/NeumaticCompressed-Regular.otf
+          weight: 400
+        - asset: assets/fonts/NeumaticCompressed-Medium.otf
+          weight: 500
+        - asset: assets/fonts/NeumaticCompressed-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/NeumaticCompressed-Bold.otf
+          weight: 700
+        - asset: assets/fonts/NeumaticCompressed-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/NeumaticCompressed-Black.otf
+          weight: 900
+    - family: HankenGrotesk
+      fonts:
+        - asset: assets/fonts/HankenGrotesk-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/HankenGrotesk-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/HankenGrotesk-Bold.ttf
+          weight: 700
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/JetBrainsMono-Bold.ttf
+          weight: 700
