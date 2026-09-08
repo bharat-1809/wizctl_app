@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/feedback/feedback_kind.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/widgets/wiz_power_key.dart';
+import 'package:wizctl_app/core/widgets/wiz_surface.dart';
 
 import '../../support/wiz_test_app.dart';
 
@@ -79,6 +80,33 @@ void main() {
     await tester.tap(find.byType(WizPowerKey));
     await tester.pumpAndSettle();
     expect(feedback.played, isEmpty);
+  });
+
+  testWidgets('the on surface draws no cast shadow of its own', (tester) async {
+    await tester.pumpWidget(
+      wizTestApp(const WizPowerKey(on: true, onChanged: null)),
+    );
+    var surfaces = tester
+        .widgetList<WizSurface>(
+          find.descendant(
+            of: find.byType(WizPowerKey),
+            matching: find.byType(WizSurface),
+          ),
+        )
+        .toList();
+    expect(surfaces, hasLength(2));
+    expect(
+      surfaces[0].spec.outer,
+      isNotEmpty,
+      reason: 'the off surface underneath draws the cast shadow once',
+    );
+    expect(
+      surfaces[1].spec.outer,
+      isEmpty,
+      reason:
+          'the on surface on top must not stack a second cast shadow under '
+          'the glow',
+    );
   });
 
   testWidgets('assistive tech sees a labelled switch that reports its state', (

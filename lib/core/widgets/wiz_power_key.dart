@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../feedback/feedback_kind.dart';
 import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
+import '../theme/wiz_elevation.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_glow.dart';
@@ -43,6 +44,12 @@ class WizPowerKey extends StatelessWidget {
   static const Alignment _onGradientCentre = Alignment(0, -0.36);
   static const List<double> _onGradientStops = [0, .58, 1];
 
+  // CSS `radial-gradient` with no explicit size is `farthest-corner`: from
+  // (0.5, 0.32) of a unit square that is `sqrt(0.5^2 + 0.68^2) ≈ 0.844` of
+  // the side, versus Flutter's `RadialGradient.radius` default of 0.5, which
+  // would compress the stops into the centre.
+  static const double _onGradientRadius = 0.844;
+
   @override
   Widget build(BuildContext context) {
     var wiz = context.wiz;
@@ -53,6 +60,7 @@ class WizPowerKey extends StatelessWidget {
     var offGradient = wizVertical(c.surfaceKey, c.char900);
     var onGradient = RadialGradient(
       center: _onGradientCentre,
+      radius: _onGradientRadius,
       colors: [c.amber300, c.amber500, c.amber700],
       stops: _onGradientStops,
     );
@@ -88,10 +96,17 @@ class WizPowerKey extends StatelessWidget {
               opacity: on ? 1 : 0,
               duration: m.light,
               curve: m.tactile,
+              // Insets only: the off surface underneath already draws the
+              // outer cast shadow once. Stacking the full knob/pressed spec
+              // here too would compound it under the glow when lit.
               child: WizSurface(
-                spec: state.pressed
-                    ? wiz.elevation.pressed
-                    : wiz.elevation.knob,
+                spec: WizShadowSpec(
+                  insets:
+                      (state.pressed
+                              ? wiz.elevation.pressed
+                              : wiz.elevation.knob)
+                          .insets,
+                ),
                 radius: radius,
                 gradient: onGradient,
               ),
@@ -99,6 +114,7 @@ class WizPowerKey extends StatelessWidget {
             Center(
               child: AnimatedDefaultTextStyle(
                 duration: m.light,
+                curve: m.tactile,
                 style: TextStyle(color: on ? c.textOnAccent : c.textTertiary),
                 child: WizIcon(WizIcons.power, size: d * glyphRatio),
               ),
