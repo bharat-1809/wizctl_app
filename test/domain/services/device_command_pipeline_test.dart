@@ -33,6 +33,7 @@ void main() {
   late LiveStateStore store;
   late _Net net;
   late NetworkMonitor monitor;
+  late FakeClock clock;
   late DeviceCommandPipeline pipeline;
   late List<CommandReport> reports;
 
@@ -42,12 +43,13 @@ void main() {
     net = _Net();
     monitor = NetworkMonitor(net);
     await monitor.refresh();
+    clock = FakeClock();
     pipeline = DeviceCommandPipeline(
       gateway: gateway,
       store: store,
       network: monitor,
       homeSubnet: () async => '192.168.1',
-      clock: FakeClock(),
+      clock: clock,
       ids: SequenceIds(),
     );
     reports = [];
@@ -177,6 +179,9 @@ void main() {
       async.elapse(const Duration(milliseconds: 500));
       expect(gateway.sends.map((s) => s.$2.dimming), [20, 65]);
       expect(store.of('1').brightness, 65);
+      // The 120 ms throttle is what was *requested* of the clock, not real
+      // elapsed time: FakeClock.delay completes immediately (spec §5.11).
+      expect(clock.delays, [const Duration(milliseconds: 120)]);
     });
   });
 }
