@@ -506,4 +506,55 @@ void main() {
       handle.dispose();
     }
   });
+
+  testWidgets('the semantics long press action fires exactly once', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    var longPresses = 0;
+    try {
+      await tester.pumpWidget(
+        wizTestApp(
+          WizPressable(
+            onTap: () {},
+            onLongPress: () => longPresses++,
+            semanticsLabel: 'Go',
+            builder: (_, _) => const SizedBox(width: 60, height: 44),
+          ),
+        ),
+      );
+      expect(
+        tester.getSemantics(find.byType(WizPressable)),
+        isSemantics(hasLongPressAction: true),
+      );
+      tester.semantics.longPress(find.semantics.byLabel('Go'));
+      await tester.pumpAndSettle();
+      expect(longPresses, 1);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets('a pressable with no feedback kind stays silent', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var taps = 0;
+    await tester.pumpWidget(
+      wizTestApp(
+        WizPressable(
+          feedback: null,
+          onTap: () => taps++,
+          builder: (_, _) => const SizedBox(width: 60, height: 44),
+        ),
+        feedback: feedback,
+      ),
+    );
+    await tester.tap(find.byType(WizPressable));
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+    expect(
+      feedback.played,
+      isEmpty,
+      reason: 'a control that plays its own cue on commit must not double up',
+    );
+  });
 }

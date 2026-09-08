@@ -34,13 +34,21 @@ class WizPressable extends StatefulWidget {
   final WizPressBuilder builder;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
-  final FeedbackKind feedback;
+
+  /// The cue played when the part goes down, or null for a control that
+  /// plays its own on commit instead — a `WizToggle` fires `toggleOn` or
+  /// `toggleOff` when the switch actually closes, not when it is touched.
+  final FeedbackKind? feedback;
   final double? scale;
   final double? travel;
   final bool enabled;
   final String? semanticsLabel;
   final bool hover;
   final MouseCursor? cursor;
+
+  /// Reported to assistive technology as the switch state, for a pressable
+  /// that is a switch rather than a plain button. Null for everything else.
+  final bool? toggled;
 
   /// Extra transparent hit area around the visual, for controls drawn
   /// smaller than the 44 minimum.
@@ -80,6 +88,7 @@ class WizPressable extends StatefulWidget {
     this.semanticsLabel,
     this.hover = true,
     this.cursor,
+    this.toggled,
     this.hitPadding,
     this.focusRadius,
     this.arenaResolved = false,
@@ -123,7 +132,8 @@ class _WizPressableState extends State<WizPressable> {
   void _down({bool silent = false}) {
     if (!widget.enabled) return;
     setState(() => _pressed = true);
-    if (!silent) context.feedback.play(widget.feedback);
+    var kind = widget.feedback;
+    if (!silent && kind != null) context.feedback.play(kind);
   }
 
   void _up() {
@@ -132,7 +142,8 @@ class _WizPressableState extends State<WizPressable> {
 
   void _activate() {
     if (!widget.enabled) return;
-    context.feedback.play(widget.feedback);
+    var kind = widget.feedback;
+    if (kind != null) context.feedback.play(kind);
     widget.onTap?.call();
   }
 
@@ -251,8 +262,10 @@ class _WizPressableState extends State<WizPressable> {
     return Semantics(
       button: true,
       enabled: widget.enabled,
+      toggled: widget.toggled,
       label: widget.semanticsLabel,
       onTap: armed ? _activate : null,
+      onLongPress: armed ? widget.onLongPress : null,
       child: FocusableActionDetector(
         focusNode: _focusNode,
         enabled: widget.enabled,

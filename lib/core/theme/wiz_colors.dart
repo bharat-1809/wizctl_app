@@ -130,4 +130,18 @@ class WizColors {
   // Ivory used by slider handles and toggle caps
   final Color ivoryHi = const Color(0xFFFBFAF7);
   final Color ivoryLo = const Color(0xFFC9C5BD);
+
+  /// The four stops of the toggle cap's glossy radial gradient, lit to
+  /// shaded: Toggle.jsx `radial-gradient(circle at 38% 26%,#FFFFFF,#F1EEE8
+  /// 42%,#C8C4BB 78%,#A8A49B)`.
+  final List<Color> ivoryCap = const [
+    Color(0xFFFFFFFF),
+    Color(0xFFF1EEE8),
+    Color(0xFFC8C4BB),
+    Color(0xFFA8A49B),
+  ];
+
+  /// The warm shadow cast inside a lit amber track — a groove in hot metal
+  /// is brown, not black: Toggle.jsx `inset 0 2px 5px rgba(120,60,0,.55)`.
+  final Color shadowAmber = const Color(0xFF783C00);
 }
