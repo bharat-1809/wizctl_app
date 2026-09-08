@@ -25,9 +25,11 @@ class WizType {
   /// `WizSegmentedControl`).
   static const double segmentTracking = 0.08;
 
-  /// Scene tile name labels track tight: 0.02 em, matching the tracking used
-  /// for other display-face wordmarks in the design system.
-  static const double sceneLabelTracking = 0.02;
+  // SceneTile.jsx label: UI face 13.5/15 with letter-spacing -0.005 em.
+  static const double sceneLabelTracking = -0.005;
+
+  // WIZCTL wordmark (Sidebar brand): display face, weight 900, 0.02 em.
+  static const double wordmarkTracking = 0.02;
 
   final TextStyle hero = const TextStyle(
     fontFamily: familyDisplay,

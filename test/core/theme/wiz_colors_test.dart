@@ -47,9 +47,10 @@ void main() {
     );
   });
 
-  test('the three tracking scalars used across the kit are defined in em', () {
+  test('the tracking scalars used across the kit are defined in em', () {
     expect(WizType.labelTracking, 0.10);
     expect(WizType.segmentTracking, 0.08);
-    expect(WizType.sceneLabelTracking, 0.02);
+    expect(WizType.sceneLabelTracking, -0.005);
+    expect(WizType.wordmarkTracking, 0.02);
   });
 }
