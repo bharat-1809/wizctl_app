@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
 
 /// The prototype switches. Only debug builds ever set these.
+///
+/// [forceTimeout] applies to reads and writes alike, so the unreachable
+/// banner can be reviewed from any screen and not just after a command.
 class DebugFlags extends Equatable {
   final bool offNetwork;
   final bool forceTimeout;
