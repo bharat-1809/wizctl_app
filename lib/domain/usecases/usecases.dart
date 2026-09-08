@@ -1,6 +1,7 @@
 export 'apply_colour.dart';
 export 'apply_scene.dart';
 export 'apply_white.dart';
+export 'blink_light.dart';
 export 'refresh_states.dart';
 export 'set_brightness.dart';
 export 'set_kelvin.dart';
