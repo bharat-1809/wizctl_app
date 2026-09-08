@@ -54,14 +54,23 @@ class WizToggle extends StatefulWidget {
   static const double _darkGrooveAlpha = .70;
   static const double _darkRimAlpha = .07;
 
-  /// Toggle.jsx cap: `0 3px 6px rgba(0,0,0,.55)`.
+  // Toggle.jsx cap: `0 3px 6px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.4)
+  // inset, inset 0 -2px 3px rgba(0,0,0,.18)` — the drop shadow it sits in,
+  // the rim the light catches, and the shading under its own belly.
   static const double _capShadowAlpha = .55;
+  static const double _capRimAlpha = .40;
+  static const double _capUnderAlpha = .18;
 
   // Toggle.jsx cap: `radial-gradient(circle at 38% 26%,#FFFFFF,#F1EEE8 42%,
   // #C8C4BB 78%,#A8A49B)`. The centre is those percentages in Alignment's
   // -1..1 space (38% → -0.24, 26% → -0.48); the colours are `colors.ivoryCap`.
   static const Alignment _capGradientCentre = Alignment(-0.24, -0.48);
   static const List<double> _capGradientStops = [0, .42, .78, 1];
+
+  /// A CSS radial gradient with no size given is `farthest-corner`, which
+  /// from (38%, 26%) of the cap reaches about 0.965 of its width. Flutter
+  /// defaults to 0.5, which would compress every stop into the middle.
+  static const double _capGradientRadius = 0.965;
 
   /// Toggle.jsx cap: `transform: down ? 'scale(.93)' : 'scale(1)'`.
   static const double _capPressScale = 0.93;
@@ -116,7 +125,11 @@ class _WizToggleState extends State<WizToggle> {
     _commit(next);
   }
 
-  void _dragCancel() => setState(() => _dragLeft = null);
+  /// Guarded: a recogniser disposed part-way through a rebuild can report a
+  /// cancel while the tree is still building, and there is nothing to undo.
+  void _dragCancel() {
+    if (_dragLeft != null) setState(() => _dragLeft = null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,10 +152,6 @@ class _WizToggleState extends State<WizToggle> {
       arenaResolved: true,
       // The ring traces the pill, not a rounded box around it.
       focusRadius: radius,
-      // The track stays 27 or 33 tall; the hit area is padded to the minimum.
-      hitPadding: EdgeInsets.symmetric(
-        vertical: (wiz.space.hitMin - g.h).clamp(0, wiz.space.hitMin) / 2,
-      ),
       builder: (context, state) {
         // A drag holds the rocker down after the tap it grew out of was
         // rejected in the arena and the pressable let its own press go.
@@ -155,36 +164,45 @@ class _WizToggleState extends State<WizToggle> {
           onHorizontalDragUpdate: _armed ? _dragUpdate : null,
           onHorizontalDragEnd: _armed ? _dragEnd : null,
           onHorizontalDragCancel: _armed ? _dragCancel : null,
-          child: AnimatedScale(
-            scale: down ? WizToggle._bodyPressScale : 1,
-            duration: wiz.motion.release,
-            curve: wiz.motion.settle,
-            child: SizedBox(
-              width: g.w,
-              height: g.h,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: AnimatedSwitcher(
-                      // The gradient and the shadows both change with the
-                      // state, and neither interpolates: cross-fade instead.
-                      duration: wiz.motion.ui,
-                      switchInCurve: wiz.motion.tactile,
-                      switchOutCurve: wiz.motion.tactile,
-                      child: _track(wiz.colors, radius),
+          // The track stays 27 or 33 tall and the hit area is padded out to
+          // the 44 minimum (spec §14) — inside this detector, not through the
+          // pressable's `hitPadding`, which would leave the padding a dead
+          // zone that swallows a drag started just above or below the track.
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: (wiz.space.hitMin - g.h).clamp(0, wiz.space.hitMin) / 2,
+            ),
+            child: AnimatedScale(
+              scale: down ? WizToggle._bodyPressScale : 1,
+              duration: wiz.motion.release,
+              curve: wiz.motion.settle,
+              child: SizedBox(
+                width: g.w,
+                height: g.h,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: AnimatedSwitcher(
+                        // The gradient and the shadows both change with the
+                        // state, and neither interpolates: cross-fade instead.
+                        duration: wiz.motion.ui,
+                        switchInCurve: wiz.motion.tactile,
+                        switchOutCurve: wiz.motion.tactile,
+                        child: _track(wiz.colors, radius),
+                      ),
                     ),
-                  ),
-                  AnimatedPositioned(
-                    // A dragged cap tracks the finger; a released one slides.
-                    duration: _dragLeft == null
-                        ? wiz.motion.panel
-                        : Duration.zero,
-                    curve: wiz.motion.settle,
-                    left: _dragLeft ?? _restLeft,
-                    top: _pad,
-                    child: _cap(wiz.colors, wiz.motion, down),
-                  ),
-                ],
+                    AnimatedPositioned(
+                      // A dragged cap tracks the finger; a released one slides.
+                      duration: _dragLeft == null
+                          ? wiz.motion.panel
+                          : Duration.zero,
+                      curve: wiz.motion.settle,
+                      left: _dragLeft ?? _restLeft,
+                      top: _pad,
+                      child: _cap(wiz.colors, wiz.motion, down),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -195,6 +213,10 @@ class _WizToggleState extends State<WizToggle> {
 
   /// The well the cap rides in: charcoal and recessed when dark, hot metal
   /// with a filament glow when live.
+  ///
+  /// The shadow numbers are Toggle.jsx's `box-shadow` transcribed: the inset
+  /// offsets and blurs are its `inset 0 2px 5px` and `inset 0 -1px 0`, and
+  /// the glow is its `0 0 16px -3px` (blur 16, spread -3) in amber.
   Widget _track(WizColors c, BorderRadius radius) {
     var on = widget.value;
     return WizSurface(
@@ -246,6 +268,7 @@ class _WizToggleState extends State<WizToggle> {
               ],
             ),
       radius: radius,
+      // Toggle.jsx track gradient.
       gradient: on
           ? LinearGradient(
               begin: Alignment.topCenter,
@@ -266,28 +289,47 @@ class _WizToggleState extends State<WizToggle> {
   }
 
   /// The glossy ivory cap, lit from the top left like everything else.
+  ///
+  /// A [WizSurface] rather than a [DecoratedBox]: two of Toggle.jsx's three
+  /// cap shadows are inset, which [BoxDecoration.boxShadow] cannot paint.
   Widget _cap(WizColors c, WizMotion m, bool down) {
     return AnimatedScale(
       scale: down ? WizToggle._capPressScale : 1,
       duration: m.release,
       curve: m.settle,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: WizToggle._capGradientCentre,
-            colors: c.ivoryCap,
-            stops: WizToggle._capGradientStops,
-          ),
-          boxShadow: [
+      child: WizSurface(
+        // Toggle.jsx cap `box-shadow`, transcribed: `0 3px 6px` outside,
+        // then `0 1px 0` inset and `inset 0 -2px 3px`.
+        spec: WizShadowSpec(
+          outer: [
             BoxShadow(
               color: c.shadowBase.withValues(alpha: WizToggle._capShadowAlpha),
               offset: const Offset(0, 3),
               blurRadius: 6,
             ),
           ],
+          insets: [
+            WizInset(
+              offsetY: 1,
+              blur: 0,
+              color: c.highlightBase.withValues(alpha: WizToggle._capRimAlpha),
+            ),
+            WizInset(
+              offsetY: -2,
+              blur: 3,
+              color: c.shadowBase.withValues(alpha: WizToggle._capUnderAlpha),
+            ),
+          ],
         ),
-        child: SizedBox(width: _g.k, height: _g.k),
+        radius: BorderRadius.circular(_g.k / 2),
+        gradient: RadialGradient(
+          center: WizToggle._capGradientCentre,
+          radius: WizToggle._capGradientRadius,
+          colors: c.ivoryCap,
+          stops: WizToggle._capGradientStops,
+        ),
+        width: _g.k,
+        height: _g.k,
       ),
     );
   }

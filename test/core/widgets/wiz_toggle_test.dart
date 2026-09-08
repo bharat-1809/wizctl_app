@@ -8,35 +8,56 @@ import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 
 import '../../support/wiz_test_app.dart';
 
-/// One crawl step. Small enough that several land before the drag
-/// recogniser claims the gesture, so the tests exercise the real hand-over.
-const double _crawlStep = 8;
+/// One swipe step. Small enough that three of them are swallowed by the drag
+/// slop, so the tests exercise the real hand-over out of the gesture arena.
+const double _swipeStep = 8;
 
-/// Drags the only [WizToggle] on screen slowly: every leg of [legs] is
-/// crawled in [_crawlStep] moves 100 ms apart, then the finger lifts.
+/// The one toggle the single-toggle tests put on screen.
+final Finder _toggle = find.byType(WizToggle);
+
+/// The well the cap rides in, inside [toggle]: the surface the switcher
+/// cross-fades from one state to the other.
+Finder _trackOf(Finder toggle) => find.descendant(
+  of: find.descendant(of: toggle, matching: find.byType(AnimatedSwitcher)),
+  matching: find.byType(WizSurface),
+);
+
+/// The rocker's cap, inside [toggle]: the surface that slides along the track.
+Finder _capOf(Finder toggle) => find.descendant(
+  of: find.descendant(of: toggle, matching: find.byType(AnimatedPositioned)),
+  matching: find.byType(WizSurface),
+);
+
+final Finder _track = _trackOf(_toggle);
+final Finder _cap = _capOf(_toggle);
+
+/// Swipes the toggle: every leg of [legs] is covered in [_swipeStep] px moves
+/// [gap] apart, starting at [from] or the toggle's centre, then the finger
+/// lifts. [whileHeld] runs on the last frame before it does.
 ///
-/// The moves are spaced wider than the velocity tracker's sampling window,
-/// so by the release it has no usable estimate and reports zero velocity —
-/// which is the point: these are drags, and the cap's resting position
-/// alone decides the commit. A flick is tested with [WidgetTester.fling].
-Future<void> _crawl(
+/// [gap] is what separates a drag from a flick over identical geometry. The
+/// default 100 ms is wider than the velocity tracker's sampling window, so
+/// the release reports no velocity and the cap's resting position alone
+/// decides the commit. A few milliseconds instead, and the same throw lands
+/// with a real one.
+Future<void> _swipe(
   WidgetTester tester,
   List<double> legs, {
+  Duration gap = const Duration(milliseconds: 100),
+  Offset? from,
   VoidCallback? whileHeld,
 }) async {
-  var gesture = await tester.startGesture(
-    tester.getCenter(find.byType(WizToggle)),
-  );
+  var gesture = await tester.startGesture(from ?? tester.getCenter(_toggle));
   var clock = Duration.zero;
   Future<void> tick(Future<void> Function(Duration at) send) async {
-    clock += const Duration(milliseconds: 100);
+    clock += gap;
     await send(clock);
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(gap);
   }
 
   for (var leg in legs) {
-    var step = Offset(_crawlStep * leg.sign, 0);
-    for (var i = 0; i < (leg.abs() / _crawlStep).round(); i++) {
+    var step = Offset(_swipeStep * leg.sign, 0);
+    for (var i = 0; i < (leg.abs() / _swipeStep).round(); i++) {
       await tick((at) => gesture.moveBy(step, timeStamp: at));
     }
   }
@@ -45,27 +66,17 @@ Future<void> _crawl(
   await tester.pumpAndSettle();
 }
 
-/// The rocker's cap: the only circle the toggle draws.
-final Finder _cap = find.descendant(
-  of: find.byType(WizToggle),
-  matching: find.byWidgetPredicate(
-    (w) =>
-        w is DecoratedBox &&
-        w.decoration is BoxDecoration &&
-        (w.decoration as BoxDecoration).shape == BoxShape.circle,
-  ),
-);
+/// Asserts where the cap has got to against the midpoint the commit's
+/// position branch uses — which is the toggle's own centre line.
+void _expectCap(WidgetTester tester, Matcher against, {required String why}) {
+  expect(tester.getCenter(_cap).dx, against, reason: why);
+}
 
-/// A toggle wired to a local [value] the tests can read back.
-Widget _liveToggle(
-  bool Function() read,
-  void Function(bool) write, {
-  bool enabled = true,
-}) {
+/// A toggle wired to a local value the tests can read back.
+Widget _liveToggle(bool Function() read, void Function(bool) write) {
   return StatefulBuilder(
     builder: (context, setState) => WizToggle(
       value: read(),
-      enabled: enabled,
       onChanged: (v) => setState(() => write(v)),
       semanticsLabel: 'Power',
     ),
@@ -94,14 +105,7 @@ void main() {
     );
     var toggles = tester.widgetList(find.byType(WizToggle)).toList();
     var tracks = toggles
-        .map(
-          (w) => tester.getSize(
-            find.descendant(
-              of: find.byWidget(w),
-              matching: find.byType(WizSurface),
-            ),
-          ),
-        )
+        .map((w) => tester.getSize(_trackOf(find.byWidget(w))))
         .toList();
     expect(tracks, [const Size(46, 27), const Size(60, 33)]);
     // Spec §14: the visual stays small, the touch target never does.
@@ -118,10 +122,10 @@ void main() {
         feedback: feedback,
       ),
     );
-    await tester.tap(find.byType(WizToggle));
+    await tester.tap(_toggle);
     await tester.pumpAndSettle();
     expect(value, isTrue);
-    await tester.tap(find.byType(WizToggle));
+    await tester.tap(_toggle);
     await tester.pumpAndSettle();
     expect(value, isFalse);
     expect(feedback.played, [FeedbackKind.toggleOn, FeedbackKind.toggleOff]);
@@ -136,7 +140,7 @@ void main() {
         feedback: feedback,
       ),
     );
-    await tester.fling(find.byType(WizToggle), const Offset(40, 0), 800);
+    await tester.fling(_toggle, const Offset(40, 0), 800);
     await tester.pumpAndSettle();
     expect(value, isTrue);
     expect(feedback.played, [FeedbackKind.toggleOn]);
@@ -151,7 +155,7 @@ void main() {
         feedback: feedback,
       ),
     );
-    await tester.fling(find.byType(WizToggle), const Offset(-40, 0), 800);
+    await tester.fling(_toggle, const Offset(-40, 0), 800);
     await tester.pumpAndSettle();
     expect(value, isFalse);
     expect(feedback.played, [FeedbackKind.toggleOff]);
@@ -166,13 +170,13 @@ void main() {
         feedback: feedback,
       ),
     );
-    await _crawl(
+    await _swipe(
       tester,
       [64],
-      whileHeld: () => expect(
-        tester.getCenter(_cap).dx,
-        greaterThan(tester.getCenter(find.byType(WizToggle)).dx),
-        reason: 'the cap follows the finger, it does not wait for the release',
+      whileHeld: () => _expectCap(
+        tester,
+        greaterThan(tester.getCenter(_toggle).dx),
+        why: 'the cap follows the finger, it does not wait for the release',
       ),
     );
     expect(value, isTrue);
@@ -191,10 +195,114 @@ void main() {
       ),
     );
     var parked = tester.getTopLeft(_cap).dx;
-    await _crawl(tester, [64, -64]);
+    await _swipe(tester, [64, -64]);
     expect(value, isFalse, reason: 'the cap came home, so nothing changed');
     expect(feedback.played, isEmpty, reason: 'a cue only ever means a commit');
     expect(tester.getTopLeft(_cap).dx, moreOrLessEquals(parked, epsilon: 0.5));
+  });
+
+  // Both `fling` tests above carry the cap past the midpoint, so the position
+  // branch alone would pass them. These two throw 32 px — 24 of which the
+  // drag slop swallows, leaving the cap short of the midpoint, as `whileHeld`
+  // asserts — so only the velocity branch can commit them.
+  testWidgets('a flick commits from short of the midpoint', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var value = false;
+    await tester.pumpWidget(
+      wizTestApp(
+        _liveToggle(() => value, (v) => value = v),
+        feedback: feedback,
+      ),
+    );
+    await _swipe(
+      tester,
+      [32],
+      gap: const Duration(milliseconds: 5),
+      whileHeld: () => _expectCap(
+        tester,
+        lessThan(tester.getCenter(_toggle).dx),
+        why: 'the cap is short of the midpoint: only the velocity commits it',
+      ),
+    );
+    expect(value, isTrue);
+    expect(feedback.played, [FeedbackKind.toggleOn]);
+  });
+
+  testWidgets('a flick back commits from past the midpoint', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var value = true;
+    await tester.pumpWidget(
+      wizTestApp(
+        _liveToggle(() => value, (v) => value = v),
+        feedback: feedback,
+      ),
+    );
+    await _swipe(
+      tester,
+      [-32],
+      gap: const Duration(milliseconds: 5),
+      whileHeld: () => _expectCap(
+        tester,
+        greaterThan(tester.getCenter(_toggle).dx),
+        why: 'the cap is still past the midpoint: only the velocity opens it',
+      ),
+    );
+    expect(value, isFalse);
+    expect(feedback.played, [FeedbackKind.toggleOff]);
+  });
+
+  testWidgets('the same throw crawled leaves the switch alone', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var value = false;
+    await tester.pumpWidget(
+      wizTestApp(
+        _liveToggle(() => value, (v) => value = v),
+        feedback: feedback,
+      ),
+    );
+    await _swipe(tester, [32]);
+    expect(
+      value,
+      isFalse,
+      reason: 'without the velocity, 32 px never reaches the midpoint',
+    );
+    expect(feedback.played, isEmpty);
+  });
+
+  testWidgets('a drag that starts in the hit padding still moves the cap', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    var value = false;
+    await tester.pumpWidget(
+      wizTestApp(
+        _liveToggle(() => value, (v) => value = v),
+        feedback: feedback,
+      ),
+    );
+    // Two pixels below the track, inside the padding that takes the toggle
+    // out to its 44 hit area.
+    var below = Offset(
+      tester.getCenter(_toggle).dx,
+      tester.getBottomLeft(_track).dy + 2,
+    );
+    expect(
+      below.dy,
+      lessThan(tester.getBottomLeft(_toggle).dy),
+      reason: 'the drag has to start inside the toggle to mean anything',
+    );
+    await _swipe(
+      tester,
+      [64],
+      from: below,
+      whileHeld: () => _expectCap(
+        tester,
+        greaterThan(tester.getCenter(_toggle).dx),
+        why: 'the padding is part of the control, not a dead zone',
+      ),
+    );
+    expect(value, isTrue);
+    expect(feedback.played, [FeedbackKind.toggleOn]);
   });
 
   testWidgets('disabled toggles ignore taps and flicks', (tester) async {
@@ -211,12 +319,38 @@ void main() {
         feedback: feedback,
       ),
     );
-    await tester.tap(find.byType(WizToggle));
+    await tester.tap(_toggle);
     await tester.pumpAndSettle();
-    await tester.fling(find.byType(WizToggle), const Offset(40, 0), 800);
+    await tester.fling(_toggle, const Offset(40, 0), 800);
     await tester.pumpAndSettle();
     expect(changed, isFalse);
     expect(feedback.played, isEmpty);
+  });
+
+  testWidgets('a toggle with no handler is disabled however it is asked', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    var feedback = RecordingFeedbackService();
+    try {
+      await tester.pumpWidget(
+        wizTestApp(
+          const WizToggle(value: false, onChanged: null, semanticsLabel: 'x'),
+          feedback: feedback,
+        ),
+      );
+      await tester.tap(_toggle);
+      await tester.pumpAndSettle();
+      await tester.fling(_toggle, const Offset(40, 0), 800);
+      await tester.pumpAndSettle();
+      expect(feedback.played, isEmpty);
+      expect(
+        tester.getSemantics(_toggle),
+        isSemantics(hasEnabledState: true, isEnabled: false),
+      );
+    } finally {
+      handle.dispose();
+    }
   });
 
   testWidgets('Space toggles a focused switch', (tester) async {
@@ -230,7 +364,7 @@ void main() {
     );
     var detector = tester.widget<FocusableActionDetector>(
       find.descendant(
-        of: find.byType(WizToggle),
+        of: _toggle,
         matching: find.byType(FocusableActionDetector),
       ),
     );
@@ -260,7 +394,7 @@ void main() {
         ),
       );
       expect(
-        tester.getSemantics(find.byType(WizToggle)),
+        tester.getSemantics(_toggle),
         isSemantics(
           label: 'Power',
           hasToggledState: true,
@@ -272,10 +406,7 @@ void main() {
       tester.semantics.tap(find.semantics.byLabel('Power'));
       await tester.pumpAndSettle();
       expect(value, isFalse);
-      expect(
-        tester.getSemantics(find.byType(WizToggle)),
-        isSemantics(isToggled: false),
-      );
+      expect(tester.getSemantics(_toggle), isSemantics(isToggled: false));
     } finally {
       handle.dispose();
     }
