@@ -25,20 +25,20 @@ class LiveStatePersister {
     _sub ??= _store.watchAll().skip(1).listen((states) {
       _latest = states;
       _timer?.cancel();
-      _timer = Timer(debounce, _flush);
+      _timer = Timer(debounce, () => unawaited(_flush()));
     });
   }
 
-  void _flush() {
+  Future<void> _flush() {
     var latest = _latest;
-    if (latest == null) return;
+    if (latest == null) return Future.value();
     _latest = null;
-    unawaited(_persistence.save(latest));
+    return _persistence.save(latest);
   }
 
   Future<void> dispose() async {
     _timer?.cancel();
-    _flush();
+    await _flush();
     await _sub?.cancel();
     _sub = null;
   }

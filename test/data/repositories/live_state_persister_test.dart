@@ -30,4 +30,27 @@ void main() {
       store.dispose();
     });
   });
+
+  test('dispose awaits the pending debounced write', () {
+    fakeAsync((async) {
+      var store = LiveStateStore();
+      var persistence = FakeLiveStatePersistence();
+      var persister = LiveStatePersister(
+        store: store,
+        persistence: persistence,
+        debounce: const Duration(milliseconds: 500),
+      );
+      persister.start();
+      async.flushMicrotasks();
+      store.put('a', LiveState.initial.copyWith(isOn: true));
+      async.elapse(const Duration(milliseconds: 100));
+      persister.dispose();
+      async.flushMicrotasks();
+      expect(persistence.saves, 1);
+      expect(persistence.stored['a']!.isOn, isTrue);
+      async.elapse(const Duration(milliseconds: 500));
+      expect(persistence.saves, 1);
+      store.dispose();
+    });
+  });
 }
