@@ -4,6 +4,11 @@ import 'package:wizctl_app/domain/services/network_monitor.dart';
 
 import '../../support/fakes.dart';
 
+class _ThrowingInfo implements NetworkInfo {
+  @override
+  Future<String?> currentSubnet() => throw StateError('enumeration failed');
+}
+
 void main() {
   test('off network when the home has a subnet and the current one differs or is missing', () async {
     var info = FakeNetworkInfo('192.168.1');
@@ -37,4 +42,16 @@ void main() {
       m.dispose();
     });
   });
+
+  test(
+    'enumeration failure completes refresh and treats as no subnet',
+    () async {
+      var info = _ThrowingInfo();
+      var m = NetworkMonitor(info);
+      await m.refresh();
+      expect(m.current, isNull);
+      expect(m.isOffNetwork('192.168.1'), isTrue);
+      m.dispose();
+    },
+  );
 }

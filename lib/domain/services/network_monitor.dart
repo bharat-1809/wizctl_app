@@ -35,7 +35,12 @@ class NetworkMonitor {
       watchSubnet().map((_) => isOffNetwork(homeSubnet)).distinct();
 
   Future<void> refresh() async {
-    var next = await _info.currentSubnet();
+    String? next;
+    try {
+      next = await _info.currentSubnet();
+    } catch (e) {
+      next = null;
+    }
     var changed = !_known || next != _current;
     _known = true;
     _current = next;

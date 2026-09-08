@@ -7,14 +7,19 @@ import '../../domain/services/network_monitor.dart';
 class IoNetworkInfo implements NetworkInfo {
   @override
   Future<String?> currentSubnet() async {
-    var interfaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4,
-      includeLinkLocal: false,
-    );
-    return subnetOf([
-      for (var i in interfaces)
-        for (var a in i.addresses) a.address,
-    ]);
+    try {
+      var interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+        includeLinkLocal: false,
+      );
+      return subnetOf([
+        for (var i in interfaces)
+          for (var a in i.addresses) a.address,
+      ]);
+    } catch (e) {
+      // Enumeration failure means "no usable IPv4 address", spec §5.9.
+      return null;
+    }
   }
 
   static String? subnetOf(List<String> addresses) {
