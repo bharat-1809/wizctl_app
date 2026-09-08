@@ -21,6 +21,13 @@ class WizTextures {
   static ui.Image? _grain;
   static double _grainScale = 1;
 
+  /// [grainPaint] results, keyed by the `opacity` they were built for.
+  /// `grain: true` is the panel default, so without this a scrolling grid
+  /// of cards would build a fresh shader, matrix and paint per card, per
+  /// frame. Cleared whenever [load] (re)creates the tile, since the shader
+  /// it captures would otherwise go stale.
+  static final Map<double, Paint> _grainPaints = {};
+
   /// Whether [load] has produced a grain tile yet. Callers that paint grain
   /// before this is true simply paint nothing this frame.
   static bool get hasGrain => _grain != null;
@@ -47,29 +54,33 @@ class WizTextures {
     );
     _grain = await recorder.endRecording().toImage(px, px);
     _grainScale = 1 / devicePixelRatio;
+    _grainPaints.clear();
   }
 
   /// The grain shader at [opacity], or `null` before [load] has produced a
   /// tile — callers must treat `null` as "paint nothing" rather than throw.
+  /// Cached per `opacity` (see [_grainPaints]).
   static Paint? grainPaint({double opacity = 1}) {
     var image = _grain;
     if (image == null) return null;
-    var matrix = Matrix4.diagonal3Values(_grainScale, _grainScale, 1);
-    // A shader is already set below, so `opacity` cannot also go through
-    // `Paint.color` (the shader would win and the colour would be dead).
-    // Instead it is applied as a `dstIn` colour filter: keep the shader's
-    // own pixels, scale their alpha by this filter colour's alpha.
-    return Paint()
-      ..shader = ImageShader(
-        image,
-        TileMode.repeated,
-        TileMode.repeated,
-        matrix.storage,
-      )
-      ..colorFilter = ColorFilter.mode(
-        WizColors.standard.highlightBase.withValues(alpha: opacity),
-        BlendMode.dstIn,
-      );
+    return _grainPaints.putIfAbsent(opacity, () {
+      var matrix = Matrix4.diagonal3Values(_grainScale, _grainScale, 1);
+      // A shader is already set below, so `opacity` cannot also go through
+      // `Paint.color` (the shader would win and the colour would be dead).
+      // Instead it is applied as a `dstIn` colour filter: keep the shader's
+      // own pixels, scale their alpha by this filter colour's alpha.
+      return Paint()
+        ..shader = ImageShader(
+          image,
+          TileMode.repeated,
+          TileMode.repeated,
+          matrix.storage,
+        )
+        ..colorFilter = ColorFilter.mode(
+          WizColors.standard.highlightBase.withValues(alpha: opacity),
+          BlendMode.dstIn,
+        );
+    });
   }
 
   /// Repeating stripes: a hairline highlight then a groove, one period per

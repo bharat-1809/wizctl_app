@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
+import 'wiz_glow.dart';
 import 'wiz_surface.dart';
 
 enum WizPanelVariant {

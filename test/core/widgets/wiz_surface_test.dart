@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/theme/wiz_theme.dart';
+import 'package:wizctl_app/core/widgets/wiz_glow.dart';
 import 'package:wizctl_app/core/widgets/wiz_panel.dart';
 import 'package:wizctl_app/core/widgets/wiz_surface.dart';
 
