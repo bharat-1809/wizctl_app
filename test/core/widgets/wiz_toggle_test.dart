@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/feedback/feedback_kind.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
+import 'package:wizctl_app/core/theme/wiz_colors.dart';
 import 'package:wizctl_app/core/widgets/wiz_surface.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 
@@ -30,6 +31,19 @@ Finder _capOf(Finder toggle) => find.descendant(
 
 final Finder _track = _trackOf(_toggle);
 final Finder _cap = _capOf(_toggle);
+
+/// The amber ring the press recipe draws around a keyboard-focused part
+/// (spec §11.2) — matched on what it paints, not on how it is built.
+final Finder _focusRing = find.descendant(
+  of: _toggle,
+  matching: find.byWidgetPredicate(
+    (w) =>
+        w is DecoratedBox &&
+        w.decoration is BoxDecoration &&
+        (w.decoration as BoxDecoration).border?.top.color ==
+            WizColors.standard.focusRing,
+  ),
+);
 
 /// Swipes the toggle: every leg of [legs] is covered in [_swipeStep] px moves
 /// [gap] apart, starting at [from] or the toggle's centre, then the finger
@@ -345,12 +359,43 @@ void main() {
       await tester.pumpAndSettle();
       expect(feedback.played, isEmpty);
       expect(
-        tester.getSemantics(_toggle),
+        find.semantics.byLabel('x'),
         isSemantics(hasEnabledState: true, isEnabled: false),
       );
     } finally {
       handle.dispose();
     }
+  });
+
+  testWidgets('the focus ring traces the track, not the hit area', (
+    tester,
+  ) async {
+    // The highlight only shows when the last interaction was a key.
+    var previous = FocusManager.instance.highlightStrategy;
+    FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = previous);
+
+    await tester.pumpWidget(
+      wizTestApp(
+        WizToggle(value: false, onChanged: (_) {}, semanticsLabel: 'Power'),
+      ),
+    );
+    expect(_focusRing, findsNothing);
+    var detector = tester.widget<FocusableActionDetector>(
+      find.descendant(
+        of: _toggle,
+        matching: find.byType(FocusableActionDetector),
+      ),
+    );
+    detector.focusNode!.requestFocus();
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSize(_focusRing),
+      const Size(60, 33),
+      reason: 'the ring traces the rocker, not the padding around it',
+    );
+    expect(tester.getSize(_toggle), const Size(60, 44));
   });
 
   testWidgets('Space toggles a focused switch', (tester) async {
@@ -393,20 +438,27 @@ void main() {
           }),
         ),
       );
+      // Addressed by label rather than by widget: the drag detector now sits
+      // above the pressable, so the toggle's outermost render object is no
+      // longer the one that owns the semantics node. One node, though —
+      // nothing above the pressable contributes a second.
+      expect(find.semantics.byLabel('Power'), findsOne);
       expect(
-        tester.getSemantics(_toggle),
+        find.semantics.byLabel('Power'),
         isSemantics(
           label: 'Power',
           hasToggledState: true,
           isToggled: true,
           hasTapAction: true,
           isEnabled: true,
+          // The node still covers the whole hit area, not just the track.
+          size: const Size(60, 44),
         ),
       );
       tester.semantics.tap(find.semantics.byLabel('Power'));
       await tester.pumpAndSettle();
       expect(value, isFalse);
-      expect(tester.getSemantics(_toggle), isSemantics(isToggled: false));
+      expect(find.semantics.byLabel('Power'), isSemantics(isToggled: false));
     } finally {
       handle.dispose();
     }

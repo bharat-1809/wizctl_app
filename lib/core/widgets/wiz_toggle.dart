@@ -137,77 +137,80 @@ class _WizToggleState extends State<WizToggle> {
     var g = _g;
     var radius = BorderRadius.circular(wiz.space.pill);
 
-    return WizPressable(
-      onTap: () => _commit(!widget.value),
-      enabled: _armed,
-      semanticsLabel: widget.semanticsLabel,
-      toggled: widget.value,
-      // The press recipe supplies focus, keyboard activation, hover and the
-      // disabled cursor; the rocker's own body scale replaces its sink, and
-      // the cue waits for the commit rather than firing on the touch.
-      scale: 1,
-      travel: 0,
-      feedback: null,
-      // A drag on the cap must be able to take the gesture off the tap.
-      arenaResolved: true,
-      // The ring traces the pill, not a rounded box around it.
-      focusRadius: radius,
-      builder: (context, state) {
-        // A drag holds the rocker down after the tap it grew out of was
-        // rejected in the arena and the pressable let its own press go.
-        var down = state.pressed || _dragLeft != null;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          // The pressable owns the semantics node; this only moves the cap.
-          excludeFromSemantics: true,
-          onHorizontalDragStart: _armed ? _dragStart : null,
-          onHorizontalDragUpdate: _armed ? _dragUpdate : null,
-          onHorizontalDragEnd: _armed ? _dragEnd : null,
-          onHorizontalDragCancel: _armed ? _dragCancel : null,
-          // The track stays 27 or 33 tall and the hit area is padded out to
-          // the 44 minimum (spec §14) — inside this detector, not through the
-          // pressable's `hitPadding`, which would leave the padding a dead
-          // zone that swallows a drag started just above or below the track.
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: (wiz.space.hitMin - g.h).clamp(0, wiz.space.hitMin) / 2,
-            ),
-            child: AnimatedScale(
-              scale: down ? WizToggle._bodyPressScale : 1,
-              duration: wiz.motion.release,
-              curve: wiz.motion.settle,
-              child: SizedBox(
-                width: g.w,
-                height: g.h,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: AnimatedSwitcher(
-                        // The gradient and the shadows both change with the
-                        // state, and neither interpolates: cross-fade instead.
-                        duration: wiz.motion.ui,
-                        switchInCurve: wiz.motion.tactile,
-                        switchOutCurve: wiz.motion.tactile,
-                        child: _track(wiz.colors, radius),
-                      ),
+    // The drag wraps the pressable rather than sitting inside its builder,
+    // so that it is on the hit-test path for the whole 44-tall hit area
+    // while the pressable keeps the focus ring around the track alone. The
+    // pressable's own detector is opaque, so `deferToChild` still reaches
+    // every pixel of the padded box; the tap and the drag then compete in
+    // the arena as they always did, and when the drag wins, the pressable's
+    // `onTapCancel` lets its press go.
+    return GestureDetector(
+      behavior: HitTestBehavior.deferToChild,
+      // The pressable owns the semantics node; this only moves the cap.
+      excludeFromSemantics: true,
+      onHorizontalDragStart: _armed ? _dragStart : null,
+      onHorizontalDragUpdate: _armed ? _dragUpdate : null,
+      onHorizontalDragEnd: _armed ? _dragEnd : null,
+      onHorizontalDragCancel: _armed ? _dragCancel : null,
+      child: WizPressable(
+        onTap: () => _commit(!widget.value),
+        enabled: _armed,
+        semanticsLabel: widget.semanticsLabel,
+        toggled: widget.value,
+        // The press recipe supplies focus, keyboard activation, hover and the
+        // disabled cursor; the rocker's own body scale replaces its sink, and
+        // the cue waits for the commit rather than firing on the touch.
+        scale: 1,
+        travel: 0,
+        feedback: null,
+        // A drag on the cap must be able to take the gesture off the tap.
+        arenaResolved: true,
+        // The ring traces the pill, not a rounded box around it.
+        focusRadius: radius,
+        // The track stays 27 or 33 tall; the hit area is padded out to the 44
+        // minimum (spec §14), with the ring inside it, around the track.
+        hitPadding: EdgeInsets.symmetric(
+          vertical: (wiz.space.hitMin - g.h).clamp(0, wiz.space.hitMin) / 2,
+        ),
+        builder: (context, state) {
+          // A drag holds the rocker down after the tap it grew out of was
+          // rejected in the arena and the pressable let its own press go.
+          var down = state.pressed || _dragLeft != null;
+          return AnimatedScale(
+            scale: down ? WizToggle._bodyPressScale : 1,
+            duration: wiz.motion.release,
+            curve: wiz.motion.settle,
+            child: SizedBox(
+              width: g.w,
+              height: g.h,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: AnimatedSwitcher(
+                      // The gradient and the shadows both change with the
+                      // state, and neither interpolates: cross-fade instead.
+                      duration: wiz.motion.ui,
+                      switchInCurve: wiz.motion.tactile,
+                      switchOutCurve: wiz.motion.tactile,
+                      child: _track(wiz.colors, radius),
                     ),
-                    AnimatedPositioned(
-                      // A dragged cap tracks the finger; a released one slides.
-                      duration: _dragLeft == null
-                          ? wiz.motion.panel
-                          : Duration.zero,
-                      curve: wiz.motion.settle,
-                      left: _dragLeft ?? _restLeft,
-                      top: _pad,
-                      child: _cap(wiz.colors, wiz.motion, down),
-                    ),
-                  ],
-                ),
+                  ),
+                  AnimatedPositioned(
+                    // A dragged cap tracks the finger; a released one slides.
+                    duration: _dragLeft == null
+                        ? wiz.motion.panel
+                        : Duration.zero,
+                    curve: wiz.motion.settle,
+                    left: _dragLeft ?? _restLeft,
+                    top: _pad,
+                    child: _cap(wiz.colors, wiz.motion, down),
+                  ),
+                ],
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
