@@ -8,3 +8,9 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.drift.dart"
+    - build/**
+    - android/**
+    - ios/**
+    - windows/**
+    - macos/**
+    - linux/**
