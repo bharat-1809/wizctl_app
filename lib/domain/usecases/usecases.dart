@@ -3,6 +3,7 @@ export 'apply_scene.dart';
 export 'apply_white.dart';
 export 'blink_light.dart';
 export 'refresh_states.dart';
+export 'run_discovery.dart';
 export 'set_brightness.dart';
 export 'set_kelvin.dart';
 export 'set_power.dart';
