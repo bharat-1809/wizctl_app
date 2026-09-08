@@ -144,6 +144,80 @@ void main() {
     expect(tester.getSize(find.byWidget(dials.last)).width, WizDial.minSize);
   });
 
+  testWidgets(
+    'a range that is not a whole number of steps still stops at max',
+    (tester) async {
+      var value = 40.0;
+      await tester.pumpWidget(
+        wizTestApp(
+          StatefulBuilder(
+            builder: (context, setState) {
+              return WizDial(
+                value: value,
+                min: 0,
+                max: 100,
+                step: 8,
+                size: 132,
+                onChanged: (v) => setState(() => value = v),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.timedDrag(
+        find.byType(WizDial),
+        const Offset(0, -400),
+        const Duration(milliseconds: 300),
+      );
+      await tester.pumpAndSettle();
+      // The twelfth step from 0 is 96 and the thirteenth is 104: the top of
+      // the range rounds past itself unless the snap is clamped too.
+      expect(value, 100);
+
+      await tester.timedDrag(
+        find.byType(WizDial),
+        const Offset(0, 33),
+        const Duration(milliseconds: 300),
+      );
+      await tester.pumpAndSettle();
+      expect(value, lessThan(100));
+      expect(value % 8, 0, reason: 'steps are counted from min, as before');
+    },
+  );
+
+  testWidgets('a disabled dial neither drags nor takes focus', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var changed = <double>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        WizDial(
+          value: 50,
+          min: 10,
+          max: 100,
+          size: 132,
+          enabled: false,
+          onChanged: changed.add,
+        ),
+        feedback: feedback,
+      ),
+    );
+    await tester.timedDrag(
+      find.byType(WizDial),
+      const Offset(0, -80),
+      const Duration(milliseconds: 300),
+    );
+    await tester.pumpAndSettle();
+    expect(changed, isEmpty);
+    expect(feedback.played, isEmpty);
+
+    var node = _focusNodeOf(tester);
+    expect(node.canRequestFocus, isFalse);
+    node.requestFocus();
+    await tester.pumpAndSettle();
+    expect(node.hasFocus, isFalse);
+    expect(_focusRing, findsNothing);
+  });
+
   testWidgets('a keyboard-focused dial draws the amber ring around its disc', (
     tester,
   ) async {

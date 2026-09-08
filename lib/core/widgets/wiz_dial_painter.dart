@@ -41,12 +41,20 @@ class WizDialGeometry {
   /// Dial.jsx mark `width: 3`.
   static const double markWidth = 3;
 
+  /// How far into the filled arc the sweep reaches its brightest before
+  /// settling back: Dial.jsx `var(--amber-400) ${pct * sweep * 0.65}deg`.
+  static const double arcHotStop = 0.65;
+
+  /// The knob face's top-left sheen: Dial.jsx `radial-gradient(circle at 32%
+  /// 22%, rgba(255,255,255,.14), rgba(255,255,255,0) 58%)`. The centre is
+  /// those percentages in [Alignment]'s -1..1 space (32% → -0.36, 22% →
+  /// -0.56).
+  static const double faceHighlightAlpha = .14;
+  static const Alignment faceHighlightCentre = Alignment(-0.36, -0.56);
+  static const double faceHighlightStop = .58;
+
   static double angleFor(double pct) => start + pct * sweep;
 }
-
-/// How far into the filled arc the sweep reaches its brightest before
-/// settling back: Dial.jsx `var(--amber-400) ${pct * sweep * 0.65}deg`.
-const double _arcHotStop = 0.65;
 
 /// The recessed disc with the amber sweep arc and the dead wedge at the
 /// bottom. CSS conic angles are from 12 o'clock; Flutter sweeps from 3, so
@@ -79,7 +87,15 @@ class WizDialArcPainter extends CustomPainter {
       startAngle: startRad,
       endAngle: startRad + 2 * math.pi,
       colors: [amber600, amber400, amber500, dead, dead, clear, clear],
-      stops: [0, filled * _arcHotStop, filled, filled, sweepEnd, sweepEnd, 1],
+      stops: [
+        0,
+        filled * WizDialGeometry.arcHotStop,
+        filled,
+        filled,
+        sweepEnd,
+        sweepEnd,
+        1,
+      ],
     );
     canvas.drawOval(rect, Paint()..shader = gradient.createShader(rect));
     paintInsets(
@@ -90,18 +106,23 @@ class WizDialArcPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WizDialArcPainter old) => old.pct != pct;
+  bool shouldRepaint(WizDialArcPainter old) =>
+      old.pct != pct ||
+      old.amber600 != amber600 ||
+      old.amber400 != amber400 ||
+      old.amber500 != amber500 ||
+      old.dead != dead ||
+      old.insets != insets;
 }
 
-/// The knob face's top-left sheen: Dial.jsx `radial-gradient(circle at 32%
-/// 22%, rgba(255,255,255,.14), rgba(255,255,255,0) 58%)`. The centre is
-/// those percentages in [Alignment]'s -1..1 space (32% → -0.36, 22% → -0.56).
-const double _faceHighlightAlpha = .14;
-const Alignment _faceHighlightCentre = Alignment(-0.36, -0.56);
-const double _faceHighlightStop = .58;
-
-/// The knurled knob face: knurl stripes over a charcoal gradient with a
-/// top-left highlight.
+/// The knurled knob face: a charcoal gradient, a top-left sheen and the
+/// knurl stripes.
+///
+/// The three layers are Dial.jsx's `background-image` stack. CSS lists
+/// background layers topmost first and pairs `background-blend-mode:
+/// soft-light, screen, normal` off with them in that same order, so painted
+/// bottom to top they are the linear gradient (normal), the radial highlight
+/// (screen) and the knurl (soft-light).
 class WizKnobFacePainter extends CustomPainter {
   final WizElevation elevation;
   final Color top, bottom, highlight;
@@ -118,6 +139,7 @@ class WizKnobFacePainter extends CustomPainter {
     var rect = Offset.zero & size;
     canvas.save();
     canvas.clipPath(Path()..addOval(rect));
+    // `linear-gradient(180deg, var(--surface-key), var(--char-950))`, normal.
     canvas.drawRect(
       rect,
       Paint()
@@ -127,26 +149,32 @@ class WizKnobFacePainter extends CustomPainter {
           colors: [top, bottom],
         ).createShader(rect),
     );
-    canvas.drawRect(
-      rect,
-      WizTextures.knurlPaint(elevation)..blendMode = BlendMode.softLight,
-    );
+    // The sheen, screened over it.
     canvas.drawRect(
       rect,
       Paint()
+        ..blendMode = BlendMode.screen
         ..shader = RadialGradient(
-          center: _faceHighlightCentre,
+          center: WizDialGeometry.faceHighlightCentre,
           colors: [
-            highlight.withValues(alpha: _faceHighlightAlpha),
+            highlight.withValues(alpha: WizDialGeometry.faceHighlightAlpha),
             highlight.withValues(alpha: 0),
           ],
-          stops: const [0, _faceHighlightStop],
+          stops: const [0, WizDialGeometry.faceHighlightStop],
         ).createShader(rect),
+    );
+    // The knurl on top, soft-light.
+    canvas.drawRect(
+      rect,
+      WizTextures.knurlPaint(elevation)..blendMode = BlendMode.softLight,
     );
     canvas.restore();
   }
 
   @override
   bool shouldRepaint(WizKnobFacePainter old) =>
-      old.top != top || old.bottom != bottom || old.highlight != highlight;
+      old.elevation != elevation ||
+      old.top != top ||
+      old.bottom != bottom ||
+      old.highlight != highlight;
 }
