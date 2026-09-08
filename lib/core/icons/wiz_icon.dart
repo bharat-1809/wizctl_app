@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_drawing/path_drawing.dart';
 
+import '../theme/wiz_theme.dart';
 import 'wiz_icon_data.dart';
 
 /// Paints a Phosphor Bold glyph. Filled, so scale is the only control:
@@ -24,7 +25,9 @@ class WizIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var paintColor =
-        color ?? DefaultTextStyle.of(context).style.color ?? Colors.white;
+        color ??
+        DefaultTextStyle.of(context).style.color ??
+        context.wiz.colors.textPrimary;
     return ExcludeSemantics(
       child: SizedBox(
         width: size,

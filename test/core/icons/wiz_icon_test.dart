@@ -13,6 +13,7 @@ void main() {
     expect(WizIcons.byName('lightbulb'), same(WizIcons.lightbulb));
     expect(WizIcons.byName('utensils-crossed'), same(WizIcons.utensilsCrossed));
     expect(WizIcons.lightbulb.path, startsWith('M'));
+    expect(WizIcons.byName('nope'), isNull);
   });
 
   test('every glyph path parses', () {
@@ -30,6 +31,12 @@ void main() {
       wizTestApp(const WizIcon(WizIcons.power, size: 24)),
     );
     expect(tester.getSize(find.byType(WizIcon)), const Size(24, 24));
-    expect(find.byType(CustomPaint), findsWidgets);
+    expect(
+      find.descendant(
+        of: find.byType(WizIcon),
+        matching: find.byType(CustomPaint),
+      ),
+      findsOneWidget,
+    );
   });
 }
