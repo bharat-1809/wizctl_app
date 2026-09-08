@@ -42,6 +42,12 @@ class WizColors {
   final Color amber600 = const Color(0xFFE1930A);
   final Color amber700 = const Color(0xFFA96C05);
 
+  // Neumorphic elevation bases
+  final Color highlightBase = const Color(0xFFFFFFFF); // neumorphic highlight base; elevation.css --nm-hi/--nm-hi-strong are this at .075/.13
+  final Color shadowBase = const Color(
+    0xFF000000,
+  ); // neumorphic shadow base; elevation.css --nm-lo is this at .60
+
   // Kelvin ramp, keyed by kelvin. The single definition of the ramp;
   // `color_maths.dart` reads this map rather than declaring its own stops.
   final Map<int, Color> kelvinStops = const {
