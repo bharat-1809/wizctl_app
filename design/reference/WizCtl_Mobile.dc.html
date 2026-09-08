@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/colors.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/typography.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/motion.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/tokens/base.css">
+<link rel="stylesheet" href="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/styles.css">
+<script src="_ds/wizctl-design-system-2a6b25ea-1d34-4ebe-9a5a-0369560afd23/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:radial-gradient(120% 90% at 50% 0%,#17171A,#0B0B0D 70%);min-height:100vh;font-family:var(--font-ui);color:var(--text-primary)}
+a{color:var(--text-link)}a:hover{color:var(--text-link-hover)}
+*::-webkit-scrollbar{width:0;height:0}
+@keyframes wz-sheet-in{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
+@keyframes wz-enter{from{opacity:0}to{opacity:1}}
+@keyframes wz-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes wz-breathe{0%,100%{opacity:.86}50%{opacity:1}}
+@keyframes wz-ping{0%{transform:scale(.35);opacity:.55}100%{transform:scale(1);opacity:0}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:32px 20px 56px">
+<div style="position:relative;width:390px;height:844px;flex:none;border-radius:52px;padding:11px;background:linear-gradient(180deg,#2A2A30,#121215);box-shadow:0 40px 90px -30px #000,inset 0 1px 0 rgba(255,255,255,.14)">
+<div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:112px;height:30px;border-radius:18px;background:#07070A;z-index:30"></div>
+<div style="position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;background-color:var(--surface-app);background-image:var(--vignette),var(--grain);background-size:auto,3px 3px;display:flex;flex-direction:column">
+
+<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 26px 4px;font-size:13px;font-weight:600;color:var(--text-secondary);font-variant-numeric:tabular-nums;position:relative;z-index:21">
+<span>9:41</span>
+<span style="display:flex;gap:6px;align-items:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="wifi" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="zap" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+</span>
+</div>
+
+<sc-if value="{{ isFirstRun }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;min-height:0;overflow:auto;scrollbar-width:none;margin-right:-20px;padding:8px 40px 28px 20px;display:flex;flex-direction:column;gap:16px;animation:wz-enter 320ms var(--ease-tactile) both">
+
+<sc-if value="{{ fr1 }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;padding-bottom:40px">
+<div style="animation:wz-rise 420ms var(--ease-tactile) both">
+<div style="font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.22em;color:var(--amber-500)">WIZCTL</div>
+<div style="height:26px"></div>
+<h1 style="font-family:var(--font-display);font-size:44px;line-height:.98;letter-spacing:.005em;font-weight:700;margin:0">Name this<br>home</h1>
+<p style="margin:12px 0 0;color:var(--text-tertiary);font-size:15px;max-width:280px">Rooms and lights are stored in this home's config file on this machine. You can keep several homes here.</p>
+</div>
+<label style="display:flex;flex-direction:column;gap:8px;animation:wz-rise 420ms var(--ease-tactile) both;animation-delay:90ms">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Home name</span>
+<input value="{{ draftName }}" onInput="{{ onDraftName }}" placeholder="Kaverappa House" style="height:56px;padding:0 16px;border-radius:var(--radius-3);border:0;background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-primary);font-family:var(--font-ui);font-size:17px;outline:none">
+</label>
+<div style="display:flex;flex-direction:column;gap:10px;animation:wz-rise 420ms var(--ease-tactile) both;animation-delay:160ms">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Button" variant="primary" full-width="{{ yes }}" icon="{{ icoRadio }}" disabled="{{ nameEmpty }}" on-click="{{ startSetupScan }}" hint-size="100%,48px">Create home</x-import>
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">A home is required. You can add more homes later and switch between them.</p>
+</div>
+<p style="margin:0;color:var(--text-tertiary);font-size:13px;animation:wz-rise 420ms var(--ease-tactile) both;animation-delay:230ms">No account, no cloud. Lights are reached over UDP on port 38899 on your own network.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{ fr2 }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="Discovering" subtitle="{{ scanSubtitle }}" leading="{{ backToName }}" hint-size="100%,64px"></x-import>
+<sc-if value="{{ scanning }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="position:relative;height:150px;display:grid;place-items:center">
+<div style="position:absolute;width:150px;height:150px;border-radius:50%;box-shadow:var(--elev-well);background:var(--char-1000)"></div>
+<div style="position:absolute;width:150px;height:150px;border-radius:50%;border:1px solid rgba(255,176,32,.35);animation:wz-ping 2.2s var(--ease-tactile) infinite"></div>
+<div style="position:absolute;width:150px;height:150px;border-radius:50%;border:1px solid rgba(255,176,32,.35);animation:wz-ping 2.2s var(--ease-tactile) infinite;animation-delay:.7s"></div>
+<div style="position:relative;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--surface-key),var(--surface-raised));box-shadow:var(--elev-key);color:var(--amber-500)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="radio" size="{{ icXl }}" hint-size="26px,26px"></x-import>
+</div>
+</div>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.FilamentBar" label="Sweeping subnet" value="{{ scanPct }}" hint-size="100%,40px"></x-import>
+<sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="3">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" padding="12px 14px" hint-size="100%,66px">
+<div style="display:flex;gap:13px;align-items:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Skeleton" circle="{{ yes }}" height="{{ sk.avatar }}" hint-size="40px,40px"></x-import>
+<div style="flex:1;display:flex;flex-direction:column;gap:7px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Skeleton" width="{{ sk.w1 }}" height="{{ sk.h1 }}" hint-size="60%,14px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Skeleton" width="{{ sk.w2 }}" height="{{ sk.h2 }}" hint-size="34%,10px"></x-import>
+</div>
+</div>
+</x-import>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ scanDoneEmpty }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.EmptyState" icon="{{ icoRadioLg }}" title="No response on the local network" body="Broadcast finds most lights. When an access point filters it, sweep the subnet one address at a time." action="{{ sweepAction }}" hint-size="100%,260px"></x-import>
+</sc-if>
+<sc-if value="{{ scanDoneFound }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatusBanner" status="success" title="{{ foundTitle }}" body="Swept 192.168.1.0/24 · 254 addresses" hint-size="100%,72px"></x-import>
+<sc-for list="{{ foundList }}" as="f" hint-placeholder-count="3">
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:center;gap:13px;width:100%;cursor:pointer;padding:13px 14px;border-radius:var(--radius-4);background:linear-gradient(180deg,var(--surface-raised),var(--surface-panel));box-shadow:var(--elev-panel);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<span style="width:40px;height:40px;flex:none;border-radius:var(--radius-2);display:grid;place-items:center;background:var(--char-1000);box-shadow:{{ f.wellGlow }};color:{{ f.wellInk }};transition:box-shadow var(--dur-light) var(--ease-tactile),color var(--dur-light) var(--ease-tactile)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="lightbulb" size="{{ icLg }}" hint-size="20px,20px"></x-import>
+</span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:15px;font-weight:600;color:var(--text-primary)">{{ f.name }}</span>
+<span style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-tertiary)">{{ f.meta }}</span>
+</span>
+<button type="button" onClick="{{ f.blink }}" title="Flash this light" aria-label="Flash this light" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:0;cursor:pointer;border-radius:var(--radius-circle);background:{{ f.blinkBg }};color:{{ f.blinkInk }};box-shadow:{{ f.blinkShadow }};transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.94)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="lightbulb" size="{{ icXl }}" hint-size="26px,26px"></x-import>
+</button>
+<span style="width:26px;height:26px;flex:none;border-radius:8px;display:grid;place-items:center;background:{{ f.boxBg }};color:{{ f.boxInk }};box-shadow:var(--elev-raised)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="check" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+</span>
+</div>
+</sc-for>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Button" variant="primary" full-width="{{ yes }}" on-click="{{ toAssign }}" hint-size="100%,48px">{{ saveCta }}</x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Button" variant="ghost" full-width="{{ yes }}" icon="{{ icoRefresh }}" on-click="{{ startSetupScan }}" hint-size="100%,48px">Scan again</x-import>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ fr3 }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="Name your lights" subtitle="A name replaces the address" leading="{{ backToFound }}" hint-size="100%,64px"></x-import>
+<p style="margin:-4px 0 0;color:var(--text-tertiary);font-size:13px;line-height:1.5">Not sure which bulb is which? Tap the flash key on a card and that light blinks for two seconds, then goes back.</p>
+<sc-for list="{{ assignList }}" as="a" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:20px;padding:20px 18px;border-radius:var(--radius-4);background:linear-gradient(180deg,var(--surface-raised),var(--surface-panel));box-shadow:var(--elev-panel);background-image:var(--grain);background-size:3px 3px;animation:wz-rise 380ms var(--ease-tactile) both">
+<div style="display:flex;flex-direction:column;gap:11px">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="flex:1;min-width:0;font-family:var(--font-mono);font-size:11.5px;color:var(--text-tertiary)">{{ a.meta }}</span>
+<button type="button" onClick="{{ a.blink }}" title="Flash this light" aria-label="Flash this light" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:0;cursor:pointer;border-radius:var(--radius-circle);background:{{ a.blinkBg }};color:{{ a.blinkInk }};box-shadow:{{ a.blinkShadow }};transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.94)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="lightbulb" size="{{ icXl }}" hint-size="26px,26px"></x-import>
+</button>
+</div>
+<input value="{{ a.alias }}" onInput="{{ a.setAlias }}" placeholder="{{ a.placeholder }}" style="height:56px;padding:0 16px;border-radius:var(--radius-3);border:0;background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-primary);font-family:var(--font-ui);font-size:17px;outline:none">
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Room</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ a.roomChips }}" as="c" hint-placeholder-count="3">
+<button type="button" onClick="{{ c.pick }}" style="border:0;cursor:pointer;height:36px;padding:0 14px;border-radius:var(--radius-pill);font-family:var(--font-ui);font-size:13px;font-weight:600;background:{{ c.bg }};color:{{ c.ink }};box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">{{ c.label }}</button>
+</sc-for>
+<button type="button" onClick="{{ a.newRoom }}" title="New room" style="display:flex;align-items:center;gap:6px;border:0;cursor:pointer;height:36px;padding:0 13px;border-radius:var(--radius-pill);font-family:var(--font-ui);font-size:13px;font-weight:600;background:linear-gradient(180deg,var(--surface-key),var(--surface-raised));color:var(--amber-400);box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="plus" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+New room
+</button>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Show it as</span>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{ a.fixtureChips }}" as="fx" hint-placeholder-count="6">
+<button type="button" onClick="{{ fx.pick }}" title="{{ fx.label }}" style="border:0;cursor:pointer;width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:var(--radius-2);background:{{ fx.bg }};color:{{ fx.ink }};box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="{{ fx.icon }}" size="{{ icLg }}" hint-size="20px,20px"></x-import>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-for>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Button" variant="primary" full-width="{{ yes }}" disabled="{{ namesIncomplete }}" on-click="{{ finishSetup }}" hint-size="100%,48px">Finish setup</x-import>
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+<sc-if value="{{ inApp }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow:auto;scrollbar-width:none;margin-right:-20px;padding:8px 40px 116px 20px;display:flex;flex-direction:column;gap:16px;animation:wz-enter 300ms var(--ease-tactile) both">
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="{{ homeName }}" subtitle="{{ homeSubtitle }}" leading="{{ homesBtn }}" trailing="{{ discoverBtn }}" hint-size="100%,64px"></x-import>
+<sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatusBanner" status="error" title="Not on the home network" body="This device is on CafeWiFi. Lights answer only on 192.168.1.0/24." action="{{ retryNetAction }}" hint-size="100%,86px"></x-import>
+</sc-if>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="18px 18px" hint-size="100%,88px">
+<div style="display:flex;align-items:center;gap:16px">
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">All lights</span>
+<span style="font-family:var(--font-display);font-size:30px;font-weight:700;letter-spacing:.015em;color:var(--text-primary)">{{ allLightsState }}</span>
+</span>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Toggle" checked="{{ anyOn }}" on-change="{{ allPower }}" label="All lights" hint-size="56px,32px"></x-import>
+</div>
+</x-import>
+<sc-if value="{{ hasUnreachable }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:9px;color:var(--signal-danger);font-size:13px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="wifi" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+{{ unreachableLabel }}
+</div>
+</sc-if>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<sc-for list="{{ rooms }}" as="room" hint-placeholder-count="4">
+<div style="animation:wz-rise 380ms var(--ease-tactile) both;animation-delay:{{ room.delay }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.RoomCard" name="{{ room.name }}" icon="{{ room.icon }}" light-count="{{ room.lightCount }}" on-count="{{ room.onCount }}" on="{{ room.on }}" on-toggle="{{ room.toggle }}" on-open="{{ room.open }}" hint-size="100%,132px"></x-import>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isRoom }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="{{ room.name }}" subtitle="{{ room.subtitle }}" leading="{{ backHome }}" trailing="{{ roomToggle }}" hint-size="100%,64px"></x-import>
+<sc-if value="{{ roomHasLights }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="18px 16px" hint-size="100%,300px">
+<div style="display:flex;flex-direction:column;gap:18px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Whole room</span>
+<div style="display:flex;gap:12px;justify-content:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Dial" size="{{ roomDialSize }}" value="{{ roomBrightness }}" min="{{ briMin }}" max="{{ briMax }}" label="Brightness" unit="%" on-change="{{ setRoomBrightness }}" hint-size="132px,164px"></x-import>
+<sc-if value="{{ roomCanKelvin }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Dial" size="{{ roomDialSize }}" value="{{ roomKelvin }}" min="{{ kMin }}" max="{{ kMax }}" step="{{ kStep }}" label="Colour temp." unit="K" on-change="{{ setRoomKelvin }}" hint-size="132px,164px"></x-import>
+</sc-if>
+</div>
+<sc-if value="{{ roomKelvinNote }}" hint-placeholder-val="{{ false }}">
+<p style="margin:-8px 0 0;text-align:center;color:var(--text-tertiary);font-size:12.5px">{{ roomKelvinNote }}</p>
+</sc-if>
+<button type="button" onClick="{{ openRoomScenes }}" style="display:flex;align-items:center;gap:13px;width:100%;border:0;cursor:pointer;padding:10px 12px;border-radius:var(--radius-3);background:linear-gradient(180deg,var(--surface-key),var(--surface-raised));box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<span data-scene-art-slot="{{ roomScene.slot }}" style="width:48px;height:48px;flex:none;border-radius:var(--radius-2);background-image:{{ roomScene.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)"></span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Light mode</span>
+<span style="font-family:var(--font-display);font-size:23px;font-weight:600;letter-spacing:.025em;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ roomScene.name }}</span>
+</span>
+<span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:var(--radius-2);background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-secondary)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="chevron-right" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+</span>
+</button>
+</div>
+</x-import>
+</sc-if>
+<sc-if value="{{ room.empty }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.EmptyState" icon="{{ icoBulbLg }}" title="No lights in this room" body="Discover lights on the network, then place them here." action="{{ discoverAction }}" hint-size="100%,240px"></x-import>
+</sc-if>
+<sc-for list="{{ room.lights }}" as="l" hint-placeholder-count="3">
+<div onClick="{{ l.open }}" style="animation:wz-rise 360ms var(--ease-tactile) both;animation-delay:{{ l.delay }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.LightCard" name="{{ l.name }}" meta="{{ l.meta }}" icon="{{ l.icon }}" on="{{ l.on }}" unreachable="{{ l.unreachable }}" on-toggle="{{ l.toggle }}" brightness="{{ l.brightness }}" brightness-control="{{ l.briControl }}" on-brightness="{{ l.setBrightness }}" hint-size="100%,124px"></x-import>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ isLight }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="{{ light.name }}" subtitle="{{ light.subtitle }}" leading="{{ backRoom }}" trailing="{{ liveBadge }}" hint-size="100%,64px"></x-import>
+<div style="position:relative;height:236px;display:grid;place-items:center;overflow:hidden;border-radius:var(--radius-4);--em:{{ light.em }};--emSoft:{{ light.emSoft }};--w:{{ light.fixW }};--h:{{ light.fixH }};--r:{{ light.fixR }}">
+<sc-if value="{{ light.hasCord }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;gap:64px">
+<div style="width:1px;height:74px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.05))"></div>
+<div style="width:1px;height:74px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.05))"></div>
+</div>
+</sc-if>
+<div style="position:absolute;top:92px;left:50%;transform:translateX(-50%);width:calc(var(--w) * 1.55);height:190px;border-radius:50%;filter:blur(34px);background:radial-gradient(50% 52% at 50% 0%,var(--em),rgba(0,0,0,0) 74%);opacity:{{ light.bloom }};transition:opacity var(--dur-light) var(--ease-tactile),background var(--dur-light) var(--ease-tactile)"></div>
+<div style="position:absolute;top:150px;left:50%;transform:translateX(-50%);width:calc(var(--w) * 0.9);height:26px;border-radius:50%;filter:blur(14px);background:var(--em);opacity:{{ light.bloom }}"></div>
+<sc-if value="{{ light.isShade }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;margin-top:{{ light.stageOffset }};width:var(--w);height:var(--h);border-radius:var(--r);background:linear-gradient(180deg,#3A3A42,#141418 62%);box-shadow:var(--elev-knob);overflow:hidden">
+<div style="position:absolute;top:0;left:0;right:0;height:34%;background-image:var(--knurl);opacity:.5"></div>
+<div style="position:absolute;left:6%;right:6%;bottom:-6%;height:52%;border-radius:50%;background:radial-gradient(60% 100% at 50% 100%,var(--em),var(--emSoft) 58%,rgba(0,0,0,.9) 100%);opacity:{{ light.emOpacity }};transition:opacity var(--dur-light) var(--ease-tactile);animation:wz-breathe 5.5s var(--ease-tactile) infinite"></div>
+<div style="position:absolute;inset:0;background-image:var(--grain);background-size:3px 3px;opacity:.7"></div>
+</div>
+</sc-if>
+<sc-if value="{{ light.isBulb }}" hint-placeholder-val="{{ false }}">
+<div style="position:relative;display:flex;flex-direction:column;align-items:center;margin-top:8px">
+<div style="width:44px;height:28px;border-radius:5px 5px 3px 3px;background-color:#3A3A42;background-image:var(--knurl);box-shadow:var(--elev-raised)"></div>
+<div style="width:58px;height:18px;margin-top:-1px;background:linear-gradient(180deg,#2E2E36,#1C1C22);clip-path:polygon(16% 0,84% 0,100% 100%,0 100%)"></div>
+<div style="position:relative;width:122px;height:122px;margin-top:-8px;border-radius:50%;overflow:hidden;background:radial-gradient(58% 58% at 50% 58%,var(--em),var(--emSoft) 52%,rgba(24,24,29,.94) 100%);box-shadow:inset 0 -10px 20px rgba(0,0,0,.55),inset 0 3px 0 rgba(255,255,255,.12),var(--elev-knob);transition:background var(--dur-light) var(--ease-tactile);animation:wz-breathe 5.5s var(--ease-tactile) infinite">
+<div style="position:absolute;left:50%;top:34%;transform:translateX(-50%);display:flex;gap:12px;opacity:{{ light.emOpacity }}">
+<span style="width:2px;height:34px;border-radius:1px;background:var(--em);filter:blur(.6px)"></span>
+<span style="width:2px;height:34px;border-radius:1px;background:var(--em);filter:blur(.6px)"></span>
+</div>
+<div style="position:absolute;left:50%;top:calc(34% + 30px);transform:translateX(-50%);width:16px;height:10px;border-radius:0 0 10px 10px;border-bottom:2px solid var(--em);opacity:{{ light.emOpacity }};filter:blur(.6px)"></div>
+<div style="position:absolute;left:18%;top:14%;width:26px;height:16px;border-radius:50%;background:rgba(255,255,255,.16);filter:blur(3px)"></div>
+<div style="position:absolute;inset:0;background-image:var(--grain);background-size:3px 3px;opacity:.5"></div>
+</div>
+</div>
+</sc-if>
+</div>
+<div style="display:flex;justify-content:center;padding:2px 0">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.PowerKey" on="{{ light.on }}" on-change="{{ setLightPower }}" hint-size="112px,112px"></x-import>
+</div>
+<sc-if value="{{ light.unreachable }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatusBanner" status="error" title="No reply from this light" body="It may be switched off at the wall, or the router changed its address." action="{{ retryLightAction }}" hint-size="100%,86px"></x-import>
+</sc-if>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatTile" icon="{{ light.statAIcon }}" label="{{ light.statALabel }}" value="{{ light.statAValue }}" unit="{{ light.statAUnit }}" hint-size="100%,92px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatTile" icon="{{ light.statBIcon }}" label="{{ light.statBLabel }}" value="{{ light.statBValue }}" unit="{{ light.statBUnit }}" tone="{{ light.statBTone }}" hint-size="100%,92px"></x-import>
+</div>
+<sc-if value="{{ socketOnly }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="16px" hint-size="100%,72px">
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">A plug switches power only. It has no brightness, colour or scene channel.</p>
+</x-import>
+</sc-if>
+<sc-if value="{{ hasModes }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="18px 16px" hint-size="100%,180px">
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;gap:12px;justify-content:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Dial" size="{{ roomDialSize }}" value="{{ light.brightness }}" min="{{ briMin }}" max="{{ briMax }}" label="Brightness" unit="%" on-change="{{ setBrightness }}" hint-size="132px,164px"></x-import>
+<sc-if value="{{ light.canKelvin }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Dial" size="{{ roomDialSize }}" value="{{ light.kelvin }}" min="{{ kMin }}" max="{{ kMax }}" step="{{ kStep }}" label="Colour temp." unit="K" on-change="{{ setKelvin }}" hint-size="132px,164px"></x-import>
+</sc-if>
+</div>
+<sc-if value="{{ light.noKelvin }}" hint-placeholder-val="{{ false }}">
+<p style="margin:-8px 0 0;text-align:center;color:var(--text-tertiary);font-size:12.5px">{{ light.kelvinNote }}</p>
+</sc-if>
+</div>
+</x-import>
+</sc-if>
+<sc-if value="{{ hasModes }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="16px" hint-size="100%,220px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<button type="button" onClick="{{ openLightScenes }}" style="display:flex;align-items:center;gap:13px;width:100%;border:0;cursor:pointer;padding:10px 12px;border-radius:var(--radius-3);background:linear-gradient(180deg,var(--surface-key),var(--surface-raised));box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<span data-scene-art-slot="{{ lightScene.slot }}" style="width:48px;height:48px;flex:none;border-radius:var(--radius-2);background-image:{{ lightScene.art }};box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)"></span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Light mode</span>
+<span style="font-family:var(--font-display);font-size:23px;font-weight:600;letter-spacing:.025em;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lightScene.name }}</span>
+</span>
+<span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:var(--radius-2);background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-secondary)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="chevron-right" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+</span>
+</button>
+<sc-if value="{{ lightScene.dynamic }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Slider" label="Speed" fill="speed" min="{{ spMin }}" max="{{ spMax }}" value="{{ light.speed }}" readout="{{ light.speed }}" on-change="{{ setSpeed }}" hint-size="100%,56px"></x-import>
+</sc-if>
+<sc-if value="{{ lightScene.static }}" hint-placeholder-val="{{ false }}">
+<p style="margin:0;color:var(--text-tertiary);font-size:12.5px">{{ lightScene.name }} is a static scene — the bulb ignores speed.</p>
+</sc-if>
+</div>
+</x-import>
+</sc-if>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" padding="14px 16px" hint-size="100%,120px">
+<div style="display:flex;flex-direction:column;gap:9px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Device</span>
+<sc-for list="{{ light.facts }}" as="fact" hint-placeholder-count="4">
+<div style="display:flex;justify-content:space-between;gap:12px">
+<span style="font-size:13px;color:var(--text-tertiary)">{{ fact.k }}</span>
+<span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-secondary)">{{ fact.v }}</span>
+</div>
+</sc-for>
+<button type="button" onClick="{{ openFixture }}" style="margin-top:4px;border:0;cursor:pointer;height:44px;border-radius:var(--radius-2);background:linear-gradient(180deg,var(--surface-key),var(--surface-raised));box-shadow:var(--elev-raised);color:var(--text-secondary);font-family:var(--font-ui);font-size:13px;font-weight:600;transition:var(--transition-control)" style-active="transform:translateY(1.5px)">Show it as</button>
+</div>
+</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isScenes }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="Light modes" subtitle="Colour, 15 static and 21 dynamic scenes" hint-size="100%,64px"></x-import>
+<button type="button" onClick="{{ openTarget }}" style="display:flex;align-items:center;gap:12px;width:100%;border:0;cursor:pointer;padding:12px 14px;border-radius:var(--radius-3);background:var(--char-1000);box-shadow:var(--elev-well);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Apply to</span>
+<span style="flex:1;min-width:0;text-align:left;font-family:var(--font-display);font-size:23px;font-weight:600;letter-spacing:.025em;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ targetLabel }}</span>
+<span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:var(--radius-2);background:linear-gradient(180deg,var(--surface-key),var(--surface-raised));box-shadow:var(--elev-raised);color:var(--text-secondary)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="chevron-down" size="{{ icSm }}" hint-size="15px,15px"></x-import>
+</span>
+</button>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.SegmentedControl" full-width="{{ yes }}" value="{{ sheetTab }}" on-change="{{ setSheetTab }}" items="{{ sheetTabs }}" hint-size="100%,48px"></x-import>
+<sc-if value="{{ tabColour }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:18px">
+<sc-if value="{{ sheetHasWheel }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;justify-content:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ColorWheel" size="{{ wheelSize }}" hue="{{ sheetHue }}" saturation="{{ sheetSat }}" on-change="{{ setSheetColour }}" hint-size="228px,228px"></x-import>
+</div>
+</sc-if>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Colours</span>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<sc-for list="{{ colourSwatches }}" as="c" hint-placeholder-count="12">
+<button type="button" onClick="{{ c.pick }}" title="{{ c.name }}" aria-label="{{ c.name }}" style="width:52px;height:52px;flex:none;border:0;cursor:pointer;border-radius:var(--radius-circle);background:{{ c.hex }};box-shadow:{{ c.ring }};transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.94)"></button>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Whites</span>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<sc-for list="{{ whiteSwatches }}" as="w" hint-placeholder-count="6">
+<button type="button" onClick="{{ w.pick }}" title="{{ w.name }}" style="display:flex;align-items:flex-end;justify-content:center;width:60px;height:64px;padding:0 0 7px;border:0;cursor:pointer;border-radius:var(--radius-3);background:{{ w.hex }};box-shadow:{{ w.ring }};transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.96)">
+<span style="font-family:var(--font-mono);font-size:10px;color:rgba(20,20,24,.72)">{{ w.name }}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ tabScenes }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<sc-if value="{{ sheetSceneDynamic }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Slider" label="{{ sheetSpeedLabel }}" fill="speed" min="{{ spMin }}" max="{{ spMax }}" value="{{ sheetSpeed }}" readout="{{ sheetSpeed }}" on-change="{{ setSheetSpeed }}" hint-size="100%,56px"></x-import>
+</sc-if>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<sc-for list="{{ sheetSceneCards }}" as="s" hint-placeholder-count="8">
+<button type="button" data-scene-art-slot="{{ s.slot }}" onClick="{{ s.apply }}" style="position:relative;overflow:hidden;border:0;padding:0;cursor:pointer;aspect-ratio:1 / 1;border-radius:var(--radius-4);box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.985)">
+<div style="position:absolute;inset:0;background-image:{{ s.art }}"></div>
+<div style="position:absolute;inset:0;background-image:radial-gradient(58% 44% at 28% 18%,rgba(255,255,255,.30),rgba(255,255,255,0) 68%)"></div>
+<div style="position:absolute;inset:0;background-image:var(--grain);background-size:3px 3px;opacity:.85"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:10px 12px;text-align:left;background:linear-gradient(180deg,rgba(8,8,10,0),rgba(8,8,10,.86))">
+<div style="font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:.02em;color:#F6F3ED">{{ s.name }}</div>
+</div>
+<sc-if value="{{ s.selected }}" hint-placeholder-val="{{ false }}">
+<span style="position:absolute;inset:0;border-radius:var(--radius-4);box-shadow:inset 0 0 0 1.5px var(--amber-500)"></span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">{{ sheetTabNote }}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{ isRooms }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="Rooms" subtitle="{{ roomsSubtitle }}" trailing="{{ addRoomBtn }}" hint-size="100%,64px"></x-import>
+<sc-for list="{{ roomRows }}" as="r" hint-placeholder-count="3">
+<div style="animation:wz-rise 360ms var(--ease-tactile) both;animation-delay:{{ r.delay }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ r.iconNode }}" title="{{ r.name }}" meta="{{ r.meta }}" trailing="{{ r.trailing }}" on-click="{{ r.open }}" hint-size="100%,72px"></x-import>
+</div>
+</sc-for>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Button" variant="ghost" full-width="{{ yes }}" icon="{{ icoHousePlus }}" on-click="{{ openAddRoom }}" hint-size="100%,48px">Add room</x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="14px 16px" hint-size="100%,72px">
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">Rooms are stored in this home's config file on this machine. Nothing is uploaded.</p>
+</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="Settings" subtitle="This home lives on this device" hint-size="100%,64px"></x-import>
+<sc-if value="{{ anyUnreachable }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatusBanner" status="error" title="One light did not answer" body="Hallway may be switched off at the wall, or the router changed its address." action="{{ rescanAction }}" hint-size="100%,86px"></x-import>
+</sc-if>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoHouse }}" title="{{ homeName }}" meta="Home name" trailing="{{ icoPencil }}" on-click="{{ noop }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoRadio }}" title="Discovery" meta="Broadcast, then unicast sweep" trailing="{{ icoChevron }}" on-click="{{ goDiscover }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoTerminal }}" title="CLI parity" meta="wizctl on -t &quot;Living Room&quot;" trailing="{{ icoChevron }}" on-click="{{ noop }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoRefresh }}" title="Re-scan on launch" trailing="{{ rescanToggle }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoZap }}" title="Sound &amp; haptics" meta="Clicks and vibration on every control" trailing="{{ feedbackToggle }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="14px 16px" hint-size="100%,72px">
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">No account, no cloud. Lights are reached over UDP on port 38899 on your own network.</p>
+</x-import>
+<div style="height:8px"></div>
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Prototype switches</span>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoWifi }}" title="Wrong network" meta="Show the offline state" trailing="{{ offlineToggle }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoClock }}" title="Force command timeout" meta="Every write fails after 1.1s" trailing="{{ timeoutToggle }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoSearch }}" title="Discovery finds nothing" meta="Scan returns zero lights" trailing="{{ nothingToggle }}" hint-size="100%,72px"></x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TopBar" title="Discover lights" subtitle="{{ scanSubtitle }}" leading="{{ backHome }}" hint-size="100%,64px"></x-import>
+<sc-if value="{{ scanning }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatusBanner" status="loading" title="Sweeping 192.168.1.0/24" body="{{ sweptLabel }}" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.FilamentBar" label="Discovering" value="{{ scanPct }}" hint-size="100%,40px"></x-import>
+<sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="3">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" padding="12px 14px" hint-size="100%,66px">
+<div style="display:flex;gap:13px;align-items:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Skeleton" circle="{{ yes }}" height="{{ sk.avatar }}" hint-size="40px,40px"></x-import>
+<div style="flex:1;display:flex;flex-direction:column;gap:7px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Skeleton" width="{{ sk.w1 }}" height="{{ sk.h1 }}" hint-size="60%,14px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Skeleton" width="{{ sk.w2 }}" height="{{ sk.h2 }}" hint-size="34%,10px"></x-import>
+</div>
+</div>
+</x-import>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ discoverIdle }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.EmptyState" icon="{{ icoRadioLg }}" title="Nothing found yet" body="Lights answer on your local network. Make sure they are powered on, then scan the subnet." action="{{ sweepAction }}" hint-size="100%,260px"></x-import>
+</sc-if>
+<sc-if value="{{ scanDoneEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.EmptyState" icon="{{ icoRadioLg }}" title="No response on the local network" body="Broadcast finds most lights. When an access point filters it, sweep the subnet one address at a time." action="{{ sweepAction }}" hint-size="100%,260px"></x-import>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Panel" variant="inset" padding="14px 16px" hint-size="100%,96px">
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">The IP shown in the Philips app can be stale — it talks to the cloud. Your router's DHCP client list is the reliable source.</p>
+</x-import>
+</div>
+</sc-if>
+<sc-if value="{{ scanDoneFound }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.StatusBanner" status="success" title="{{ foundTitle }}" body="Swept 192.168.1.0/24" action="{{ foundBadge }}" hint-size="100%,72px"></x-import>
+<sc-for list="{{ foundRows }}" as="f" hint-placeholder-count="3">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ListRow" icon="{{ icoBulb }}" title="{{ f.name }}" meta="{{ f.meta }}" trailing="{{ f.button }}" hint-size="100%,72px"></x-import>
+</sc-for>
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Button" variant="ghost" full-width="{{ yes }}" icon="{{ icoRefresh }}" on-click="{{ runScan }}" hint-size="100%,48px">Scan again</x-import>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+</div>
+<sc-if value="{{ showDock }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:20px;right:20px;bottom:18px;z-index:10">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.TabBar" value="{{ tabValue }}" on-change="{{ setTab }}" items="{{ tabs }}" hint-size="100%,72px"></x-import>
+</div>
+</sc-if>
+</sc-if>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ToastStack" dc-props="{{ toastProps }}" hint-size="100%,0px"></x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetAddRoom }}" on-close="{{ closeSheet }}" title="Add a room" footer="{{ addRoomFooter }}" hint-size="100%,320px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<label style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Room name</span>
+<input value="{{ roomDraftName }}" onInput="{{ onRoomDraftName }}" placeholder="Study" style="height:48px;padding:0 14px;border-radius:var(--radius-3);border:0;background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-primary);font-family:var(--font-ui);font-size:16px;outline:none">
+</label>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Glyph</span>
+<div style="display:flex;gap:10px">
+<sc-for list="{{ glyphChoices }}" as="g" hint-placeholder-count="6">
+<button type="button" onClick="{{ g.pick }}" style="width:48px;height:48px;display:grid;place-items:center;border:0;border-radius:var(--radius-2);cursor:pointer;background:{{ g.bg }};color:{{ g.ink }};box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="{{ g.name }}" size="{{ icLg }}" hint-size="20px,20px"></x-import>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetScenes }}" on-close="{{ closeSheet }}" title="{{ sheetScenesTitle }}" hint-size="100%,470px">
+<div style="display:flex;flex-direction:column;gap:14px">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.SegmentedControl" full-width="{{ yes }}" value="{{ sheetTab }}" on-change="{{ setSheetTab }}" items="{{ sheetTabs }}" hint-size="100%,48px"></x-import>
+
+<sc-if value="{{ tabColour }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{ sheetHasWheel }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;justify-content:center">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.ColorWheel" size="{{ sheetWheelSize }}" hue="{{ sheetHue }}" saturation="{{ sheetSat }}" on-change="{{ setSheetColour }}" hint-size="196px,196px"></x-import>
+</div>
+</sc-if>
+<div style="display:flex;flex-direction:column;gap:9px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Colours</span>
+<div style="display:flex;flex-wrap:wrap;gap:9px">
+<sc-for list="{{ colourSwatches }}" as="c" hint-placeholder-count="12">
+<button type="button" onClick="{{ c.pick }}" title="{{ c.name }}" aria-label="{{ c.name }}" style="width:44px;height:44px;flex:none;border:0;cursor:pointer;border-radius:var(--radius-circle);background:{{ c.hex }};box-shadow:{{ c.ring }};transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.94)"></button>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Whites</span>
+<div style="display:flex;flex-wrap:wrap;gap:9px">
+<sc-for list="{{ whiteSwatches }}" as="w" hint-placeholder-count="6">
+<button type="button" onClick="{{ w.pick }}" title="{{ w.name }}" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;width:52px;height:60px;padding:0 0 6px;border:0;cursor:pointer;border-radius:var(--radius-2);background:{{ w.hex }};box-shadow:{{ w.ring }};transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.96)">
+<span style="font-family:var(--font-mono);font-size:9.5px;color:rgba(20,20,24,.72)">{{ w.name }}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabScenes }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<sc-if value="{{ sheetSceneDynamic }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Slider" label="{{ sheetSpeedLabel }}" fill="speed" min="{{ spMin }}" max="{{ spMax }}" value="{{ sheetSpeed }}" readout="{{ sheetSpeed }}" on-change="{{ setSheetSpeed }}" hint-size="100%,56px"></x-import>
+</sc-if>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+<sc-for list="{{ sheetSceneCards }}" as="s" hint-placeholder-count="12">
+<button type="button" data-scene-art-slot="{{ s.slot }}" onClick="{{ s.apply }}" style="position:relative;overflow:hidden;border:0;padding:0;cursor:pointer;height:82px;border-radius:var(--radius-3);box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px) scale(.985)">
+<div style="position:absolute;inset:0;background-image:{{ s.art }}"></div>
+<div style="position:absolute;inset:0;background-image:var(--grain);background-size:3px 3px;opacity:.85"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:6px 8px;text-align:left;background:linear-gradient(180deg,rgba(8,8,10,0),rgba(8,8,10,.88))">
+<span style="font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:.02em;color:#F6F3ED">{{ s.name }}</span>
+</div>
+<sc-if value="{{ s.selected }}" hint-placeholder-val="{{ false }}">
+<span style="position:absolute;inset:0;border-radius:var(--radius-3);box-shadow:inset 0 0 0 1.5px var(--amber-500)"></span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+<p style="margin:0;color:var(--text-tertiary);font-size:12.5px">{{ sheetTabNote }}</p>
+</div>
+</sc-if>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetTarget }}" on-close="{{ closeSheet }}" title="Apply scenes to" hint-size="100%,360px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ targetOptions }}" as="t" hint-placeholder-count="5">
+<button type="button" onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:13px;width:100%;text-align:left;border:0;cursor:pointer;padding:12px 14px;margin-left:{{ t.indent }};border-radius:var(--radius-3);background:linear-gradient(180deg,var(--surface-raised),var(--surface-panel));box-shadow:{{ t.ring }};transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<span style="width:36px;height:36px;flex:none;border-radius:var(--radius-2);display:grid;place-items:center;background:var(--char-1000);box-shadow:var(--elev-well);color:{{ t.ink }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="{{ t.icon }}" size="{{ icLg }}" hint-size="20px,20px"></x-import>
+</span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font-size:15px;font-weight:600;color:var(--text-primary)">{{ t.label }}</span>
+<span style="font-size:12.5px;color:var(--text-tertiary)">{{ t.meta }}</span>
+</span>
+</button>
+</sc-for>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetNewRoom }}" on-close="{{ closeSheet }}" title="New room" footer="{{ newRoomFooter }}" hint-size="100%,300px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<label style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Room name</span>
+<input value="{{ roomDraftName }}" onInput="{{ onRoomDraftName }}" placeholder="Study" style="height:48px;padding:0 14px;border-radius:var(--radius-3);border:0;background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-primary);font-family:var(--font-ui);font-size:16px;outline:none">
+</label>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Glyph</span>
+<div style="display:flex;gap:10px">
+<sc-for list="{{ glyphChoices }}" as="g" hint-placeholder-count="6">
+<button type="button" onClick="{{ g.pick }}" style="width:48px;height:48px;flex:none;display:grid;place-items:center;border:0;border-radius:var(--radius-2);cursor:pointer;background:{{ g.bg }};color:{{ g.ink }};box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="{{ g.name }}" size="{{ icLg }}" hint-size="20px,20px"></x-import>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetNameLight }}" on-close="{{ closeSheet }}" title="Name this light" footer="{{ saveLightFooter }}" hint-size="100%,300px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<span style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-tertiary)">{{ saveDraftMeta }}</span>
+<label style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Alias</span>
+<input value="{{ saveDraftAlias }}" onInput="{{ onSaveAlias }}" placeholder="Bedside bulb" style="height:48px;padding:0 14px;border-radius:var(--radius-3);border:0;background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-primary);font-family:var(--font-ui);font-size:16px;outline:none">
+</label>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">Room</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ saveRoomChips }}" as="c" hint-placeholder-count="3">
+<button type="button" onClick="{{ c.pick }}" style="border:0;cursor:pointer;height:40px;padding:0 14px;border-radius:var(--radius-pill);font-family:var(--font-ui);font-size:13px;font-weight:600;background:{{ c.bg }};color:{{ c.ink }};box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">{{ c.label }}</button>
+</sc-for>
+</div>
+</div>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetHomes }}" on-close="{{ closeSheet }}" title="Homes" footer="{{ addHomeFooter }}" hint-size="100%,320px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ homeRows }}" as="h" hint-placeholder-count="2">
+<button type="button" onClick="{{ h.pick }}" style="display:flex;align-items:center;gap:13px;width:100%;text-align:left;border:0;cursor:pointer;padding:13px 14px;border-radius:var(--radius-4);background:linear-gradient(180deg,var(--surface-raised),var(--surface-panel));box-shadow:{{ h.ring }};transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<span style="width:40px;height:40px;border-radius:var(--radius-2);display:grid;place-items:center;background:var(--char-1000);box-shadow:var(--elev-well);color:{{ h.ink }}">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="house" size="{{ icLg }}" hint-size="20px,20px"></x-import>
+</span>
+<span style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:15px;font-weight:600;color:var(--text-primary)">{{ h.name }}</span>
+<span style="font-size:12.5px;color:var(--text-tertiary)">{{ h.meta }}</span>
+</span>
+</button>
+</sc-for>
+<label style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)">New home</span>
+<input value="{{ homeDraft }}" onInput="{{ onHomeDraft }}" placeholder="Studio" style="height:48px;padding:0 14px;border-radius:var(--radius-3);border:0;background:var(--char-1000);box-shadow:var(--elev-well);color:var(--text-primary);font-family:var(--font-ui);font-size:16px;outline:none">
+</label>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Sheet" open="{{ sheetFixture }}" on-close="{{ closeSheet }}" title="Show it as" hint-size="100%,280px">
+<div style="display:flex;flex-direction:column;gap:14px">
+<p style="margin:0;color:var(--text-tertiary);font-size:13px">This only changes how the light is drawn here. It does not change what the bulb supports.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+<sc-for list="{{ fixtureChoices }}" as="fx" hint-placeholder-count="6">
+<button type="button" onClick="{{ fx.pick }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border:0;cursor:pointer;border-radius:var(--radius-3);background:{{ fx.bg }};color:{{ fx.ink }};box-shadow:var(--elev-raised);transition:var(--transition-control)" style-active="transform:translateY(1.5px)">
+<x-import component-from-global-scope="WizCtlDesignSystem_2a6b25.Icon" name="{{ fx.icon }}" size="{{ icXl }}" hint-size="26px,26px"></x-import>
+<span style="font-size:12px;font-weight:600">{{ fx.label }}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</x-import>
+
+</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = {
+    route: 'firstrun', step: 1,
+    homeName: 'Kaverappa House', draftName: '',
+    homeId: 'h1', homeDraft: '',
+    homes: [
+      { id: 'h1', name: 'Kaverappa House', rooms: null },
+      { id: 'h2', name: 'Studio', rooms: [{ id: 'desk', name: 'Desk', icon: 'lamp-desk', lights: [
+        { id: 'task', name: 'Task lamp', ip: '10.0.0.42', mac: 'a8bb50f30011', cls: 'Tunable White', fixture: 'desk', on: true, brightness: 80, kelvin: 4500, hue: 30, sat: 0, rgb: [255, 244, 230], sceneId: 15, speed: 100, active: 'white' }
+      ] }] }
+    ],
+    rooms: [
+      { id: 'living', name: 'Living Room', icon: 'sofa', lights: [
+        { id: 'dome', name: 'Ceiling dome light', ip: '192.168.1.104', mac: 'a8bb50f1c204', cls: 'RGB', fixture: 'dome', on: true, brightness: 70, kelvin: 2450, hue: 28, sat: .9, rgb: [255, 176, 32], sceneId: 6, speed: 150, active: 'scene' },
+        { id: 'floor', name: 'Corner floor lamp', ip: '192.168.1.107', mac: 'a8bb50f1c8a1', cls: 'RGB', fixture: 'desk', on: true, brightness: 45, kelvin: 2700, hue: 12, sat: .8, rgb: [255, 120, 60], sceneId: 29, speed: 120, active: 'colour' },
+        { id: 'strip', name: 'Shelf strip', ip: '192.168.1.111', mac: 'a8bb50f2013e', cls: 'Tunable White', fixture: 'strip', on: false, brightness: 60, kelvin: 4000, hue: 30, sat: 0, rgb: [255, 224, 188], sceneId: 12, speed: 100, active: 'white' }
+      ] },
+      { id: 'bedroom', name: 'Bedroom', icon: 'bed', lights: [
+        { id: 'bedside', name: 'Bedside bulb', ip: '192.168.1.115', mac: 'a8bb50f21177', cls: 'RGB', fixture: 'bulb', on: false, brightness: 30, kelvin: 2200, hue: 20, sat: .95, rgb: [255, 140, 40], sceneId: 10, speed: 90, active: 'white' },
+        { id: 'hall', name: 'Hallway', ip: '192.168.1.118', mac: 'a8bb50f22b03', cls: 'Dimmable White', fixture: 'pendant', on: false, brightness: 50, kelvin: 2700, hue: 30, sat: 0, rgb: [255, 224, 188], sceneId: 11, speed: 100, active: 'white', unreachable: true }
+      ] },
+      { id: 'kitchen', name: 'Kitchen', icon: 'utensils-crossed', lights: [
+        { id: 'counter', name: 'Counter downlight', ip: '192.168.1.121', mac: 'a8bb50f23940', cls: 'Tunable White', fixture: 'dome', on: true, brightness: 90, kelvin: 5000, hue: 30, sat: 0, rgb: [242, 246, 255], sceneId: 15, speed: 100, active: 'white' }
+      ] }
+    ],
+    roomId: 'living', lightId: 'dome', mode: 'white',
+    sceneTarget: 'all', activeScene: 6, detailScene: 1, detailSpeed: 120,
+    scanning: false, swept: 0, found: [], scanned: false,
+    assign: {}, pendingIp: '', blinking: {}, feedback: true, relaunch: true,
+    setupRooms: [
+      { id: 'sr-living', name: 'Living Room', icon: 'sofa' },
+      { id: 'sr-bedroom', name: 'Bedroom', icon: 'bed' },
+      { id: 'sr-kitchen', name: 'Kitchen', icon: 'utensils-crossed' }
+    ],
+    offline: false, forceTimeout: false, findNothing: false,
+    sheet: null, sceneSheetTarget: 'all', sheetTab: 'colour', roomDraft: { name: '', icon: 'sofa' },
+    toasts: []
+  };
+
+  FIXTURES = [
+    { id: 'bulb', label: 'Bulb', icon: 'lightbulb' },
+    { id: 'dome', label: 'Ceiling light', icon: 'lamp-ceiling' },
+    { id: 'desk', label: 'Lamp', icon: 'lamp-desk' },
+    { id: 'strip', label: 'Light strip', icon: 'waves-horizontal' },
+    { id: 'socket', label: 'Plug', icon: 'power' }
+  ];
+  DEFAULT_ROOMS = [
+    { id: 'sr-living', name: 'Living Room', icon: 'sofa' },
+    { id: 'sr-bedroom', name: 'Bedroom', icon: 'bed' },
+    { id: 'sr-kitchen', name: 'Kitchen', icon: 'utensils-crossed' }
+  ];
+  GEO = {
+    dome: { w: '216px', h: '78px', r: '14px 14px 108px 108px / 14px 14px 54px 54px', cord: true, top: '34px' },
+    pendant: { w: '150px', h: '104px', r: '16px 16px 76px 76px / 16px 16px 64px 64px', cord: true, top: '30px' },
+    desk: { w: '140px', h: '76px', r: '78px 78px 14px 14px / 62px 62px 14px 14px', cord: false, top: '18px' },
+    strip: { w: '262px', h: '20px', r: '10px', cord: false, top: '0px' },
+    socket: { w: '104px', h: '104px', r: 'var(--radius-4)', cord: false, top: '0px' },
+    bulb: { w: '112px', h: '112px', r: '50% 50% 46% 46%', cord: false, top: '4px' }
+  };
+  DISCOVERED = [
+    { ip: '192.168.1.126', name: 'WiZ RGBW Tunable', cls: 'RGB' },
+    { ip: '192.168.1.131', name: 'WiZ Dimmable', cls: 'Dimmable White' },
+    { ip: '192.168.1.140', name: 'WiZ Smart Plug', cls: 'Socket' }
+  ];
+
+  plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+  ns() { return window.WizCtlDesignSystem_2a6b25 || {}; }
+  fb(kind) { const F = this.ns().Feedback; if (F && F.play) F.play(kind); }
+  ic(name, size) { const I = this.ns().Icon; return I ? React.createElement(I, { name, size }) : null; }
+  btn(props, label) { const B = this.ns().Button; return B ? React.createElement(B, props, label) : null; }
+  iconBtn(label, name, onClick) { const B = this.ns().IconButton; return B ? React.createElement(B, { label, icon: this.ic(name), onClick }) : null; }
+  tog(checked, onChange, label, size) { const T = this.ns().Toggle; return T ? React.createElement(T, { checked, onChange, label, size }) : null; }
+
+  componentDidMount() { this.injectScrollCss(); }
+  injectScrollCss() {
+    if (!document.getElementById('wz-proto-scroll')) {
+      const el = document.createElement('style');
+      el.id = 'wz-proto-scroll';
+      el.textContent = '*{scrollbar-width:none}*::-webkit-scrollbar{width:0;height:0;display:none}';
+      document.head.appendChild(el);
+    }
+  }
+  componentWillUnmount() { Object.values(this.timers || {}).forEach(clearTimeout); }
+  timers = {};
+
+  /* ---------- toasts ---------- */
+  push(t) {
+    const id = 't' + Date.now() + Math.random().toString(36).slice(2, 6);
+    this.setState(s => ({ toasts: [...s.toasts, { id, ...t }].slice(-3) }));
+    if (t.tone !== 'loading') this.timers[id] = setTimeout(() => this.dismiss(id), 3200);
+    return id;
+  }
+  updateToast(id, patch) {
+    this.setState(s => ({ toasts: s.toasts.map(t => (t.id === id ? { ...t, ...patch } : t)) }));
+    if (patch.tone && patch.tone !== 'loading') this.timers[id] = setTimeout(() => this.dismiss(id), 3200);
+  }
+  dismiss = id => { clearTimeout(this.timers[id]); this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) })); };
+
+  /* ---------- helpers ---------- */
+  allLights() { return this.state.rooms.flatMap(r => r.lights); }
+  currentRoom() { return this.state.rooms.find(r => r.id === this.state.roomId) || this.state.rooms[0]; }
+  currentLight() { const r = this.currentRoom(); return (r && (r.lights.find(l => l.id === this.state.lightId) || r.lights[0])) || null; }
+  scenes() { return this.ns().SCENE_GRADIENTS || {}; }
+  mapLight(id, fn) {
+    this.setState(s => ({ rooms: s.rooms.map(r => ({ ...r, lights: r.lights.map(l => (l.id === id ? fn(l) : l)) })) }));
+  }
+  guard(light, action) {
+    if (this.state.offline) {
+      this.fb('reject');
+      this.push({ tone: 'error', title: 'No route to the light', body: 'This device is not on 192.168.1.0/24.' });
+      return false;
+    }
+    if (light && (light.unreachable || this.state.forceTimeout)) {
+      this.fb('reject');
+      const id = this.push({ tone: 'loading', title: 'Sending to ' + light.name, body: light.ip + ':38899' });
+      this.timers['to' + id] = setTimeout(() => this.updateToast(id, {
+        tone: 'error', title: 'No response after 3 tries', body: light.ip + ' did not answer on port 38899',
+        action: this.btn({ variant: 'ghost', size: 'sm', onClick: () => { this.dismiss(id); this.retryLight(light); } }, 'Retry')
+      }), 1100);
+      return false;
+    }
+    return true;
+  }
+  retryLight(light) {
+    const id = this.push({ tone: 'loading', title: 'Retrying ' + light.name });
+    this.timers['r' + id] = setTimeout(() => this.updateToast(id, { tone: 'error', title: 'Still no reply', body: 'Check the wall switch, then rescan the subnet.' }), 1300);
+  }
+  kelvinRgb(k) {
+    const stops = [[2200, [255, 178, 92]], [2700, [255, 201, 141]], [3500, [255, 224, 188]], [4500, [255, 244, 230]], [5500, [242, 246, 255]], [6500, [220, 233, 255]]];
+    if (k <= stops[0][0]) return stops[0][1];
+    for (let i = 1; i < stops.length; i++) {
+      if (k <= stops[i][0]) {
+        const [k0, c0] = stops[i - 1], [k1, c1] = stops[i], t = (k - k0) / (k1 - k0);
+        return c0.map((v, j) => Math.round(v + (c1[j] - v) * t));
+      }
+    }
+    return stops[stops.length - 1][1];
+  }
+  emission(light) {
+    if (!light) return { em: 'rgba(0,0,0,0)', emSoft: 'rgba(0,0,0,0)', bloom: 0, emOpacity: 0 };
+    if (!light.on || light.unreachable) return { em: 'rgba(255,176,32,0)', emSoft: 'rgba(255,176,32,0)', bloom: 0, emOpacity: .06 };
+    let rgb;
+    if (light.active === 'colour' && light.cls === 'RGB') rgb = light.rgb;
+    else if (light.active === 'scene') { const s = this.scenes()[light.sceneId]; rgb = s ? this.hexRgb(s.from) : this.kelvinRgb(light.kelvin); }
+    else rgb = this.kelvinRgb(light.kelvin);
+    const a = .30 + (light.brightness / 100) * .62;
+    return {
+      em: 'rgba(' + rgb.join(',') + ',' + a.toFixed(2) + ')',
+      emSoft: 'rgba(' + rgb.join(',') + ',' + (a * .32).toFixed(2) + ')',
+      bloom: (.22 + (light.brightness / 100) * .58).toFixed(2),
+      emOpacity: 1
+    };
+  }
+  hexRgb(hex) {
+    const h = (hex || '#FFB020').replace('#', '');
+    return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  }
+  sceneArt(meta) {
+    const from = meta.from, to = meta.to;
+    return 'radial-gradient(72% 58% at 26% 14%,' + from + ',rgba(0,0,0,0) 68%),radial-gradient(84% 70% at 82% 96%,' + to + ',rgba(0,0,0,0) 72%),linear-gradient(158deg,' + from + ',' + to + ')';
+  }
+
+  switchHome = id => {
+    this.fb('tick');
+    this.setState(s => {
+      if (id === s.homeId) return { sheet: null };
+      const homes = s.homes.map(h => (h.id === s.homeId ? { ...h, rooms: s.rooms } : h));
+      const target = homes.find(h => h.id === id) || homes[0];
+      const rooms = target.rooms || [];
+      return { homes, homeId: id, homeName: target.name, rooms, roomId: (rooms[0] || {}).id || '', lightId: ((rooms[0] || {}).lights || [{}])[0].id || '', sheet: null, route: 'home' };
+    });
+  };
+  addHome = () => {
+    const name = (this.state.homeDraft || '').trim();
+    if (!name) { this.fb('reject'); return; }
+    this.fb('confirm');
+    const id = 'h' + Date.now();
+    this.setState(s => ({
+      homes: [...s.homes.map(h => (h.id === s.homeId ? { ...h, rooms: s.rooms } : h)), { id, name, rooms: [] }],
+      homeId: id, homeName: name, rooms: [], roomId: '', lightId: '', homeDraft: '', sheet: null, route: 'discover', scanned: false, found: []
+    }));
+    this.push({ tone: 'success', title: name + ' created', body: 'Discover the lights on this network' });
+  };
+
+  targetLights(target) {
+    const s = this.state;
+    if (!target || target === 'all') return this.allLights();
+    if (String(target).indexOf('light:') === 0) return this.allLights().filter(l => l.id === target.slice(6));
+    const r = s.rooms.find(x => x.id === target);
+    return r ? r.lights : [];
+  }
+  sheetActiveScene() {
+    const ls = this.targetLights(this.state.sceneSheetTarget);
+    return ls.length ? ls[0].sceneId : this.state.activeScene;
+  }
+  sheetSpeedValue() {
+    const ls = this.targetLights(this.state.sceneSheetTarget);
+    return ls.length ? ls[0].speed : this.state.detailSpeed;
+  }
+  setSpeedForTarget(sp, target) {
+    const ids = this.targetLights(target).map(l => l.id);
+    this.setState(st => ({ rooms: st.rooms.map(r => ({ ...r, lights: r.lights.map(l => (ids.indexOf(l.id) < 0 || l.unreachable ? l : { ...l, speed: sp })) })) }));
+  }
+  modeSummary(ls) {
+    const flat = 'linear-gradient(180deg,#24242A,#16161A)';
+    if (!ls.length) return { slot: 'mode-none', name: 'Nothing set', art: flat, dynamic: false, static: false };
+    if (ls.length > 1 && ls.some(l => l.cls !== 'Socket')) ls = ls.filter(l => l.cls !== 'Socket');
+    const first = ls[0];
+    const same = ls.every(l => l.active === first.active && l.sceneId === first.sceneId && l.rgb.join() === first.rgb.join() && l.kelvin === first.kelvin);
+    if (!same) return { slot: 'mode-mixed', name: 'Mixed', art: flat, dynamic: false, static: false };
+    if (first.active === 'scene') {
+      const m = this.scenes()[first.sceneId];
+      if (m) return { slot: 'scene-' + first.sceneId, name: m.name, art: this.sceneArt(m), dynamic: !!m.dynamic, static: !m.dynamic };
+    }
+    if (first.active === 'colour') {
+      const hex = 'rgb(' + first.rgb.join(',') + ')';
+      return { slot: 'mode-colour', name: 'Colour', art: 'linear-gradient(160deg,' + hex + ',' + hex + ')', dynamic: false, static: false };
+    }
+    if (ls.every(l => l.cls === 'Socket')) {
+      return { slot: 'mode-socket', name: first.on ? 'Power on' : 'Power off', art: flat, dynamic: false, static: false };
+    }
+    if (ls.every(l => l.cls === 'Dimmable White')) {
+      const d = 'rgb(255,201,141)';
+      return { slot: 'mode-dim', name: 'Warm white', art: 'linear-gradient(160deg,' + d + ',' + d + ')', dynamic: false, static: false };
+    }
+    const k = this.kelvinRgb(first.kelvin);
+    const khex = 'rgb(' + k.join(',') + ')';
+    return { slot: 'mode-white', name: first.kelvin + 'K white', art: 'linear-gradient(160deg,' + khex + ',' + khex + ')', dynamic: false, static: false };
+  }
+  targetIsScene() {
+    const ls = this.targetLights(this.state.sceneSheetTarget);
+    return ls.length > 0 && ls.every(l => l.active === 'scene');
+  }
+  swatchSelected(hex) {
+    const ls = this.targetLights(this.state.sceneSheetTarget);
+    if (!ls.length) return false;
+    const rgb = this.hexRgb(hex).join(',');
+    return ls.every(l => l.active === 'colour' && l.rgb.join(',') === rgb);
+  }
+  whiteSelected(k) {
+    const ls = this.targetLights(this.state.sceneSheetTarget);
+    return ls.length > 0 && ls.every(l => l.active === 'white' && l.kelvin === k);
+  }
+  writeTarget(target, patch, skipSocket) {
+    const ids = this.targetLights(target).filter(l => !skipSocket || l.cls !== 'Socket').map(l => l.id);
+    this.setState(st => ({ rooms: st.rooms.map(r => ({ ...r, lights: r.lights.map(l => (ids.indexOf(l.id) < 0 || l.unreachable ? l : { ...l, ...patch })) })) }));
+  }
+  rgbHs(rgb) {
+    const r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    let h = 0;
+    if (d !== 0) {
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h = (h * 60 + 360) % 360;
+    }
+    return { h, s: max === 0 ? 0 : d / max };
+  }
+  applyColour(c, target) {
+    const rgb = c.rgb || [255, 176, 32];
+    const hs = this.rgbHs(rgb);
+    if (c.h === undefined) c = { ...c, h: hs.h, s: hs.s };
+    this.fb('detent');
+    const ids = this.targetLights(target).filter(l => l.cls === 'RGB').map(l => l.id);
+    this.setState(st => ({ rooms: st.rooms.map(r => ({ ...r, lights: r.lights.map(l => (ids.indexOf(l.id) < 0 || l.unreachable ? l : { ...l, rgb, hue: c.h !== undefined ? c.h : l.hue, sat: c.s !== undefined ? c.s : 1, active: 'colour', on: true })) })) }));
+    if (!ids.length) this.push({ tone: 'error', title: 'No colour bulb here', body: 'Colour needs an RGB bulb.' });
+  }
+  applyWhite(k, target) {
+    this.fb('detent');
+    const ids = this.targetLights(target).filter(l => l.cls === 'RGB' || l.cls === 'Tunable White').map(l => l.id);
+    this.setState(st => ({ rooms: st.rooms.map(r => ({ ...r, lights: r.lights.map(l => (ids.indexOf(l.id) < 0 || l.unreachable ? l : { ...l, kelvin: k, active: 'white', on: true })) })) }));
+    if (!ids.length) this.push({ tone: 'error', title: 'No white channel here', body: 'These bulbs only dim.' });
+  }
+  applyScene(id, target) {
+    const s = this.state;
+    const meta = this.scenes()[id] || {};
+    const tgt = target || s.sceneTarget;
+    const lightId = String(tgt).indexOf('light:') === 0 ? tgt.slice(6) : null;
+    this.fb('confirm');
+    this.setState(st => ({
+      activeScene: id,
+      rooms: st.rooms.map(r => {
+        const hit = lightId ? r.lights.some(l => l.id === lightId) : (tgt === 'all' || tgt === r.id);
+        if (!hit) return r;
+        return { ...r, lights: r.lights.map(l => ((l.unreachable || (lightId && l.id !== lightId)) ? l : { ...l, sceneId: id, active: 'scene', on: true })) };
+      })
+    }));
+    const where = tgt === 'all' ? 'the whole home'
+      : (lightId ? (this.allLights().find(l => l.id === lightId) || {}).name
+        : (s.rooms.find(r => r.id === tgt) || {}).name);
+    this.push({ tone: 'success', title: meta.name + ' applied', body: where ? 'to ' + where : undefined });
+  }
+
+  /* ---------- navigation ---------- */
+  go = (route, patch = {}) => { this.fb('tick'); this.setState({ route, ...patch }); };
+
+  /* ---------- discovery ---------- */
+  runScan = () => {
+    this.fb('confirm');
+    this.setState({ scanning: true, swept: 0, found: [], scanned: true });
+    const tick = setInterval(() => this.setState(s => ({ swept: Math.min(254, s.swept + 34) })), 190);
+    this.timers.scan = setTimeout(() => {
+      clearInterval(tick);
+      const nothing = this.state.findNothing;
+      this.setState({ scanning: false, swept: 254, found: nothing ? [] : this.DISCOVERED.map(d => ({ ...d, saved: false, keep: true })) });
+      if (nothing) this.push({ tone: 'error', title: 'No response on the local network', body: 'Broadcast may be filtered by your access point.' });
+      else this.push({ tone: 'success', title: '3 lights answered', body: 'Swept 192.168.1.0/24' });
+    }, 1600);
+  };
+  briDown = e => {
+    const light = this.currentLight();
+    if (!light || !this.guard(light)) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    let last = light.brightness;
+    const apply = x => {
+      const p = Math.min(1, Math.max(0, (x - rect.left) / rect.width));
+      const v = Math.round(10 + p * 90);
+      if (v !== last) { last = v; this.fb('detent'); }
+      this.mapLight(light.id, l => ({ ...l, brightness: v, on: true }));
+    };
+    apply(e.clientX);
+    const move = ev => apply(ev.clientX);
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  macFor(ip) {
+    const last = parseInt(ip.split('.').pop(), 10) || 0;
+    const hex = ('0' + last.toString(16)).slice(-2);
+    return 'a8bb50f2' + hex + '1c';
+  }
+  blink = (ip, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (this.state.blinking[ip]) return;
+    this.fb('detent');
+    this.setState(s => ({ blinking: { ...s.blinking, [ip]: true } }));
+    this.timers['b' + ip] = setTimeout(() => {
+      this.setState(s => ({ blinking: { ...s.blinking, [ip]: false } }));
+    }, 2000);
+  };
+  saveFound = ip => {
+    const f = this.state.found.find(x => x.ip === ip) || {};
+    this.fb('press');
+    this.setState(s => ({ sheet: 'nameLight', saveDraft: { ip, alias: '', room: (s.rooms[0] || {}).id || '', fixture: f.cls === 'Socket' ? 'socket' : 'bulb' } }));
+  };
+  confirmSaveLight = () => {
+    const d = this.state.saveDraft || {};
+    const alias = (d.alias || '').trim();
+    if (!alias) { this.fb('reject'); return; }
+    const f = this.state.found.find(x => x.ip === d.ip) || {};
+    this.fb('confirm');
+    this.setState(s => ({
+      sheet: null,
+      found: s.found.map(x => (x.ip === d.ip ? { ...x, saved: true } : x)),
+      rooms: s.rooms.map(r => (r.id === d.room ? { ...r, lights: [...r.lights, {
+        id: 'n' + d.ip.split('.').pop(), name: alias, ip: d.ip, mac: this.macFor(d.ip),
+        cls: f.cls || 'RGB', fixture: d.fixture || 'bulb', on: false, brightness: 60, kelvin: 2700,
+        hue: 30, sat: 0, rgb: [255, 224, 188], sceneId: 6, speed: 100, active: 'white'
+      }] } : r))
+    }));
+    const id = this.push({ tone: 'loading', title: 'Saving ' + alias });
+    this.timers['s' + id] = setTimeout(() => this.updateToast(id, { tone: 'success', title: alias + ' saved', body: d.ip + ' added to this home' }), 900);
+  };
+
+  renderVals() {
+    this.injectScrollCss();
+    const s = this.state;
+    const scenes = this.scenes();
+    const lights = this.allLights();
+    const onCount = lights.filter(l => l.on && !l.unreachable).length;
+    const room = this.currentRoom();
+    const light = this.currentLight();
+    const em = this.emission(light);
+    const geo = this.GEO[light && light.fixture ? light.fixture : 'bulb'];
+    const sceneMeta = light ? scenes[light.sceneId] : null;
+    const detailMeta = scenes[s.detailScene] || { name: 'Ocean', dynamic: true, from: '#2ECBFF', to: '#2E7BFF' };
+    const keptCount = s.found.filter(f => f.keep).length;
+
+    const v = {
+      yes: true, noop: () => {},
+      icSm: 15, icLg: 20, icXl: 26, briMin: 10, briMax: 100, kMin: 2200, kMax: 6500, kStep: 50,
+      spMin: 10, spMax: 200, wheelSize: 228, dialSize: 168,
+      homeName: s.homeName,
+      isFirstRun: s.route === 'firstrun', inApp: s.route !== 'firstrun',
+      fr1: s.step === 1, fr2: s.step === 2, fr3: s.step === 3,
+      backToFound: this.iconBtn('Back', 'chevron-left', () => this.setState({ step: 2 })),
+      namesIncomplete: s.found.filter(f => f.keep).some(f => !((s.assign[f.ip] || {}).alias || '').trim()),
+      draftName: s.draftName,
+      onDraftName: e => this.setState({ draftName: e.target.value }),
+      nameEmpty: !(s.draftName || '').trim(),
+      startSetupScan: () => {
+        const name = (s.draftName || '').trim();
+        if (!name) { this.fb('reject'); return; }
+        this.setState({ step: 2, homeName: name });
+        this.runScan();
+      },
+      homesBtn: this.iconBtn('Homes', 'house', () => { this.fb('press'); this.setState({ sheet: 'homes' }); }),
+      sheetHomes: s.sheet === 'homes',
+      homeDraft: s.homeDraft,
+      onHomeDraft: e => { const val = e.target.value; this.setState({ homeDraft: val }); },
+      homeRows: s.homes.map(h => {
+        const rs = h.id === s.homeId ? s.rooms : (h.rooms || []);
+        const n = rs.reduce((a, r) => a + r.lights.length, 0);
+        return {
+          name: h.name, meta: this.plural(rs.length, 'room') + ' · ' + this.plural(n, 'light'),
+          ring: h.id === s.homeId ? 'var(--elev-panel),inset 0 0 0 1.5px var(--amber-500)' : 'var(--elev-panel)',
+          ink: h.id === s.homeId ? 'var(--amber-500)' : 'var(--text-tertiary)',
+          pick: () => this.switchHome(h.id)
+        };
+      }),
+      addHomeFooter: React.createElement(React.Fragment, null,
+        this.btn({ variant: 'ghost', onClick: () => this.setState({ sheet: null }) }, 'Close'),
+        this.btn({ variant: 'primary', fullWidth: true, onClick: this.addHome }, 'Add home')),
+      backToName: this.iconBtn('Back', 'chevron-left', () => this.setState({ step: 1 })),
+      scanning: s.scanning,
+      scanPct: Math.round((s.swept / 254) * 100),
+      sweptLabel: s.swept + ' of 254 addresses',
+      scanSubtitle: s.scanning ? s.swept + ' of 254 addresses' : 'Local network',
+      scanDoneEmpty: !s.scanning && s.scanned && s.found.length === 0,
+      scanDoneFound: !s.scanning && s.found.length > 0,
+      discoverIdle: !s.scanning && !s.scanned,
+      foundTitle: s.found.length + ' lights answered',
+      foundBadge: (() => { const B = this.ns().Badge; return B ? React.createElement(B, { tone: 'online', dot: true }, 'Live') : null; })(),
+      skeletons: [
+        { avatar: 40, w1: '56%', h1: 14, w2: '32%', h2: 10 },
+        { avatar: 40, w1: '44%', h1: 14, w2: '38%', h2: 10 },
+        { avatar: 40, w1: '62%', h1: 14, w2: '28%', h2: 10 }
+      ],
+      sweepAction: this.btn({ variant: 'primary', icon: this.ic('radio', 16), onClick: this.runScan }, 'Scan subnet'),
+      foundList: s.found.map(f => ({
+        name: f.name, meta: f.ip + ' · ' + f.cls,
+        blinking: !!s.blinking[f.ip],
+        blinkBg: s.blinking[f.ip] ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+        blinkInk: s.blinking[f.ip] ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
+        blinkShadow: s.blinking[f.ip] ? 'var(--elev-key),var(--glow-amber-strong)' : 'var(--elev-key)',
+        wellInk: s.blinking[f.ip] ? 'var(--amber-500)' : 'var(--text-tertiary)',
+        wellGlow: s.blinking[f.ip] ? 'var(--elev-well),var(--glow-amber)' : 'var(--elev-well)',
+        blink: e => this.blink(f.ip, e),
+        boxBg: f.keep ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'var(--char-1000)',
+        boxInk: f.keep ? 'var(--text-on-accent)' : 'var(--char-700)',
+        toggle: () => { this.fb('tick'); this.setState(st => ({ found: st.found.map(x => (x.ip === f.ip ? { ...x, keep: !x.keep } : x)) })); }
+      })),
+      saveCta: 'Save ' + keptCount + (keptCount === 1 ? ' light' : ' lights'),
+      toAssign: () => {
+        this.fb('confirm');
+        this.setState(st => {
+          const first = (st.setupRooms[0] || {}).id;
+          const assign = {};
+          st.found.filter(f => f.keep).forEach(f => {
+            const prev = st.assign[f.ip] || {};
+            assign[f.ip] = { alias: prev.alias || '', room: prev.room || first, fixture: prev.fixture || (f.cls === 'Socket' ? 'socket' : 'bulb') };
+          });
+          return { step: 3, assign };
+        });
+      },
+      sheetNewRoom: s.sheet === 'newRoom',
+      newRoomFooter: React.createElement(React.Fragment, null,
+        this.btn({ variant: 'ghost', onClick: () => this.setState({ sheet: null }) }, 'Cancel'),
+        this.btn({ variant: 'primary', fullWidth: true, onClick: () => {
+          const name = (this.state.roomDraft.name || '').trim();
+          if (!name) { this.fb('reject'); return; }
+          this.fb('confirm');
+          const id = 'sr' + Date.now();
+          this.setState(st => ({
+            setupRooms: [...st.setupRooms, { id, name, icon: st.roomDraft.icon, custom: true }],
+            assign: st.pendingIp ? { ...st.assign, [st.pendingIp]: { ...(st.assign[st.pendingIp] || {}), room: id } } : st.assign,
+            roomDraft: { name: '', icon: 'sofa' }, pendingIp: '', sheet: null
+          }));
+        } }, 'Create room')),
+      assignList: s.found.filter(f => f.keep).map(f => {
+        const a = s.assign[f.ip] || { room: (s.setupRooms[0] || {}).id, fixture: 'bulb', alias: '' };
+        return {
+          name: f.name, meta: f.ip + ' · ' + f.cls,
+          alias: a.alias || '',
+          placeholder: f.cls === 'Socket' ? 'Plug by the TV' : 'Ceiling dome light',
+          blink: e => this.blink(f.ip, e),
+          blinkBg: s.blinking[f.ip] ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+          blinkInk: s.blinking[f.ip] ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
+          blinkShadow: s.blinking[f.ip] ? 'var(--elev-key),var(--glow-amber-strong)' : 'var(--elev-key)',
+          setAlias: e => { const val = e.target.value; this.setState(st => ({ assign: { ...st.assign, [f.ip]: { ...(st.assign[f.ip] || a), alias: val } } })); },
+          newRoom: () => { this.fb('press'); this.setState({ sheet: 'newRoom', pendingIp: f.ip }); },
+          roomChips: s.setupRooms.map(r => ({
+            label: r.name,
+            bg: a.room === r.id ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+            ink: a.room === r.id ? 'var(--text-on-accent)' : 'var(--text-secondary)',
+            pick: () => { this.fb('tick'); this.setState(st => ({ assign: { ...st.assign, [f.ip]: { ...a, room: r.id } } })); }
+          })),
+          fixtureChips: this.FIXTURES.map(fx => ({
+            label: fx.label, icon: fx.icon,
+            bg: a.fixture === fx.id ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+            ink: a.fixture === fx.id ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
+            pick: () => { this.fb('detent'); this.setState(st => ({ assign: { ...st.assign, [f.ip]: { ...a, fixture: fx.id } } })); }
+          }))
+        };
+      }),
+      finishSetup: () => {
+        this.fb('confirm');
+        const added = s.found.filter(f => f.keep);
+        const name = (s.draftName || '').trim() || 'New home';
+        const id = 'h' + Date.now();
+        const used = r => r.custom || added.some(f => (s.assign[f.ip] || {}).room === r.id);
+        const newRooms = s.setupRooms.filter(used).map(r => ({
+          id: r.id, name: r.name, icon: r.icon,
+          lights: added.filter(f => (s.assign[f.ip] || {}).room === r.id).map(f => {
+            const a = s.assign[f.ip] || {};
+            return {
+              id: 'n' + f.ip.split('.').pop(), name: (a.alias || '').trim() || f.name, ip: f.ip,
+              mac: this.macFor(f.ip), cls: f.cls, fixture: a.fixture || 'bulb',
+              on: false, brightness: 60, kelvin: 2700, hue: 30, sat: 0, rgb: [255, 224, 188], sceneId: 6, speed: 100, active: 'white'
+            };
+          })
+        }));
+        const firstRoom = newRooms[0] || { id: '', lights: [] };
+        this.setState(st => ({
+          route: 'home', step: 1,
+          homes: [...st.homes.map(h => (h.id === st.homeId ? { ...h, rooms: st.rooms } : h)), { id, name, rooms: newRooms }],
+          homeId: id, homeName: name, rooms: newRooms,
+          roomId: firstRoom.id, lightId: (firstRoom.lights[0] || {}).id || '',
+          found: [], scanned: false, assign: {},
+          setupRooms: [
+            { id: 'sr-living', name: 'Living Room', icon: 'sofa' },
+            { id: 'sr-bedroom', name: 'Bedroom', icon: 'bed' },
+            { id: 'sr-kitchen', name: 'Kitchen', icon: 'utensils-crossed' }
+          ]
+        }));
+        this.push({ tone: 'success', title: name + ' is set up', body: this.plural(added.length, 'light') + ' in ' + this.plural(newRooms.length, 'room') });
+      },
+
+      /* app chrome */
+      showDock: ['home', 'room', 'light', 'scenes', 'scene', 'rooms', 'settings'].indexOf(s.route) >= 0,
+      tabValue: s.route === 'light' ? 'room' : (s.route === 'scene' ? 'scenes' : (s.route === 'rooms' ? 'room' : s.route)),
+      tabs: [
+        { value: 'home', label: 'Home', icon: this.ic('house') },
+        { value: 'room', label: 'Rooms', icon: this.ic('layout-grid') },
+        { value: 'scenes', label: 'Scenes', icon: this.ic('sparkles') },
+        { value: 'settings', label: 'Settings', icon: this.ic('sliders-horizontal') }
+      ],
+      setTab: t => this.go(t === 'room' ? 'rooms' : t, t === 'scenes' ? { sceneSheetTarget: this.state.sceneTarget } : {}),
+      toastProps: { toasts: s.toasts, onDismiss: this.dismiss, style: { bottom: 'calc(var(--tabbar-height) + 28px)' } },
+
+      /* home */
+      isHome: s.route === 'home',
+      homeSubtitle: this.plural(s.rooms.length, 'room') + ' · ' + this.plural(lights.length, 'light'),
+      discoverBtn: this.iconBtn('Discover lights', 'radio', () => this.go('discover')),
+      offline: s.offline,
+      retryNetAction: this.btn({ variant: 'ghost', size: 'sm', onClick: () => { this.fb('press'); this.push({ tone: 'error', title: 'Still on CafeWiFi', body: 'Join the home network, then scan again.' }); } }, 'Retry'),
+      onCountLabel: onCount + ' / ' + lights.length,
+      onTone: onCount ? 'accent' : 'default',
+      drawNow: lights.filter(l => l.on && !l.unreachable).reduce((a, l) => a + Math.round(l.brightness * 0.26), 0),
+      anyOn: onCount > 0,
+      allLightsState: onCount === 0 ? 'All off' : (onCount === lights.length ? 'All on' : onCount + ' of ' + lights.length + ' on'),
+      hasUnreachable: lights.some(l => l.unreachable),
+      unreachableLabel: this.plural(lights.filter(l => l.unreachable).length, 'light') + ' not answering',
+      allOff: () => { this.fb('power'); this.setState(st => ({ rooms: st.rooms.map(r => ({ ...r, lights: r.lights.map(l => (l.unreachable ? l : { ...l, on: false })) })) })); },
+      allPower: on => { this.fb('power'); this.setState(st => ({ rooms: st.rooms.map(r => ({ ...r, lights: r.lights.map(l => (l.unreachable ? l : { ...l, on })) })) })); },
+      rooms: s.rooms.map((r, i) => ({
+        name: r.name, icon: r.icon, lightCount: r.lights.length,
+        onCount: r.lights.filter(l => l.on).length, on: r.lights.some(l => l.on),
+        delay: (40 + i * 55) + 'ms',
+        toggle: on => { this.fb('toggleOn'); this.setState(st => ({ rooms: st.rooms.map(x => (x.id === r.id ? { ...x, lights: x.lights.map(l => (l.unreachable ? l : { ...l, on })) } : x)) })); },
+        open: () => this.go('room', { roomId: r.id })
+      })),
+      openAddRoom: () => { this.fb('press'); this.setState({ sheet: 'addRoom' }); },
+      icoHousePlus: this.ic('house-plus', 16),
+      icoBulbSm: this.ic('lightbulb', 14), icoZapSm: this.ic('zap', 14), icoGaugeSm: this.ic('gauge', 14),
+      icoWifiSm: this.ic('wifi', 14), icoThermoSm: this.ic('thermometer', 14),
+      unreachableCount: lights.filter(l => l.unreachable).length,
+      icoRadio: this.ic('radio', 16), icoRadioLg: this.ic('radio', 30), icoBulbLg: this.ic('lightbulb', 30),
+      icoRefresh: this.ic('refresh-cw', 15), icoSparkles: this.ic('sparkles', 16),
+      icoHouse: this.ic('house'), icoPencil: this.ic('pencil', 17), icoChevron: this.ic('chevron-right', 18),
+      icoTerminal: this.ic('terminal'), icoZap: this.ic('zap'), icoWifi: this.ic('wifi'),
+      icoClock: this.ic('clock'), icoSearch: this.ic('search'), icoBulb: this.ic('lightbulb'),
+
+      /* room */
+      isRoom: s.route === 'room',
+      roomId: s.roomId,
+      room: room ? {
+        name: room.name, subtitle: this.plural(room.lights.length, 'light'), empty: room.lights.length === 0,
+        lights: room.lights.map((l, i) => ({
+          name: l.name, meta: l.unreachable ? l.ip : this.modeSummary([l]).name,
+          icon: (this.FIXTURES.find(f => f.id === l.fixture) || { icon: 'lightbulb' }).icon,
+          briControl: l.cls === 'Socket' ? 'none' : 'rail',
+          on: l.on, unreachable: !!l.unreachable, brightness: l.brightness, delay: (30 + i * 60) + 'ms',
+          toggle: on => { if (!this.guard(l)) return; this.fb('toggleOn'); this.mapLight(l.id, x => ({ ...x, on })); },
+          setBrightness: b => { if (!this.guard(l)) return; this.mapLight(l.id, x => ({ ...x, brightness: b, on: true })); },
+          open: e => {
+            if (e && e.target && e.target.closest && e.target.closest('[role="switch"],[role="slider"]')) return;
+            this.go('light', { lightId: l.id, roomId: room.id, mode: 'white' });
+          }
+        }))
+      } : { name: '', subtitle: '', empty: true, lights: [] },
+      roomDialSize: 132,
+      roomHasLights: !!(room && room.lights.length),
+      roomBrightness: room && room.lights.length ? Math.round(room.lights.reduce((a, l) => a + l.brightness, 0) / room.lights.length) : 10,
+      roomKelvin: room && room.lights.length ? Math.round(room.lights.reduce((a, l) => a + l.kelvin, 0) / room.lights.length / 50) * 50 : 2700,
+      setRoomBrightness: v => {
+        if (!room || this.state.offline) { if (this.state.offline) this.guard(null); return; }
+        this.setState(st => ({ rooms: st.rooms.map(r => (r.id === room.id ? { ...r, lights: r.lights.map(l => (l.unreachable ? l : { ...l, brightness: v, on: true })) } : r)) }));
+      },
+      setRoomKelvin: v => {
+        if (!room || this.state.offline) { if (this.state.offline) this.guard(null); return; }
+        this.setState(st => ({ rooms: st.rooms.map(r => (r.id === room.id ? { ...r, lights: r.lights.map(l => (l.unreachable || l.cls === 'Dimmable White' || l.cls === 'Socket' ? l : { ...l, kelvin: v, active: 'white' })) } : r)) }));
+      },
+      roomCanKelvin: !!(room && room.lights.some(l => l.cls === 'RGB' || l.cls === 'Tunable White')),
+      roomKelvinNote: room && room.lights.length && !room.lights.some(l => l.cls === 'RGB' || l.cls === 'Tunable White')
+        ? 'No bulb in this room has a white channel to tune.'
+        : (room && room.lights.some(l => l.cls === 'Dimmable White' || l.cls === 'Socket')
+          ? 'Colour temp reaches ' + room.lights.filter(l => l.cls === 'RGB' || l.cls === 'Tunable White').length + ' of ' + room.lights.length + ' bulbs.' : ''),
+      roomScene: this.modeSummary(room ? room.lights : []),
+      openRoomScenes: () => { if (!room) return; this.fb('press'); this.setState({ sheet: 'scenes', sceneSheetTarget: room.id }); },
+      openLightScenes: () => { if (!light) return; this.fb('press'); this.setState({ sheet: 'scenes', sceneSheetTarget: 'light:' + light.id }); },
+      lightScene: this.modeSummary(light ? [light] : []),
+      sheetScenes: s.sheet === 'scenes',
+      sheetScenesTitle: (() => {
+        const t = s.sceneSheetTarget;
+        if (!t || t === 'all') return 'Light mode · whole home';
+        if (String(t).indexOf('light:') === 0) return 'Light mode · ' + ((lights.find(l => l.id === t.slice(6)) || {}).name || '');
+        return 'Light mode · ' + ((s.rooms.find(r => r.id === t) || {}).name || '');
+      })(),
+      sheetTab: s.sheetTab,
+      setSheetTab: t => { this.fb('tick'); this.setState({ sheetTab: t }); },
+      sheetTabs: [
+        { value: 'colour', label: 'Colour' },
+        { value: 'static', label: 'Static' },
+        { value: 'dynamic', label: 'Dynamic' }
+      ],
+      tabColour: s.sheetTab === 'colour',
+      tabScenes: s.sheetTab !== 'colour',
+      sheetTabNote: s.sheetTab === 'dynamic'
+        ? 'Dynamic scenes cycle. Speed runs from 10 to 200.'
+        : 'Static scenes hold one look. The bulb ignores speed.',
+      sheetWheelSize: 196,
+      sheetHasWheel: this.targetLights(s.sceneSheetTarget).some(l => l.cls === 'RGB'),
+      sheetHue: (this.targetLights(s.sceneSheetTarget)[0] || { hue: 30 }).hue,
+      sheetSat: (this.targetLights(s.sceneSheetTarget)[0] || { sat: 0 }).sat,
+      setSheetColour: c => this.applyColour(c, s.sceneSheetTarget),
+      colourSwatches: [
+        ['Red', '#FF4A3D'], ['Orange', '#FF8A2B'], ['Yellow', '#FFD52B'], ['Lime', '#B7F03C'],
+        ['Green', '#38D06B'], ['Teal', '#25D8C0'], ['Cyan', '#2ECBFF'], ['Blue', '#2E7BFF'],
+        ['Indigo', '#5B5BFF'], ['Violet', '#A45BFF'], ['Magenta', '#FF3FC0'], ['Pink', '#FF6FA5']
+      ].map(([name, hex]) => ({
+        name, hex,
+        ring: this.swatchSelected(hex) ? 'var(--elev-raised),inset 0 0 0 2.5px var(--ink-1000)' : 'var(--elev-raised)',
+        pick: () => this.applyColour({ rgb: this.hexRgb(hex), hex }, s.sceneSheetTarget)
+      })),
+      whiteSwatches: [
+        ['2200K', 2200, '#FFB25C'], ['2700K', 2700, '#FFC98D'], ['3500K', 3500, '#FFE0BC'],
+        ['4500K', 4500, '#FFF4E6'], ['5500K', 5500, '#F2F6FF'], ['6500K', 6500, '#DCE9FF']
+      ].map(([name, k, hex]) => ({
+        name, hex,
+        ring: this.whiteSelected(k) ? 'var(--elev-raised),inset 0 0 0 2.5px var(--amber-500)' : 'var(--elev-raised)',
+        pick: () => this.applyWhite(k, s.sceneSheetTarget)
+      })),
+      sheetSceneCards: Object.keys(scenes).map(Number)
+        .filter(id => (s.sheetTab === 'dynamic' ? scenes[id].dynamic : !scenes[id].dynamic))
+        .map(id => ({
+          slot: 'scene-' + id, name: scenes[id].name, dynamic: scenes[id].dynamic, art: this.sceneArt(scenes[id]),
+          selected: id === this.sheetActiveScene() && this.targetIsScene(),
+          apply: () => this.applyScene(id, s.sceneSheetTarget)
+        })),
+      sheetSceneDynamic: s.sheetTab === 'dynamic' && this.targetIsScene() && !!(scenes[this.sheetActiveScene()] || {}).dynamic,
+      sheetSpeedLabel: 'Speed — ' + ((scenes[this.sheetActiveScene()] || {}).name || ''),
+      sheetSpeed: this.sheetSpeedValue(),
+      setSheetSpeed: sp => this.setSpeedForTarget(sp, s.sceneSheetTarget),
+      manyRooms: s.rooms.length > 1,
+      roomSegments: s.rooms.map(r => ({ value: r.id, icon: this.ic(r.icon, 17) })),
+      pickRoom: id => this.go('room', { roomId: id }),
+      backHome: this.iconBtn('Back', 'chevron-left', () => this.go('home')),
+      roomToggle: room ? this.tog(room.lights.some(l => l.on), on => { this.fb('toggleOn'); this.setState(st => ({ rooms: st.rooms.map(x => (x.id === room.id ? { ...x, lights: x.lights.map(l => (l.unreachable ? l : { ...l, on })) } : x)) })); }, room.name) : null,
+      discoverAction: this.btn({ variant: 'primary', icon: this.ic('radio', 16), onClick: () => this.go('discover') }, 'Discover lights'),
+
+      /* light detail */
+      isLight: s.route === 'light',
+      light: light ? {
+        name: light.name, subtitle: room.name + ' · ' + light.cls, on: light.on, unreachable: !!light.unreachable,
+        em: em.em, emSoft: em.emSoft, bloom: em.bloom, emOpacity: em.emOpacity,
+        fixW: geo.w, fixH: geo.h, fixR: geo.r, hasCord: geo.cord, stageOffset: geo.top,
+        isBulb: light.fixture === 'bulb', isShade: light.fixture !== 'bulb',
+        watts: light.on ? Math.round(light.brightness * 0.26) : 0,
+        intensity: Math.round(light.brightness), intensityTone: light.on ? 'accent' : 'default',
+        isSocket: light.cls === 'Socket', notSocket: light.cls !== 'Socket',
+        statAIcon: light.cls === 'RGB' || light.cls === 'Tunable White' ? this.ic('thermometer', 14) : this.ic('lightbulb', 14),
+        statALabel: light.cls === 'RGB' || light.cls === 'Tunable White' ? 'Colour temp' : 'Class',
+        statAValue: light.cls === 'RGB' || light.cls === 'Tunable White' ? light.kelvin : light.cls,
+        statAUnit: light.cls === 'RGB' || light.cls === 'Tunable White' ? 'K' : '',
+        statBIcon: light.cls === 'Socket' ? this.ic('power', 14) : this.ic('gauge', 14),
+        statBLabel: light.cls === 'Socket' ? 'Power' : 'Intensity',
+        statBValue: light.cls === 'Socket' ? (light.on ? 'On' : 'Off') : Math.round(light.brightness),
+        statBUnit: light.cls === 'Socket' ? '' : '%',
+        statBTone: light.on ? 'accent' : 'default',
+        brightness: light.brightness, briReadout: Math.round(light.brightness) + '%',
+        kelvin: light.kelvin, kReadout: light.kelvin + 'K',
+        noKelvin: light.cls === 'Dimmable White' || light.cls === 'Socket',
+        canKelvin: light.cls === 'RGB' || light.cls === 'Tunable White',
+        kelvinNote: light.cls === 'Socket' ? 'A plug switches power only — no brightness or colour.' : 'This bulb dims but has no white channel to tune.',
+        hue: light.hue, sat: light.sat, rgbLabel: light.rgb.join(', '), speed: light.speed,
+        colourHex: 'rgb(' + light.rgb.join(',') + ')',
+        colourGlow: 'rgba(' + light.rgb.join(',') + ',.5)',
+        facts: [
+          { k: 'Address', v: light.ip + ':38899' },
+          { k: 'MAC', v: light.mac },
+          { k: 'Class', v: light.cls },
+          { k: 'Signal', v: light.unreachable ? 'no reply' : '-52 dBm' }
+        ]
+      } : null,
+      briPct: light ? Math.round(((light.brightness - 10) / 90) * 100) + '%' : '0%',
+      briDown: this.briDown,
+      backRoom: this.iconBtn('Back', 'chevron-left', () => this.go('room', { roomId: s.roomId })),
+      liveBadge: (() => { const B = this.ns().Badge; return B ? React.createElement(B, { tone: light && light.unreachable ? 'danger' : 'online', dot: true }, light && light.unreachable ? 'No reply' : 'Live') : null; })(),
+      retryLightAction: this.btn({ variant: 'ghost', size: 'sm', onClick: () => light && this.retryLight(light) }, 'Retry'),
+      setLightPower: on => { if (!light || !this.guard(light)) return; this.fb('power'); this.mapLight(light.id, x => ({ ...x, on })); },
+      setBrightness: b => { if (!light || !this.guard(light)) return; this.mapLight(light.id, x => ({ ...x, brightness: b, on: true })); },
+      setKelvin: k => { if (!light || !this.guard(light)) return; this.mapLight(light.id, x => ({ ...x, kelvin: k, active: 'white' })); },
+      setColour: c => { if (!light || !this.guard(light)) return; this.mapLight(light.id, x => ({ ...x, hue: c.h, sat: c.s, rgb: c.rgb })); },
+      setSpeed: sp => { if (!light) return; this.mapLight(light.id, x => ({ ...x, speed: sp })); },
+      mode: s.mode,
+      socketOnly: !!light && light.cls === 'Socket',
+      hasModes: !!light && light.cls !== 'Socket',
+      isWhite: s.mode === 'white' && !!light && light.cls !== 'Socket',
+      isColour: s.mode === 'colour' && !!light && light.cls !== 'Socket',
+      isSceneMode: s.mode === 'scene' && !!light && light.cls !== 'Socket',
+      setMode: m => { this.fb('tick'); this.setState({ mode: m }); },
+      modeItems: (() => {
+        const items = [{ value: 'white', label: 'White', icon: this.ic('sun', 15) }];
+        if (light && light.cls === 'RGB') items.push({ value: 'colour', label: 'Colour', icon: this.ic('palette', 15) });
+        items.push({ value: 'scene', label: 'Scene', icon: this.ic('sparkles', 15) });
+        return items;
+      })(),
+      quickScenes: [6, 1, 3, 5, 16, 29].filter(id => scenes[id]).map(id => ({
+        id, slot: 'scene-' + id, name: scenes[id].name, dynamic: scenes[id].dynamic, art: this.sceneArt(scenes[id]),
+        selected: !!light && light.sceneId === id,
+        pick: () => { if (!light || !this.guard(light)) return; this.fb('detent'); this.mapLight(light.id, x => ({ ...x, sceneId: id, on: true })); }
+      })),
+      scenesForLight: () => { if (!light) return; this.go('scenes', { sceneTarget: 'light:' + light.id }); },
+      scenesForRoom: () => this.go('scenes', { sceneTarget: room ? room.id : 'all', sceneSheetTarget: room ? room.id : 'all' }),
+      speedLabel: sceneMeta && sceneMeta.dynamic ? 'Speed' : 'Speed — static scene',
+      speedDisabled: !sceneMeta || !sceneMeta.dynamic,
+      openFixture: () => { this.fb('press'); this.setState({ sheet: 'fixture' }); },
+
+      /* scenes */
+      isScenes: s.route === 'scenes',
+      sceneTarget: s.sceneTarget,
+
+      setSceneTarget: t => { this.fb('tick'); this.setState({ sceneTarget: t }); },
+      targetLabel: (() => {
+        if (s.sceneTarget === 'all') return 'Whole home';
+        if (String(s.sceneTarget).indexOf('light:') === 0) {
+          const l = lights.find(x => x.id === s.sceneTarget.slice(6));
+          return l ? l.name : 'Whole home';
+        }
+        const r = s.rooms.find(x => x.id === s.sceneTarget);
+        return r ? r.name : 'Whole home';
+      })(),
+      openTarget: () => { this.fb('press'); this.setState({ sheet: 'target', sceneSheetTarget: s.sceneTarget }); },
+      sheetTarget: s.sheet === 'target',
+      targetOptions: (() => {
+        const sel = key => (s.sceneTarget === key
+          ? { ring: 'var(--elev-panel),inset 0 0 0 1.5px var(--amber-500)', ink: 'var(--amber-500)' }
+          : { ring: 'var(--elev-panel)', ink: 'var(--text-tertiary)' });
+        const rows = [{ key: 'all', label: 'Whole home', meta: this.plural(lights.length, 'light'), icon: 'house', indent: '0px' }];
+        s.rooms.forEach(r => {
+          rows.push({ key: r.id, label: r.name, meta: this.plural(r.lights.length, 'light'), icon: r.icon, indent: '0px' });
+          r.lights.forEach(l => rows.push({ key: 'light:' + l.id, label: l.name, meta: l.ip, icon: (this.FIXTURES.find(f => f.id === l.fixture) || { icon: 'lightbulb' }).icon, indent: '20px' }));
+        });
+        return rows.map(row => ({
+          label: row.label, meta: row.meta, icon: row.icon, indent: row.indent,
+          ring: sel(row.key).ring, ink: sel(row.key).ink,
+          pick: () => { this.fb('tick'); this.setState({ sceneTarget: row.key, sceneSheetTarget: row.key, sheet: null }); }
+        }));
+      })(),
+      sceneCards: Object.keys(scenes).map(Number).map(id => {
+        const m = scenes[id];
+        return {
+          id, slot: 'scene-' + id, name: m.name, kind: m.dynamic ? 'Dynamic' : 'Static',
+          dynamic: m.dynamic, selected: s.activeScene === id, art: this.sceneArt(m),
+          apply: () => this.applyScene(id)
+        };
+      }),
+      sceneSpeedVisible: !!(scenes[s.activeScene] && scenes[s.activeScene].dynamic),
+      sceneSpeedLabel: 'Speed — ' + ((scenes[s.activeScene] || {}).name || ''),
+      sceneSpeed: s.detailSpeed,
+      setSceneSpeed: sp => {
+        this.setState({ detailSpeed: sp });
+        const lightId = String(s.sceneTarget).indexOf('light:') === 0 ? s.sceneTarget.slice(6) : null;
+        this.setState(st => ({
+          rooms: st.rooms.map(r => {
+            const hit = lightId ? r.lights.some(l => l.id === lightId) : (st.sceneTarget === 'all' || st.sceneTarget === r.id);
+            if (!hit) return r;
+            return { ...r, lights: r.lights.map(l => ((l.unreachable || (lightId && l.id !== lightId)) ? l : { ...l, speed: sp })) };
+          })
+        }));
+      },
+
+      /* scene detail */
+      isSceneDetail: s.route === 'scene',
+      detail: { name: detailMeta.name, kind: detailMeta.dynamic ? 'Dynamic scene · speed 10–200' : 'Static scene', art: this.sceneArt(detailMeta), slot: 'scene-' + s.detailScene, static: !detailMeta.dynamic, note: detailMeta.dynamic ? 'Speed is sent with the scene. Higher values cycle the scene faster.' : 'This scene is static. Speed is ignored by the bulb.' },
+      detailSpeed: s.detailSpeed,
+      setDetailSpeed: sp => this.setState({ detailSpeed: sp }),
+      backScenes: this.iconBtn('Back', 'chevron-left', () => this.go('scenes')),
+      applyLabel: 'Apply to ' + (s.sceneTarget === 'all' ? 'the whole home' : (String(s.sceneTarget).indexOf('light:') === 0
+        ? ((lights.find(x => x.id === s.sceneTarget.slice(6)) || { name: 'this light' }).name)
+        : (s.rooms.find(r => r.id === s.sceneTarget) || { name: 'this room' }).name)),
+      applyDetailScene: () => {
+        this.fb('confirm');
+        const lightId = String(s.sceneTarget).indexOf('light:') === 0 ? s.sceneTarget.slice(6) : null;
+        this.setState(st => ({
+          activeScene: st.detailScene,
+          rooms: st.rooms.map(r => {
+            const hit = lightId ? r.lights.some(l => l.id === lightId) : (st.sceneTarget === 'all' || st.sceneTarget === r.id);
+            if (!hit) return r;
+            return { ...r, lights: r.lights.map(l => ((l.unreachable || (lightId && l.id !== lightId)) ? l : { ...l, sceneId: st.detailScene, on: true })) };
+          })
+        }));
+        this.push({ tone: 'success', title: detailMeta.name + ' applied', body: detailMeta.dynamic ? 'Speed ' + s.detailSpeed : 'Static scene' });
+      },
+
+      /* rooms management */
+      isRooms: s.route === 'rooms',
+      roomsSubtitle: this.plural(s.rooms.length, 'room') + ' · ' + this.plural(lights.length, 'light'),
+      addRoomBtn: this.iconBtn('Add room', 'plus', () => { this.fb('press'); this.setState({ sheet: 'addRoom' }); }),
+      roomRows: s.rooms.map((r, i) => ({
+        name: r.name, meta: r.lights.length + ' lights · ' + r.lights.filter(l => l.on).length + ' on',
+        iconNode: this.ic(r.icon), delay: (30 + i * 55) + 'ms',
+        trailing: this.ic('chevron-right', 18),
+        open: () => this.go('room', { roomId: r.id })
+      })),
+
+      /* settings */
+      isSettings: s.route === 'settings',
+      anyUnreachable: lights.some(l => l.unreachable),
+      rescanAction: this.btn({ variant: 'ghost', size: 'sm', onClick: () => this.go('discover') }, 'Rescan'),
+      goDiscover: () => this.go('discover'),
+      rescanToggle: this.tog(s.relaunch, v => { this.fb(v ? 'toggleOn' : 'toggleOff'); this.setState({ relaunch: v }); }, 'Re-scan on launch', 'sm'),
+      feedbackToggle: this.tog(s.feedback, v => { const F = this.ns().Feedback; if (F && F.setEnabled) F.setEnabled(v); this.setState({ feedback: v }); }, 'Sound and haptics', 'sm'),
+      offlineToggle: this.tog(s.offline, v => { this.fb('tick'); this.setState({ offline: v }); }, 'Wrong network', 'sm'),
+      timeoutToggle: this.tog(s.forceTimeout, v => { this.fb('tick'); this.setState({ forceTimeout: v }); }, 'Force timeout', 'sm'),
+      nothingToggle: this.tog(s.findNothing, v => { this.fb('tick'); this.setState({ findNothing: v, scanned: false, found: [] }); }, 'Find nothing', 'sm'),
+
+      /* discovery screen */
+      isDiscover: s.route === 'discover',
+      runScan: this.runScan,
+      foundRows: s.found.map(f => ({
+        name: f.name, meta: f.ip + ' · ' + f.cls,
+        button: React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement('button', {
+            type: 'button', title: 'Flash this light', 'aria-label': 'Flash this light',
+            onClick: e => this.blink(f.ip, e),
+            style: { display: 'grid', placeItems: 'center', width: 40, height: 40, border: 0, cursor: 'pointer', borderRadius: '50%',
+              background: s.blinking[f.ip] ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+              color: s.blinking[f.ip] ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
+              boxShadow: s.blinking[f.ip] ? 'var(--elev-key),var(--glow-amber-strong)' : 'var(--elev-key)' }
+          }, this.ic('lightbulb', 22)),
+          this.btn({ size: 'sm', variant: f.saved ? 'ghost' : 'primary', onClick: () => this.saveFound(f.ip) }, f.saved ? 'Saved' : 'Save'))
+      })),
+
+      /* save-light sheet */
+      sheetNameLight: s.sheet === 'nameLight',
+      saveDraftAlias: (s.saveDraft || {}).alias || '',
+      saveDraftMeta: (s.saveDraft || {}).ip ? (s.saveDraft.ip + ' · ' + ((s.found.find(f => f.ip === s.saveDraft.ip) || {}).cls || '')) : '',
+      onSaveAlias: e => { const val = e.target.value; this.setState(st => ({ saveDraft: { ...st.saveDraft, alias: val } })); },
+      saveRoomChips: s.rooms.map(r => ({
+        label: r.name,
+        bg: (s.saveDraft || {}).room === r.id ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+        ink: (s.saveDraft || {}).room === r.id ? 'var(--text-on-accent)' : 'var(--text-secondary)',
+        pick: () => { this.fb('tick'); this.setState(st => ({ saveDraft: { ...st.saveDraft, room: r.id } })); }
+      })),
+      saveLightFooter: React.createElement(React.Fragment, null,
+        this.btn({ variant: 'ghost', onClick: () => this.setState({ sheet: null }) }, 'Cancel'),
+        this.btn({ variant: 'primary', fullWidth: true, onClick: this.confirmSaveLight }, 'Save light')),
+
+      /* sheets */
+      sheetAddRoom: s.sheet === 'addRoom',
+      sheetFixture: s.sheet === 'fixture',
+      closeSheet: () => this.setState({ sheet: null }),
+      roomDraftName: s.roomDraft.name,
+      onRoomDraftName: e => { const val = e.target.value; this.setState(st => ({ roomDraft: { ...st.roomDraft, name: val } })); },
+      glyphChoices: ['sofa', 'bed', 'utensils-crossed', 'bath', 'lamp-desk', 'trees'].map(n => ({
+        name: n,
+        bg: s.roomDraft.icon === n ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+        ink: s.roomDraft.icon === n ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
+        pick: () => { this.fb('detent'); this.setState(st => ({ roomDraft: { ...st.roomDraft, icon: n } })); }
+      })),
+      addRoomFooter: React.createElement(React.Fragment, null,
+        this.btn({ variant: 'ghost', onClick: () => this.setState({ sheet: null }) }, 'Cancel'),
+        this.btn({ variant: 'primary', fullWidth: true, onClick: () => {
+          const name = (this.state.roomDraft.name || '').trim() || 'New room';
+          this.fb('confirm');
+          this.setState(st => ({ rooms: [...st.rooms, { id: 'r' + Date.now(), name, icon: st.roomDraft.icon, lights: [] }], roomDraft: { name: '', icon: 'sofa' }, sheet: null }));
+          this.push({ tone: 'success', title: 'Room saved', body: name + ' is empty — discover lights for it' });
+        } }, 'Save room')),
+      fixtureChoices: this.FIXTURES.map(fx => ({
+        label: fx.label, icon: fx.icon,
+        bg: light && light.fixture === fx.id ? 'linear-gradient(180deg,var(--amber-400),var(--amber-600))' : 'linear-gradient(180deg,var(--surface-key),var(--surface-raised))',
+        ink: light && light.fixture === fx.id ? 'var(--text-on-accent)' : 'var(--text-secondary)',
+        pick: () => { if (!light) return; this.fb('detent'); this.mapLight(light.id, x => ({ ...x, fixture: fx.id })); this.setState({ sheet: null }); }
+      }))
+    };
+    return v;
+  }
+}
+</script>
+</body>
+</html>
+

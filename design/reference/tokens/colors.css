@@ -1,0 +1,50 @@
+:root{
+  /* ---- Machined charcoal ramp (the chassis) ---- */
+  --char-1000:#0C0C0E;--char-950:#101013;--char-900:#16161A;--char-850:#1D1D22;
+  --char-800:#24242A;--char-750:#2C2C33;--char-700:#35353D;--char-600:#42424C;
+  --char-500:#55555F;--char-400:#6E6C69;
+
+  /* ---- Warm ink ---- */
+  --ink-1000:#F6F3ED;--ink-700:#C6C2BA;--ink-500:#95918A;--ink-400:#6E6B65;--ink-300:#4B4945;
+
+  /* ---- Tungsten amber (primary accent — the "lamp on" colour) ---- */
+  --amber-300:#FFD98A;--amber-400:#FFC24D;--amber-500:#FFB020;--amber-600:#E1930A;--amber-700:#A96C05;
+
+  /* ---- Light-state colour channel (mirrors wizctl's RGB / kelvin ranges) ---- */
+  --kelvin-2200:#FFB25C;--kelvin-2700:#FFC98D;--kelvin-3500:#FFE0BC;--kelvin-4500:#FFF4E6;
+  --kelvin-5500:#F2F6FF;--kelvin-6500:#DCE9FF;
+  --hue-red:#FF4A3D;--hue-orange:#FF8A2B;--hue-yellow:#FFD52B;--hue-lime:#B7F03C;
+  --hue-green:#38D06B;--hue-teal:#25D8C0;--hue-cyan:#2ECBFF;--hue-blue:#2E7BFF;
+  --hue-indigo:#5B5BFF;--hue-violet:#A45BFF;--hue-magenta:#FF3FC0;--hue-pink:#FF6FA5;
+
+  /* ---- Status ---- */
+  --signal-online:#38D06B;--signal-offline:#55555F;--signal-warn:#FFB020;--signal-danger:#FF5A47;
+
+  /* ---- Semantic surfaces ---- */
+  --surface-app:var(--char-950);
+  --surface-chassis:var(--char-900);
+  --surface-panel:var(--char-850);
+  --surface-raised:var(--char-800);
+  --surface-key:var(--char-750);
+  --surface-well:var(--char-1000);
+  --surface-scrim:rgba(10,10,12,.72);
+
+  /* ---- Semantic text ---- */
+  --text-primary:var(--ink-1000);
+  --text-secondary:var(--ink-700);
+  --text-tertiary:var(--ink-500);
+  --text-disabled:var(--ink-400);
+  --text-on-accent:#1A1305;
+  --text-link:var(--amber-400);
+  --text-link-hover:var(--amber-300);
+
+  /* ---- Semantic accents / edges ---- */
+  --accent:var(--amber-500);
+  --accent-hover:var(--amber-400);
+  --accent-press:var(--amber-600);
+  --accent-soft:rgba(255,176,32,.14);
+  --edge-hairline:rgba(255,255,255,.055);
+  --edge-key:rgba(255,255,255,.10);
+  --edge-groove:rgba(0,0,0,.55);
+  --focus-ring:rgba(255,194,77,.55);
+}

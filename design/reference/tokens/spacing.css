@@ -1,0 +1,19 @@
+:root{
+  --space-0:0;--space-1:2px;--space-2:4px;--space-3:6px;--space-4:8px;--space-5:12px;
+  --space-6:16px;--space-7:20px;--space-8:24px;--space-9:32px;--space-10:40px;
+  --space-11:56px;--space-12:72px;
+
+  --radius-1:6px;--radius-2:10px;--radius-3:14px;--radius-4:20px;--radius-5:28px;--radius-6:36px;
+  --radius-pill:999px;--radius-circle:50%;
+
+  --control-height-sm:36px;--control-height:48px;--control-height-lg:56px;
+  --hit-min:44px;
+  --knob-sm:56px;--knob-md:96px;--knob-lg:168px;
+  --track-thickness:14px;
+  --panel-pad:16px;--panel-pad-lg:20px;
+  --screen-gutter:20px;
+  --screen-gutter-desktop:32px;
+  --sidebar-width:264px;
+  --tabbar-height:72px;
+  --border-hairline:1px;--border-key:1.5px;
+}

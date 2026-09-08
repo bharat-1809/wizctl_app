@@ -1,0 +1,13 @@
+:root{
+  --ease-tactile:cubic-bezier(.2,.8,.2,1);
+  --ease-press:cubic-bezier(.4,0,1,1);
+  --ease-settle:cubic-bezier(.16,1.02,.3,1);
+  --dur-press:80ms;
+  --dur-release:140ms;
+  --dur-ui:180ms;
+  --dur-panel:260ms;
+  --dur-light:420ms;
+  --transition-control:transform var(--dur-press) var(--ease-press),box-shadow var(--dur-release) var(--ease-tactile),background-color var(--dur-ui) var(--ease-tactile);
+  --press-travel:1.5px;
+  --press-scale:.985;
+}
