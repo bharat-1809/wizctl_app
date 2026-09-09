@@ -42,7 +42,28 @@ Future<AppServices> bootstrap({
   HapticMapper? haptics,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await WizTextures.load(devicePixelRatio: _devicePixelRatio());
+
+  // Guarded on its own: a texture that will not render is a flat chassis,
+  // not a dead app, and an unhandled throw here would take `main` down before
+  // a single frame was drawn. `WizTextures.grainPaint` returns null until a
+  // tile exists and every painter that reads it treats null as "paint no
+  // grain", so carrying on is safe.
+  //
+  // Untested: `WizTextures.load` is a static with no injection point, so
+  // there is no way to make it fail from a test without reaching into the
+  // kit. The branch is one report-and-continue.
+  try {
+    await WizTextures.load(devicePixelRatio: _devicePixelRatio());
+  } catch (error, stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'wizctl bootstrap',
+        context: ErrorDescription('rendering the grain texture'),
+      ),
+    );
+  }
 
   FeedbackService feedback;
   try {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/app.dart';
@@ -50,10 +52,10 @@ import 'package:wizctl_app/features/gallery/gallery_keys.dart';
 import 'package:wizctl_app/features/gallery/gallery_navigation.dart';
 import 'package:wizctl_app/features/gallery/gallery_rows.dart';
 import 'package:wizctl_app/features/gallery/gallery_scenes.dart';
-import 'package:wizctl_app/features/gallery/gallery_section.dart';
 import 'package:wizctl_app/features/gallery/gallery_states.dart';
 import 'package:wizctl_app/features/gallery/gallery_switches.dart';
 import 'package:wizctl_app/features/gallery/gallery_wheel.dart';
+import 'package:wizctl_app/features/gallery/gallery_wordmark.dart';
 
 /// A phone-wide surface tall enough that the gallery's `ListView.builder`
 /// builds every section: a lazy list only builds what is near the viewport,
@@ -61,9 +63,18 @@ import 'package:wizctl_app/features/gallery/gallery_wheel.dart';
 /// added.
 const Size _wholeGallery = Size(390, 12000);
 
+/// Wide enough to land in `WidthClass.expanded`, where the toast stack goes
+/// bottom-right instead of above the tab bar.
+const Size _desktopWindow = Size(1200, 12000);
+
 /// Long enough to drain every `RiseIn` stagger timer (one per section, 55 ms
 /// apart) and settle the entrances.
 const Duration _settled = Duration(milliseconds: 1500);
+
+/// How many `.dart` files `lib/core/widgets` holds. The coverage map below
+/// is a literal and cannot notice a new widget on its own; this count can,
+/// and failing it is the prompt to go and add the demo.
+const int _kitWidgetFiles = 55;
 
 /// `byType` compares runtime types exactly, so a generic widget built as
 /// `WizTabBar<SomeEnum>` never matches the bare `WizTabBar` type literal.
@@ -82,27 +93,48 @@ Finder _byGeneric<T>(String name) =>
 Finder _inSection<S extends Widget>(Finder widget) =>
     find.descendant(of: find.byType(S), matching: widget);
 
+/// Builds the whole app on [size] and settles the entrances. Returns the
+/// queue it was given, already registered for disposal.
+Future<ToastController> _pumpGallery(
+  WidgetTester tester, {
+  Size size = _wholeGallery,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  var toasts = ToastController();
+  addTearDown(toasts.dispose);
+
+  await tester.pumpWidget(
+    WizCtlApp(
+      services: AppServices(feedback: NoopFeedbackService(), toasts: toasts),
+    ),
+  );
+  // The gallery loops for ever (badge dot, skeleton sheen, spinner, the lit
+  // hero's breathe, the indeterminate filament), so the tree never settles
+  // and `pumpAndSettle` would time out. Bounded pumps only.
+  await tester.pump(_settled);
+  return toasts;
+}
+
 void main() {
   testWidgets('the gallery shows one of every kit widget', (tester) async {
-    tester.view.physicalSize = _wholeGallery;
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pumpGallery(tester);
 
-    var toasts = ToastController();
-    addTearDown(toasts.dispose);
-
-    await tester.pumpWidget(
-      WizCtlApp(
-        services: AppServices(feedback: NoopFeedbackService(), toasts: toasts),
-      ),
-    );
-    // The gallery loops for ever, so `pumpAndSettle` would time out.
-    await tester.pump(_settled);
-
-    // Spec §11.2's kit, one entry per widget. A widget added to `core/widgets`
-    // without a demo here fails this test rather than quietly missing from
-    // the screen the design is reviewed on.
+    // Spec §11.2's kit, one entry per widget.
+    //
+    // What this guards: a demo *deleted* from a section fails here rather
+    // than quietly vanishing from the screen the design is reviewed on. It
+    // cannot guard the opposite — this map is a literal, so a widget newly
+    // added to `core/widgets` is simply absent from it and nothing fails.
+    // The file-count test below is what forces a visit to this map when a
+    // widget file appears.
+    //
+    // `WizSheet` is not here: it is a route, so its coverage is the
+    // ModeRow-tap test further down. `wizFadePage` has no demo at all until
+    // Plan 4 lands the router (see `GalleryScreen`'s doc).
     var kit = <String, Finder>{
       'WizButton': _inSection<GalleryKeys>(find.byType(WizButton)),
       'WizChip': _inSection<GalleryKeys>(find.byType(WizChip)),
@@ -172,23 +204,58 @@ void main() {
     }
   });
 
+  test('every kit widget file is accounted for in the coverage map', () {
+    // `flutter test` runs from the package root, as `test/assets/
+    // fonts_test.dart` already relies on.
+    var files = Directory('lib/core/widgets')
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .toList();
+
+    expect(
+      files.length,
+      _kitWidgetFiles,
+      reason:
+          'adding a widget file: add its demo to the gallery, its entry to '
+          'the map above, and bump this count',
+    );
+  });
+
+  testWidgets('the toast stack goes bottom-right on a desktop window', (
+    tester,
+  ) async {
+    await _pumpGallery(tester, size: _desktopWindow);
+
+    // The branch in `WizCtlApp` that picks the placement by width class.
+    var layer = tester.widget<WizToastLayer>(find.byType(WizToastLayer));
+    expect(layer.placement, WizToastPlacement.bottomRight);
+
+    // And what that placement actually lays out: a fixed 340-wide column
+    // pinned to the right edge, not stretched between both (spec §10.9).
+    var box = tester.widget<Positioned>(
+      find.descendant(
+        of: find.byType(WizToastLayer),
+        matching: find.byType(Positioned),
+      ),
+    );
+    expect(box.width, WizToastLayer.desktopWidth);
+    expect(box.left, isNull);
+  });
+
+  testWidgets('the toast stack sits above the tab bar on a phone', (
+    tester,
+  ) async {
+    await _pumpGallery(tester);
+
+    var layer = tester.widget<WizToastLayer>(find.byType(WizToastLayer));
+    expect(layer.placement, WizToastPlacement.aboveTabBar);
+  });
+
   testWidgets('the Feedback section has one key per FeedbackKind', (
     tester,
   ) async {
-    tester.view.physicalSize = _wholeGallery;
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    var toasts = ToastController();
-    addTearDown(toasts.dispose);
-
-    await tester.pumpWidget(
-      WizCtlApp(
-        services: AppServices(feedback: NoopFeedbackService(), toasts: toasts),
-      ),
-    );
-    await tester.pump(_settled);
+    await _pumpGallery(tester);
 
     expect(
       find.descendant(
@@ -202,20 +269,7 @@ void main() {
   testWidgets('the rail carries the wordmark and the mode row opens a sheet', (
     tester,
   ) async {
-    tester.view.physicalSize = _wholeGallery;
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    var toasts = ToastController();
-    addTearDown(toasts.dispose);
-
-    await tester.pumpWidget(
-      WizCtlApp(
-        services: AppServices(feedback: NoopFeedbackService(), toasts: toasts),
-      ),
-    );
-    await tester.pump(_settled);
+    await _pumpGallery(tester);
 
     expect(find.text(GalleryWordmark.wordmark), findsOneWidget);
 
@@ -231,20 +285,7 @@ void main() {
   testWidgets('a toast pushed from the gallery reaches the app-level layer', (
     tester,
   ) async {
-    tester.view.physicalSize = _wholeGallery;
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    var toasts = ToastController();
-    addTearDown(toasts.dispose);
-
-    await tester.pumpWidget(
-      WizCtlApp(
-        services: AppServices(feedback: NoopFeedbackService(), toasts: toasts),
-      ),
-    );
-    await tester.pump(_settled);
+    await _pumpGallery(tester);
 
     var before = find.byType(WizToast).evaluate().length;
     await tester.tap(find.widgetWithText(WizButton, 'SUCCESS TOAST'));

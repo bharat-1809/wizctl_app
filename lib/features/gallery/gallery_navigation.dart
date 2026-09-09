@@ -7,6 +7,7 @@ import '../../core/widgets/wiz_rail.dart';
 import '../../core/widgets/wiz_tab_bar.dart';
 import '../../core/widgets/wiz_toggle.dart';
 import 'gallery_section.dart';
+import 'gallery_wordmark.dart';
 
 /// The phone's tab bar and the desktop rail, both live. The rail is shown at
 /// a fixed height because it is a full-height nav column and the gallery

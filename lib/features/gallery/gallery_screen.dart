@@ -26,6 +26,9 @@ import 'gallery_wheel.dart';
 /// One light — power, brightness and colour temperature — is shared by the
 /// switches, the dials, the cards and the hero, so that turning the power
 /// key off visibly darkens the fixture two sections down.
+///
+/// One kit piece has no demo here: `wizFadePage` is a route transition, and
+/// there is no navigation to run it through until Plan 4 lands the router.
 class GalleryScreen extends StatefulWidget {
   final ToastController toasts;
 

@@ -11,8 +11,8 @@ import '../../core/widgets/wiz_panel.dart';
 import '../../core/widgets/wiz_skeleton.dart';
 import '../../core/widgets/wiz_spinner.dart';
 import '../../core/widgets/wiz_status_banner.dart';
-import '../../core/widgets/wiz_toast.dart';
 import 'gallery_section.dart';
+import 'gallery_toast_sample.dart';
 
 /// Loaders, banners, toasts and the empty state — every way the app tells
 /// the user it is busy or that something went wrong.
@@ -79,16 +79,16 @@ class GalleryStates extends StatelessWidget {
               children: [
                 const WizSkeleton(height: skeletonAvatar, circle: true),
                 SizedBox(width: space.s5),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      WizSkeleton(
+                      const WizSkeleton(
                         width: skeletonTitleWidth,
                         height: skeletonTitleHeight,
                       ),
-                      SizedBox(height: skeletonMetaHeight),
-                      WizSkeleton(
+                      SizedBox(height: space.s3),
+                      const WizSkeleton(
                         width: skeletonMetaWidth,
                         height: skeletonMetaHeight,
                       ),
@@ -212,24 +212,6 @@ class GalleryStates extends StatelessWidget {
         tone: WizToastTone.success,
         title: 'Bedside bulb saved',
         body: '192.168.1.115 added to this home',
-      ),
-    );
-  }
-}
-
-/// The toast card itself, shown inline so the gallery has one on screen
-/// without waiting for a queue: [WizToastLayer] renders the same widget.
-class GalleryToastSample extends StatelessWidget {
-  const GalleryToastSample({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const WizToast(
-      data: WizToastData(
-        id: 'gallery-sample',
-        tone: WizToastTone.success,
-        title: 'Cozy applied',
-        body: 'to the whole home',
       ),
     );
   }
