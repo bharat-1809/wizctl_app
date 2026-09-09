@@ -34,9 +34,14 @@ class SynthFeedbackService implements FeedbackService {
 
   /// Starts the engine and renders every kind into it.
   ///
+  /// Idempotent once it has worked: a second call would load nine more
+  /// sources over the player's first nine and leak them. A start that failed
+  /// is retried.
+  ///
   /// Never throws: a device with no working audio must not take the app
   /// down with it, so a failure is reported and the layer stays silent.
   Future<void> init() async {
+    if (_ready) return;
     try {
       await player.init();
       for (var kind in FeedbackKind.values) {

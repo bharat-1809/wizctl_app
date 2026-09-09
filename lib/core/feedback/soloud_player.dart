@@ -19,8 +19,16 @@ class SoLoudPlayer implements AudioPlayerPort {
   /// Whether this player started the engine, and so should stop it.
   bool _ownsEngine = false;
 
+  /// The start in flight, or the one that already finished. `isInitialized`
+  /// is a synchronous snapshot the package itself warns about
+  /// (soloud.dart:310-313), so two overlapping callers would both read false
+  /// and both start the engine. They share this future instead.
+  Future<void>? _starting;
+
   @override
-  Future<void> init() async {
+  Future<void> init() => _starting ??= _start();
+
+  Future<void> _start() async {
     if (SoLoud.instance.isInitialized) return;
     await SoLoud.instance.init();
     _ownsEngine = true;
@@ -51,5 +59,6 @@ class SoLoudPlayer implements AudioPlayerPort {
     }
     _sources.clear();
     _ownsEngine = false;
+    _starting = null;
   }
 }

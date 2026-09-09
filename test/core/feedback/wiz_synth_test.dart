@@ -4,6 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/feedback/feedback_kind.dart';
 import 'package:wizctl_app/core/feedback/wiz_synth.dart';
 
+/// The floor for "this kind makes a sound at all". Not a spec number and not
+/// a level to tune to: it only guards against a render that comes back
+/// silent. The quietest kind, detent — noise alone at the spec's gain .02 —
+/// measures 0.0105, so there is room to spare.
+const double nonSilentPeak = 0.005;
+
 /// The loudest sample in a rendered buffer.
 double peakOf(Float32List pcm) =>
     pcm.fold<double>(0, (p, s) => s.abs() > p ? s.abs() : p);
@@ -34,8 +40,18 @@ void main() {
       expect(pcm.length, lessThanOrEqualTo(longest), reason: '$kind too long');
       var peak = peakOf(pcm);
       expect(peak, lessThanOrEqualTo(1.0), reason: '$kind clips');
-      expect(peak, greaterThan(0.01), reason: '$kind is silent');
+      expect(peak, greaterThan(nonSilentPeak), reason: '$kind is silent');
     }
+  });
+
+  test('the master gain is in the samples', () {
+    // reject is a single sawtooth at the spec's gain .05, so its peak lands
+    // just under gain × masterGain: 0.04303 today, and 0.04781 — over the
+    // bound below — if render stopped applying the master gain.
+    const rejectGain = 0.05;
+    var peak = peakOf(WizSynth.render(FeedbackKind.reject));
+    expect(peak, lessThanOrEqualTo(rejectGain * WizSynth.masterGain));
+    expect(peak, greaterThan(rejectGain * WizSynth.masterGain * 0.5));
   });
 
   test('durations follow the recipes', () {

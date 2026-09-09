@@ -65,21 +65,39 @@ void main() {
 
     test('disabled plays nothing; enabling ticks once', () async {
       var player = FakePlayer();
+      var haptics = <String>[];
       var enabledLog = <bool>[];
       var service = SynthFeedbackService(
         player: player,
-        haptics: HapticMapper(supported: false),
+        haptics: recordingMapper(haptics),
         enabled: false,
         onEnabledChanged: enabledLog.add,
       );
       await service.init();
       expect(service.enabled, isFalse);
       service.play(FeedbackKind.press);
+      await pumpHaptics();
       expect(player.played, isEmpty);
+      // The switch covers the hand as well as the ear.
+      expect(haptics, isEmpty);
       await service.setEnabled(true);
       expect(service.enabled, isTrue);
       expect(enabledLog, [true]);
       expect(player.played.map((p) => p.$1), ['tick']);
+      await pumpHaptics();
+      expect(haptics, ['light']);
+    });
+
+    test('init is idempotent', () async {
+      var player = FakePlayer();
+      var service = SynthFeedbackService(
+        player: player,
+        haptics: HapticMapper(supported: false),
+      );
+      await service.init();
+      await service.init();
+      // A second start must not reload nine more sources over the first nine.
+      expect(player.loaded, hasLength(FeedbackKind.values.length));
     });
 
     test('a failing engine is reported once and never throws', () async {
@@ -139,9 +157,19 @@ void main() {
     test('confirm and reject are two spaced impacts', () async {
       var haptics = <String>[];
       var mapper = recordingMapper(haptics);
+      var confirmWatch = Stopwatch()..start();
       await mapper.play(FeedbackKind.confirm);
+      confirmWatch.stop();
+      var rejectWatch = Stopwatch()..start();
       await mapper.play(FeedbackKind.reject);
+      rejectWatch.stop();
       expect(haptics, ['light', 'medium', 'heavy', 'heavy']);
+      // Two impacts on top of each other read as one: the gap is the pattern.
+      expect(
+        confirmWatch.elapsed,
+        greaterThanOrEqualTo(HapticMapper.confirmGap),
+      );
+      expect(rejectWatch.elapsed, greaterThanOrEqualTo(HapticMapper.rejectGap));
     });
 
     test('an unsupported platform feels nothing', () async {
