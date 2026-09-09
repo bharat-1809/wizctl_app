@@ -474,4 +474,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(changed, [const WizHsv(0, 0.5)]);
   });
+  testWidgets('a wheel with no handler is inert and announced disabled', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    var feedback = RecordingFeedbackService();
+    await tester.pumpWidget(
+      wizTestApp(
+        const WizColorWheel(hue: 30, saturation: 1, size: 200, onChanged: null),
+        feedback: feedback,
+      ),
+    );
+    var centre = tester.getCenter(find.byType(WizColorWheel));
+    await tester.tapAt(_at(centre, 200, 1));
+    await tester.pumpAndSettle();
+    expect(feedback.played, isEmpty);
+
+    var node = _focusNodeOf(tester);
+    expect(node.canRequestFocus, isFalse);
+    node.requestFocus();
+    await tester.pumpAndSettle();
+    expect(node.hasFocus, isFalse);
+    expect(_focusRing, findsNothing);
+
+    expect(
+      find.semantics.byLabel('Colour wheel'),
+      isSemantics(
+        isSlider: true,
+        hasEnabledState: true,
+        isEnabled: false,
+        hasIncreaseAction: false,
+        hasDecreaseAction: false,
+      ),
+      reason: 'nowhere to report to is nothing to offer',
+    );
+    handle.dispose();
+  });
 }

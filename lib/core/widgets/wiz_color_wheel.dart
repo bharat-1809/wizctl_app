@@ -41,10 +41,13 @@ class WizHsv {
 ///
 /// The face is painted by [WizColorWheelDisc]; everything here is the
 /// gesture, the keyboard, the focus ring and the semantics.
+///
+/// A null [onChanged] is a wheel with nowhere to report to: it draws and
+/// announces itself, disabled, and neither moves nor takes focus.
 class WizColorWheel extends StatefulWidget {
   final double hue;
   final double saturation;
-  final ValueChanged<WizHsv> onChanged;
+  final ValueChanged<WizHsv>? onChanged;
   final ValueChanged<WizHsv>? onChangeEnd;
   final double size;
   final bool enabled;
@@ -146,6 +149,11 @@ class _WizColorWheelState extends State<WizColorWheel> {
   double get _r => _diameter / 2;
   double get _usable => _r - WizColorWheel.radiusMargin;
 
+  /// Whether the control can be moved at all: a caller that gave no handler
+  /// has nothing to report a change to, so the part is drawn and announced
+  /// but inert, the way a `WizToggle` with no `onChanged` is.
+  bool get _armed => widget.enabled && widget.onChanged != null;
+
   /// What the caller is showing, rounded the way a change from this wheel
   /// is, so the two can be compared.
   WizHsv get _value => _round(widget.hue, widget.saturation);
@@ -209,7 +217,7 @@ class _WizColorWheelState extends State<WizColorWheel> {
     }
     // Against both, since two samples in one frame can settle on the same
     // reading before the owner has rebuilt this widget with the first.
-    if (next != _value && next != _committed) widget.onChanged(next);
+    if (next != _value && next != _committed) widget.onChanged?.call(next);
     _committed = next;
     return next;
   }
@@ -262,7 +270,7 @@ class _WizColorWheelState extends State<WizColorWheel> {
   }
 
   KeyEventResult _key(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || !widget.enabled) {
+    if (event is! KeyDownEvent || !_armed) {
       return KeyEventResult.ignored;
     }
     const turn = WizColorWheel.detentDegrees;
@@ -295,7 +303,7 @@ class _WizColorWheelState extends State<WizColorWheel> {
 
   Widget _wheel(BuildContext context) {
     var wiz = context.wiz;
-    var armed = widget.enabled;
+    var armed = _armed;
     var increased = _shift(byHue: WizColorWheel.detentDegrees);
     var decreased = _shift(byHue: -WizColorWheel.detentDegrees);
 

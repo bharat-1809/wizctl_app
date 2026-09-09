@@ -412,4 +412,50 @@ void main() {
       reason: 'the disc paints at the width its parent has, not past it',
     );
   });
+  testWidgets('a knob with no handler is inert and announced disabled', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    var feedback = RecordingFeedbackService();
+    await tester.pumpWidget(
+      wizTestApp(
+        const WizDial(
+          value: 50,
+          min: 10,
+          max: 100,
+          size: 132,
+          label: 'Brightness',
+          onChanged: null,
+        ),
+        feedback: feedback,
+      ),
+    );
+    await tester.timedDrag(
+      find.byType(WizDial),
+      const Offset(0, -80),
+      const Duration(milliseconds: 300),
+    );
+    await tester.pumpAndSettle();
+    expect(feedback.played, isEmpty);
+
+    var node = _focusNodeOf(tester);
+    expect(node.canRequestFocus, isFalse);
+    node.requestFocus();
+    await tester.pumpAndSettle();
+    expect(node.hasFocus, isFalse);
+    expect(_focusRing, findsNothing);
+
+    expect(
+      find.semantics.byLabel('Brightness'),
+      isSemantics(
+        isSlider: true,
+        hasEnabledState: true,
+        isEnabled: false,
+        hasIncreaseAction: false,
+        hasDecreaseAction: false,
+      ),
+      reason: 'nowhere to report to is nothing to offer',
+    );
+    handle.dispose();
+  });
 }

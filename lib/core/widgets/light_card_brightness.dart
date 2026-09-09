@@ -68,11 +68,10 @@ class LightCardBrightness extends StatelessWidget {
       value: brightness,
       min: brightnessMin,
       max: brightnessMax,
-      // A card given no handler has nothing to report a drag to, so the rail
-      // is shown but inert rather than live and silently dropping the write.
-      // `WizSlider` still needs a callback it can hold.
-      enabled: onBrightness != null,
-      onChanged: onBrightness ?? (_) {},
+      // A card given no handler has nothing to report a drag to, so the
+      // rail is shown but inert rather than live and silently dropping the
+      // write: a null handler is what makes it inert.
+      onChanged: onBrightness,
       onChangeEnd: onBrightnessEnd,
       label: 'Brightness',
       readout: '$pct%',

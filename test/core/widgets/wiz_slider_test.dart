@@ -572,4 +572,49 @@ void main() {
     await finger.up();
     await tester.pumpAndSettle();
   });
+  testWidgets('a rail with no handler is inert and announced disabled', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    var feedback = RecordingFeedbackService();
+    await tester.pumpWidget(
+      wizTestApp(
+        const SizedBox(
+          width: 300,
+          child: WizSlider(
+            value: 50,
+            min: 0,
+            max: 100,
+            label: 'Brightness',
+            onChanged: null,
+          ),
+        ),
+        feedback: feedback,
+      ),
+    );
+    var rect = tester.getRect(_track);
+    await tester.tapAt(Offset(rect.left + rect.width * 0.25, rect.center.dy));
+    await tester.pumpAndSettle();
+    expect(feedback.played, isEmpty);
+
+    var node = _focusNodeOf(tester);
+    expect(node.canRequestFocus, isFalse);
+    node.requestFocus();
+    await tester.pumpAndSettle();
+    expect(node.hasFocus, isFalse);
+    expect(_focusRing, findsNothing);
+
+    expect(
+      find.semantics.byLabel('Brightness'),
+      isSemantics(
+        isSlider: true,
+        hasEnabledState: true,
+        isEnabled: false,
+        hasIncreaseAction: false,
+        hasDecreaseAction: false,
+      ),
+      reason: 'nowhere to report to is nothing to offer',
+    );
+    handle.dispose();
+  });
 }

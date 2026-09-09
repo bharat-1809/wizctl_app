@@ -17,12 +17,15 @@ import 'wiz_dial_painter.dart';
 ///
 /// The face is drawn by [WizDialDisc]; everything here is the gesture, the
 /// keyboard, the focus ring, the semantics and the label.
+///
+/// A null [onChanged] is a knob with nowhere to report to: it draws and
+/// announces itself, disabled, and neither turns nor takes focus.
 class WizDial extends StatefulWidget {
   final double value;
   final double min;
   final double max;
   final double step;
-  final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChanged;
   final ValueChanged<double>? onChangeEnd;
   final String? label;
   final String unit;
@@ -83,6 +86,11 @@ class _WizDialState extends State<WizDial> {
         )
       : 0;
 
+  /// Whether the control can be moved at all: a caller that gave no handler
+  /// has nothing to report a change to, so the part is drawn and announced
+  /// but inert, the way a `WizToggle` with no `onChanged` is.
+  bool get _armed => widget.enabled && widget.onChanged != null;
+
   /// How far one arrow key, or one assistive-technology increment, moves.
   double get _keyDelta => widget.step * WizDialGeometry.keySteps;
 
@@ -138,7 +146,9 @@ class _WizDialState extends State<WizDial> {
     }
     // Against both, since two samples in one frame can settle on the same
     // value before the owner has rebuilt this widget with the first.
-    if (next != widget.value && next != _committed) widget.onChanged(next);
+    if (next != widget.value && next != _committed) {
+      widget.onChanged?.call(next);
+    }
     _committed = next;
     return next;
   }
@@ -185,7 +195,7 @@ class _WizDialState extends State<WizDial> {
   }
 
   KeyEventResult _key(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || !widget.enabled) {
+    if (event is! KeyDownEvent || !_armed) {
       return KeyEventResult.ignored;
     }
     var k = event.logicalKey;
@@ -215,7 +225,7 @@ class _WizDialState extends State<WizDial> {
     var m = wiz.motion;
     var d = widget.size.clamp(WizDial.minSize, WizDial.maxSize);
     if (maxWidth.isFinite) d = math.min(d, maxWidth);
-    var armed = widget.enabled;
+    var armed = _armed;
 
     // The ring's box is always here, carrying a border only while focused,
     // the way `WizSlider`'s does: a wrapper that comes and goes changes the

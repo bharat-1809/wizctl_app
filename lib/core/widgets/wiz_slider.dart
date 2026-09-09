@@ -16,12 +16,15 @@ export 'wiz_slider_fill.dart' show WizSliderFill;
 ///
 /// The rail is painted by [WizSliderRail]; everything here is the gesture,
 /// the keyboard, the focus ring, the semantics and the header.
+///
+/// A null [onChanged] is a rail with nowhere to report to: it draws and
+/// announces itself, disabled, and neither moves nor takes focus.
 class WizSlider extends StatefulWidget {
   final double value;
   final double min;
   final double max;
   final double step;
-  final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChanged;
   final ValueChanged<double>? onChangeEnd;
   final WizSliderFill? fill;
   final String? label;
@@ -91,6 +94,11 @@ class _WizSliderState extends State<WizSlider> {
         )
       : 0;
 
+  /// Whether the control can be moved at all: a caller that gave no handler
+  /// has nothing to report a change to, so the part is drawn and announced
+  /// but inert, the way a `WizToggle` with no `onChanged` is.
+  bool get _armed => widget.enabled && widget.onChanged != null;
+
   @override
   void initState() {
     super.initState();
@@ -158,7 +166,9 @@ class _WizSliderState extends State<WizSlider> {
     }
     // Against both, since two samples in one frame can settle on the same
     // value before the owner has rebuilt this widget with the first.
-    if (next != widget.value && next != _committed) widget.onChanged(next);
+    if (next != widget.value && next != _committed) {
+      widget.onChanged?.call(next);
+    }
     _committed = next;
     return next;
   }
@@ -203,7 +213,7 @@ class _WizSliderState extends State<WizSlider> {
   }
 
   KeyEventResult _key(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || !widget.enabled) {
+    if (event is! KeyDownEvent || !_armed) {
       return KeyEventResult.ignored;
     }
     var k = event.logicalKey;
@@ -245,7 +255,7 @@ class _WizSliderState extends State<WizSlider> {
 
   /// The rail and everything that takes a touch on it, [w] wide.
   Widget _control(WizTheme wiz, double w) {
-    var armed = widget.enabled;
+    var armed = _armed;
     return MouseRegion(
       cursor: armed ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
       child: Listener(
@@ -308,7 +318,7 @@ class _WizSliderState extends State<WizSlider> {
   @override
   Widget build(BuildContext context) {
     var wiz = context.wiz;
-    var armed = widget.enabled;
+    var armed = _armed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
