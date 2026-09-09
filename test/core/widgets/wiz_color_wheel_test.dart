@@ -510,4 +510,40 @@ void main() {
     );
     handle.dispose();
   });
+  testWidgets('a colour from elsewhere re-bases the next key step', (
+    tester,
+  ) async {
+    var changed = <WizHsv>[];
+    var ended = <WizHsv>[];
+    Widget wheel(double hue) => wizTestApp(
+      WizColorWheel(
+        hue: hue,
+        saturation: 1,
+        size: 200,
+        onChanged: changed.add,
+        onChangeEnd: ended.add,
+      ),
+    );
+
+    await tester.pumpWidget(wheel(30));
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(changed, [const WizHsv(45, 1)]);
+    expect(ended, [const WizHsv(45, 1)]);
+
+    // The owner takes the change; then another source puts the light back.
+    await tester.pumpWidget(wheel(45));
+    await tester.pumpWidget(wheel(30));
+    changed.clear();
+    ended.clear();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(changed, [
+      const WizHsv(45, 1),
+    ], reason: 'the step is measured from what the wheel is showing');
+    expect(ended, [const WizHsv(45, 1)]);
+  });
 }

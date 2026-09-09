@@ -44,6 +44,11 @@ class WizHsv {
 ///
 /// A null [onChanged] is a wheel with nowhere to report to: it draws and
 /// announces itself, disabled, and neither moves nor takes focus.
+///
+/// The root is a [LayoutBuilder], because the diameter is decided from the
+/// width the parent offers. That means the wheel cannot sit under an ancestor
+/// asking for intrinsic dimensions — an [IntrinsicWidth] or [IntrinsicHeight]
+/// over it throws. Give it a bounded box instead.
 class WizColorWheel extends StatefulWidget {
   final double hue;
   final double saturation;
@@ -90,6 +95,11 @@ class WizColorWheel extends StatefulWidget {
   /// sheet, capped by width") — and "touch targets never below 44", the
   /// smallest disc a finger can still aim inside. A caller asking for
   /// anything outside gets the wheel the chassis has room for.
+  ///
+  /// A parent narrower than [minSize] wins over it: the disc draws at the
+  /// width it was given rather than overflowing the box, so the paint and
+  /// the maths that reads a touch agree. The floor is what the design
+  /// offers, not what the layout guarantees.
   static const double minSize = 44;
   static const double maxSize = 228;
 
@@ -170,7 +180,19 @@ class _WizColorWheelState extends State<WizColorWheel> {
   @override
   void didUpdateWidget(WizColorWheel old) {
     super.didUpdateWidget(old);
+    // A reading from somewhere else — the owner coercing what it was handed,
+    // a bulb reporting in, a scene applied — re-bases both what the next step
+    // is measured against and the notch the next crossing is counted from.
+    // Without the first, the dedupe in [_commit] holds the last reading this
+    // wheel itself settled on and swallows every repeat of one arrow key
+    // until the user reverses direction.
+    //
+    // Not while a finger is down: the drag owns both.
+    if (_dragging) return;
     if (widget.hue != old.hue) _notch = _notchOf(_value.hue);
+    if (widget.hue != old.hue || widget.saturation != old.saturation) {
+      _committed = _value;
+    }
   }
 
   @override

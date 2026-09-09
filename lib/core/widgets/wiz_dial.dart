@@ -20,6 +20,11 @@ import 'wiz_dial_painter.dart';
 ///
 /// A null [onChanged] is a knob with nowhere to report to: it draws and
 /// announces itself, disabled, and neither turns nor takes focus.
+///
+/// The root is a [LayoutBuilder], because the diameter is decided from the
+/// width the parent offers. That means the knob cannot sit under an ancestor
+/// asking for intrinsic dimensions — an [IntrinsicWidth] or [IntrinsicHeight]
+/// over it throws. Give it a bounded box instead.
 class WizDial extends StatefulWidget {
   final double value;
   final double min;
@@ -51,6 +56,11 @@ class WizDial extends StatefulWidget {
   /// smallest knob in the spec's hardware sizes. A caller asking for
   /// anything outside gets the nearest dial the design actually has, so a
   /// layout cannot invent a knob the chassis has no part for.
+  ///
+  /// A parent narrower than [minSize] wins over it: the knob draws at the
+  /// width it was given rather than overflowing the box, so the disc, the
+  /// ring around it and the area the finger lands in stay one size. The
+  /// floor is what the design offers, not what the layout guarantees.
   static const double minSize = 56;
   static const double maxSize = 168;
 
@@ -102,6 +112,24 @@ class _WizDialState extends State<WizDial> {
     // Only the pointer path re-seeds, where the touch landing is not itself
     // a crossing.
     _notch = _notchOf(widget.value);
+  }
+
+  @override
+  void didUpdateWidget(WizDial old) {
+    super.didUpdateWidget(old);
+    // A value from somewhere else — the owner coercing what it was handed, a
+    // bulb reporting in, a scene applied — re-bases what the next step is
+    // measured against. Without this the dedupe in [_commit] holds the last
+    // value this dial itself settled on, and every repeat of one arrow key
+    // is swallowed until the user reverses direction.
+    //
+    // Not while a finger is down: the drag owns both, and re-seeding from a
+    // value that arrived mid-gesture would have the next sample measure its
+    // crossing from somewhere the finger never was.
+    if (_dragStartY == null && widget.value != old.value) {
+      _committed = widget.value;
+      _notch = _notchOf(widget.value);
+    }
   }
 
   @override

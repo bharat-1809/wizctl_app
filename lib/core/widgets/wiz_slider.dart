@@ -111,12 +111,19 @@ class _WizSliderState extends State<WizSlider> {
   @override
   void didUpdateWidget(WizSlider old) {
     super.didUpdateWidget(old);
-    // Not while a finger is down: the drag owns the notch, and re-seeding it
-    // from a value that arrived mid-gesture — the owner coercing what it was
-    // handed, or another source moving the light — would have the next
-    // sample measure its crossing from somewhere the finger never was, and
-    // a stationary finger click.
+    // A value from somewhere else — the owner coercing what it was handed, a
+    // bulb reporting in, a scene applied — re-bases both what the next step
+    // is measured against and the notch the next crossing is counted from.
+    // Without the first, the dedupe in [_commit] holds the last value this
+    // rail itself settled on and swallows every repeat of one arrow key
+    // until the user reverses direction.
+    //
+    // Not while a finger is down: the drag owns both, and re-seeding from a
+    // value that arrived mid-gesture would have the next sample measure its
+    // crossing from somewhere the finger never was, and a stationary finger
+    // click.
     if (!_dragging && widget.value != old.value) {
+      _committed = widget.value;
       _notch = _notchOf(widget.value);
     }
   }

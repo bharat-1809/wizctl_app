@@ -458,4 +458,74 @@ void main() {
     );
     handle.dispose();
   });
+  testWidgets('a value from elsewhere re-bases the next key step', (
+    tester,
+  ) async {
+    var changed = <double>[];
+    var ended = <double>[];
+    Widget dial(double value) => wizTestApp(
+      WizDial(
+        value: value,
+        min: 10,
+        max: 100,
+        size: 132,
+        onChanged: changed.add,
+        onChangeEnd: ended.add,
+      ),
+    );
+
+    await tester.pumpWidget(dial(50));
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(changed, [55.0]);
+    expect(ended, [55.0]);
+
+    // The owner takes the change; then another source — a bulb reporting in,
+    // a scene applied — puts the light back where it was.
+    await tester.pumpWidget(dial(55));
+    await tester.pumpWidget(dial(50));
+    changed.clear();
+    ended.clear();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(changed, [
+      55.0,
+    ], reason: 'the step is measured from what the dial is showing');
+    expect(ended, [55.0]);
+  });
+
+  testWidgets('a bulb reporting under the stop lets the key reach it again', (
+    tester,
+  ) async {
+    var changed = <double>[];
+    var ended = <double>[];
+    Widget dial(double value) => wizTestApp(
+      WizDial(
+        value: value,
+        min: 10,
+        max: 100,
+        size: 132,
+        onChanged: changed.add,
+        onChangeEnd: ended.add,
+      ),
+    );
+
+    await tester.pumpWidget(dial(100));
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(changed, isEmpty, reason: 'already against the stop');
+    expect(ended, isEmpty);
+
+    // The light comes back a little under the stop.
+    await tester.pumpWidget(dial(97));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(changed, [100.0], reason: 'the key must reach the stop again');
+    expect(ended, [100.0]);
+  });
 }

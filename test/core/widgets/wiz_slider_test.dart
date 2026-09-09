@@ -617,4 +617,43 @@ void main() {
     );
     handle.dispose();
   });
+  testWidgets('a value from elsewhere re-bases the next key step', (
+    tester,
+  ) async {
+    var changed = <double>[];
+    var ended = <double>[];
+    Widget rail(double value) => wizTestApp(
+      SizedBox(
+        width: 300,
+        child: WizSlider(
+          value: value,
+          min: 0,
+          max: 100,
+          onChanged: changed.add,
+          onChangeEnd: ended.add,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(rail(50));
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(changed, [51.0]);
+    expect(ended, [51.0]);
+
+    // The owner takes the change; then another source puts the light back.
+    await tester.pumpWidget(rail(51));
+    await tester.pumpWidget(rail(50));
+    changed.clear();
+    ended.clear();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(changed, [
+      51.0,
+    ], reason: 'the step is measured from what the rail is showing');
+    expect(ended, [51.0]);
+  });
 }
