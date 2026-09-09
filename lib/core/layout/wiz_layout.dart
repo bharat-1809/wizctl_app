@@ -18,10 +18,17 @@ class WizLayout extends InheritedWidget {
   });
 
   static WizLayout of(BuildContext context) {
-    var layout = context.dependOnInheritedWidgetOfExactType<WizLayout>();
+    var layout = maybeOf(context);
     assert(layout != null, 'No WizLayoutScope above this widget');
     return layout!;
   }
+
+  /// The layout, or null when there is no [WizLayoutScope] above — for a
+  /// widget that can be dropped straight into a gallery page or a test and
+  /// still has to choose a size. Depends on the scope exactly as [of] does,
+  /// so the caller rebuilds when the width class changes.
+  static WizLayout? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<WizLayout>();
 
   @override
   bool updateShouldNotify(WizLayout oldWidget) =>
