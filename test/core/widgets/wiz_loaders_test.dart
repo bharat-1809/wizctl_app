@@ -6,15 +6,6 @@ import 'package:wizctl_app/core/widgets/wiz_spinner.dart';
 
 import '../../support/wiz_test_app.dart';
 
-/// Wraps [child] in a `MediaQuery` that keeps `wizTestApp`'s data but turns
-/// the platform's "reduce motion" switch on.
-Widget reducedMotion(Widget child) => Builder(
-  builder: (context) => MediaQuery(
-    data: MediaQuery.of(context).copyWith(disableAnimations: true),
-    child: child,
-  ),
-);
-
 void main() {
   testWidgets('determinate filament fills proportionally and prints the '
       'percentage', (tester) async {

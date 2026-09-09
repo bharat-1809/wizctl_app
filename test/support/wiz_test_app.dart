@@ -19,13 +19,31 @@ Widget wizTestApp(
     service: feedback ?? RecordingFeedbackService(),
     child: MaterialApp(
       theme: buildWizThemeData(),
-      home: MediaQuery(
-        data: MediaQueryData(size: size),
-        child: Scaffold(body: Center(child: child)),
+      home: Builder(
+        // Copied from what the view already reports rather than built
+        // outright, so a nested override — the platform's "reduce motion"
+        // switch, say — keeps the size this harness pinned instead of
+        // dropping it back to zero.
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(size: size),
+          child: Scaffold(body: Center(child: child)),
+        ),
       ),
     ),
   );
 }
+
+/// Wraps [child] in a `MediaQuery` that keeps everything the harness above
+/// it set and turns the platform's "reduce motion" switch to [reduced].
+///
+/// The wrapper is there either way, so a test that flips the switch on a
+/// live tree does not change its shape and cost the subject its `State`.
+Widget reducedMotion(Widget child, {bool reduced = true}) => Builder(
+  builder: (context) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
+    child: child,
+  ),
+);
 
 /// Sets the test surface's physical size so layout — not just `MediaQuery`
 /// data — reflects [size]. Restores the tester's view on teardown.

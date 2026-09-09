@@ -104,11 +104,8 @@ void main() {
                 return const SizedBox.shrink();
               },
             ),
-            MediaQuery(
-              // The platform's "reduce motion" switch, over the harness's
-              // own MediaQuery.
-              data: const MediaQueryData(disableAnimations: true),
-              child: Builder(
+            reducedMotion(
+              Builder(
                 builder: (context) {
                   on = wizReducedMotion(context);
                   return const SizedBox.shrink();
@@ -128,9 +125,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       wizTestApp(
-        const MediaQuery(
-          data: MediaQueryData(disableAnimations: true),
-          child: RiseIn(index: 3, child: SizedBox(key: Key('d'), height: 10)),
+        reducedMotion(
+          const RiseIn(index: 3, child: SizedBox(key: Key('d'), height: 10)),
         ),
       ),
     );
@@ -145,9 +141,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       wizTestApp(
-        const MediaQuery(
-          data: MediaQueryData(disableAnimations: true),
-          child: Breathe(
+        reducedMotion(
+          const Breathe(
             active: true,
             child: SizedBox(key: Key('z'), height: 10),
           ),
@@ -247,16 +242,14 @@ void main() {
     tester,
   ) async {
     Widget app(bool reduced, String tag, int index) => wizTestApp(
-      MediaQuery(
-        // The platform's "reduce motion" switch, over the harness's own
-        // MediaQuery.
-        data: MediaQueryData(disableAnimations: reduced),
+      reducedMotion(
         // Keyed, so the two halves below each get a State of their own.
-        child: RiseIn(
+        RiseIn(
           key: ValueKey('rise-$tag'),
           index: index,
           child: SizedBox(key: Key(tag), height: 10),
         ),
+        reduced: reduced,
       ),
     );
 

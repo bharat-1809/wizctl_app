@@ -191,11 +191,8 @@ void main() {
     tester,
   ) async {
     Widget row(int sceneId) => wizTestApp(
-      MediaQuery(
-        // The platform's "reduce motion" switch, over the harness's own
-        // MediaQuery.
-        data: const MediaQueryData(disableAnimations: true),
-        child: SizedBox(
+      reducedMotion(
+        SizedBox(
           width: 350,
           child: ModeRow(
             art: SceneModeArt(sceneId),

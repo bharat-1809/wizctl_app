@@ -183,11 +183,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       wizTestApp(
-        const MediaQuery(
-          // The platform's "reduce motion" switch, over the harness's own
-          // MediaQuery.
-          data: MediaQueryData(disableAnimations: true),
-          child: WizBadge(label: 'Live', tone: WizBadgeTone.online, dot: true),
+        reducedMotion(
+          const WizBadge(label: 'Live', tone: WizBadgeTone.online, dot: true),
         ),
       ),
     );
@@ -195,6 +192,27 @@ void main() {
     // settle, and this would time out.
     await tester.pumpAndSettle();
     expect(find.text('LIVE'), findsOneWidget);
+
+    // And the dot is parked at the top of the pulse rather than wherever the
+    // stopped controller happened to be: `t == 0` is full opacity, full size.
+    var badge = find.byType(WizBadge);
+    expect(
+      tester
+          .widget<Opacity>(
+            find.descendant(of: badge, matching: find.byType(Opacity)),
+          )
+          .opacity,
+      1,
+    );
+    expect(
+      tester
+          .widget<Transform>(
+            find.descendant(of: badge, matching: find.byType(Transform)),
+          )
+          .transform
+          .getMaxScaleOnAxis(),
+      1,
+    );
   });
 
   testWidgets('a stat tile sets its unit in the face of the value', (

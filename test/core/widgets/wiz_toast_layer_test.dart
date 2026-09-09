@@ -5,6 +5,7 @@ import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/icons/wiz_icon.dart';
 import 'package:wizctl_app/core/icons/wiz_icon_data.dart';
 import 'package:wizctl_app/core/theme/wiz_colors.dart';
+import 'package:wizctl_app/core/theme/wiz_motion.dart';
 import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_button.dart';
@@ -222,14 +223,8 @@ void main() {
     var still = ToastController();
     await tester.pumpWidget(
       wizTestApp(
-        MediaQuery(
-          // The platform's "reduce motion" switch, over the harness's own
-          // MediaQuery.
-          data: const MediaQueryData(
-            size: Size(390, 600),
-            disableAnimations: true,
-          ),
-          child: SizedBox(
+        reducedMotion(
+          SizedBox(
             width: 390,
             height: 600,
             child: Stack(
@@ -303,6 +298,30 @@ void main() {
     expect(frame.right, space.s8);
     expect(frame.bottom, space.s8);
     expect(frame.width, WizToastLayer.desktopWidth);
+    c.dispose();
+  });
+  testWidgets('a toast rises in on the panel duration and the settle curve', (
+    tester,
+  ) async {
+    var c = ToastController();
+    await tester.pumpWidget(_host(c));
+    c.push(tone: WizToastTone.success, title: 'Cozy applied');
+    await tester.pump();
+
+    // The entrance is the builder wrapped round the toast; the keys inside
+    // it run presses of their own on other tokens.
+    var enter = tester.widget<TweenAnimationBuilder<double>>(
+      find
+          .ancestor(
+            of: find.byType(WizToast),
+            matching: find.byType(TweenAnimationBuilder<double>),
+          )
+          .first,
+    );
+    expect(enter.duration, WizMotion.standard.panel);
+    expect(enter.curve, WizMotion.standard.settle);
+
+    await tester.pumpAndSettle();
     c.dispose();
   });
 }

@@ -86,7 +86,7 @@ void main() {
       r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]',
       unicode: true,
     );
-    var weAsWord = RegExp(r'\bwe\b');
+    var weAsWord = RegExp(r'\bwe\b', caseSensitive: false);
     for (var s in Strings.all) {
       expect(emoji.hasMatch(s), isFalse, reason: s);
       expect(weAsWord.hasMatch(s), isFalse, reason: s);
