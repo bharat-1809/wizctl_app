@@ -42,8 +42,18 @@ import 'package:wizctl_app/core/widgets/wiz_toast.dart';
 import 'package:wizctl_app/core/widgets/wiz_toast_layer.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 import 'package:wizctl_app/core/widgets/wiz_top_bar.dart';
+import 'package:wizctl_app/features/gallery/gallery_dials.dart';
 import 'package:wizctl_app/features/gallery/gallery_feedback.dart';
+import 'package:wizctl_app/features/gallery/gallery_fields.dart';
+import 'package:wizctl_app/features/gallery/gallery_hero.dart';
+import 'package:wizctl_app/features/gallery/gallery_keys.dart';
+import 'package:wizctl_app/features/gallery/gallery_navigation.dart';
+import 'package:wizctl_app/features/gallery/gallery_rows.dart';
+import 'package:wizctl_app/features/gallery/gallery_scenes.dart';
 import 'package:wizctl_app/features/gallery/gallery_section.dart';
+import 'package:wizctl_app/features/gallery/gallery_states.dart';
+import 'package:wizctl_app/features/gallery/gallery_switches.dart';
+import 'package:wizctl_app/features/gallery/gallery_wheel.dart';
 
 /// A phone-wide surface tall enough that the gallery's `ListView.builder`
 /// builds every section: a lazy list only builds what is near the viewport,
@@ -60,6 +70,17 @@ const Duration _settled = Duration(milliseconds: 1500);
 /// A subtype test does match, because Dart's generics are covariant.
 Finder _byGeneric<T>(String name) =>
     find.byWidgetPredicate((w) => w is T, description: name);
+
+/// A widget in the section that is supposed to demonstrate it.
+///
+/// Unscoped, this test is much weaker than it looks: kit widgets are built
+/// out of each other, so `find.byType(WizSpinner)` matches the one
+/// `WizStatusBanner` builds for its loading tone, and would keep passing
+/// after the deliberate spinner demo was deleted. Scoping each entry to its
+/// own section is what makes "a future widget cannot be forgotten silently"
+/// actually true.
+Finder _inSection<S extends Widget>(Finder widget) =>
+    find.descendant(of: find.byType(S), matching: widget);
 
 void main() {
   testWidgets('the gallery shows one of every kit widget', (tester) async {
@@ -83,46 +104,63 @@ void main() {
     // without a demo here fails this test rather than quietly missing from
     // the screen the design is reviewed on.
     var kit = <String, Finder>{
-      'WizButton': find.byType(WizButton),
-      'WizChip': find.byType(WizChip),
-      'WizIconKey': find.byType(WizIconKey),
-      'WizToggle': find.byType(WizToggle),
-      'WizPowerKey': find.byType(WizPowerKey),
-      'WizDial': find.byType(WizDial),
-      'WizSlider': find.byType(WizSlider),
-      'WizColorWheel': find.byType(WizColorWheel),
-      'WizSceneTile': find.byType(WizSceneTile),
-      'WizSceneArt': find.byType(WizSceneArt),
-      'WizSegmentedControl': _byGeneric<WizSegmentedControl<Object?>>(
-        'WizSegmentedControl',
+      'WizButton': _inSection<GalleryKeys>(find.byType(WizButton)),
+      'WizChip': _inSection<GalleryKeys>(find.byType(WizChip)),
+      'WizIconKey': _inSection<GalleryKeys>(find.byType(WizIconKey)),
+      'WizToggle': _inSection<GallerySwitches>(find.byType(WizToggle)),
+      'WizPowerKey': _inSection<GallerySwitches>(find.byType(WizPowerKey)),
+      'WizDial': _inSection<GalleryDials>(find.byType(WizDial)),
+      'WizSlider': _inSection<GalleryDials>(find.byType(WizSlider)),
+      'WizReadout': _inSection<GalleryDials>(find.byType(WizReadout)),
+      'WizPanel': _inSection<GalleryDials>(find.byType(WizPanel)),
+      'WizColorWheel': _inSection<GalleryWheel>(find.byType(WizColorWheel)),
+      'WizSegmentedControl': _inSection<GalleryScenes>(
+        _byGeneric<WizSegmentedControl<Object?>>('WizSegmentedControl'),
       ),
-      'WizTabBar': _byGeneric<WizTabBar<Object?>>('WizTabBar'),
-      'WizRail': _byGeneric<WizRail<Object?>>('WizRail'),
+      'WizSceneTile': _inSection<GalleryScenes>(find.byType(WizSceneTile)),
+      // `WizSceneArt` has no standalone demo: it is the painter behind the
+      // tiles and the mode row, which is how spec §11.2 describes it.
+      'WizSceneArt': _inSection<GalleryScenes>(find.byType(WizSceneArt)),
+      'WizGrid': _inSection<GalleryScenes>(find.byType(WizGrid)),
+      'ModeRow': _inSection<GalleryScenes>(find.byType(ModeRow)),
+      'WizTabBar': _inSection<GalleryNavigation>(
+        _byGeneric<WizTabBar<Object?>>('WizTabBar'),
+      ),
+      'WizRail': _inSection<GalleryNavigation>(
+        _byGeneric<WizRail<Object?>>('WizRail'),
+      ),
+      'WizListRow': _inSection<GalleryRows>(find.byType(WizListRow)),
+      'WizBadge': _inSection<GalleryRows>(find.byType(WizBadge)),
+      'WizStatTile': _inSection<GalleryRows>(find.byType(WizStatTile)),
+      'RoomCard': _inSection<GalleryRows>(find.byType(RoomCard)),
+      'LightCard': _inSection<GalleryRows>(find.byType(LightCard)),
+      'FixtureHero': _inSection<GalleryHero>(find.byType(FixtureHero)),
+      'Breathe': _inSection<GalleryHero>(find.byType(Breathe)),
+      'WizFilamentBar': _inSection<GalleryStates>(find.byType(WizFilamentBar)),
+      // Keyed, not scoped to the section: `WizStatusBanner` and `WizToast`
+      // build their own spinner for the loading tone, so a section-wide
+      // finder would keep passing after the demo itself was deleted.
+      'WizSpinner': find.descendant(
+        of: find.byKey(GalleryStates.spinnerRow),
+        matching: find.byType(WizSpinner),
+      ),
+      'WizSkeleton': _inSection<GalleryStates>(find.byType(WizSkeleton)),
+      'WizStatusBanner': _inSection<GalleryStates>(
+        find.byType(WizStatusBanner),
+      ),
+      'WizToast': _inSection<GalleryStates>(find.byType(WizToast)),
+      'WizEmptyState': _inSection<GalleryStates>(find.byType(WizEmptyState)),
+      'WizTextField': _inSection<GalleryFields>(find.byType(WizTextField)),
+      // These four have no section of their own: the header and the load-in
+      // belong to the screen, and the toast stack to `WizCtlApp`.
       'WizTopBar': find.byType(WizTopBar),
-      'WizListRow': find.byType(WizListRow),
-      'WizBadge': find.byType(WizBadge),
-      'WizStatTile': find.byType(WizStatTile),
-      'WizReadout': find.byType(WizReadout),
-      'WizEmptyState': find.byType(WizEmptyState),
-      'WizFilamentBar': find.byType(WizFilamentBar),
-      'WizSkeleton': find.byType(WizSkeleton),
-      'WizSpinner': find.byType(WizSpinner),
-      'WizStatusBanner': find.byType(WizStatusBanner),
-      'WizToast': find.byType(WizToast),
+      'RiseIn': find.byType(RiseIn),
       'WizToastLayer': find.byType(WizToastLayer),
-      'WizTextField': find.byType(WizTextField),
-      'WizPanel': find.byType(WizPanel),
+      // Never built directly by anything: `WizSurface` is what every panel,
+      // key and card is made of, and `WizPressable` is the one press recipe
+      // under all of them (spec §11.2). Present is all there is to check.
       'WizSurface': find.byType(WizSurface),
       'WizPressable': find.byType(WizPressable),
-      'WizGrid': find.byType(WizGrid),
-      'RoomCard': find.byType(RoomCard),
-      'LightCard': find.byType(LightCard),
-      'FixtureHero': find.byType(FixtureHero),
-      'ModeRow': find.byType(ModeRow),
-      // The motion helpers, applied where they belong: the sections stagger
-      // in, and the lit emission readout breathes.
-      'RiseIn': find.byType(RiseIn),
-      'Breathe': find.byType(Breathe),
     };
 
     for (var entry in kit.entries) {

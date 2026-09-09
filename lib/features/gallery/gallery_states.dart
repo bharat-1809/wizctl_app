@@ -30,6 +30,11 @@ class GalleryStates extends StatelessWidget {
   static const double skeletonTitleWidth = 160, skeletonTitleHeight = 14;
   static const double skeletonMetaWidth = 90, skeletonMetaHeight = 10;
 
+  /// Marks the pair of spinners that are here to be looked at, as opposed to
+  /// the ones `WizStatusBanner` and `WizToast` build for their loading tone:
+  /// without it the coverage test cannot tell a deleted demo from a banner.
+  static const Key spinnerRow = Key('gallery-spinner-row');
+
   /// How long the demo's loading toast pretends to be saving before it
   /// resolves in place.
   static const Duration fakeSave = Duration(milliseconds: 900);
@@ -48,6 +53,7 @@ class GalleryStates extends StatelessWidget {
           const WizFilamentBar(label: 'Discovering'),
           SizedBox(height: space.s5),
           Row(
+            key: spinnerRow,
             children: [
               const WizSpinner(),
               SizedBox(width: space.s5),
