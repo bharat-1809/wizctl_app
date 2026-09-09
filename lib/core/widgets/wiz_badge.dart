@@ -102,6 +102,10 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   // like that isn't safe before the element has established dependencies.
   AnimationController? _pulse;
 
+  /// What the paint reads: Badge.jsx runs `wz-pulse` on
+  /// `var(--ease-tactile)`, so the dip is eased, not linear.
+  CurvedAnimation? _eased;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -109,10 +113,12 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
     // round trip, whose midpoint is the keyframe at 50 %. A controller
     // repeating in reverse plays that midpoint at the end of each run, so
     // it takes half the token to get there.
-    var halfCycle = context.wiz.motion.ping ~/ 2;
+    var motion = context.wiz.motion;
+    var halfCycle = motion.ping ~/ 2;
     var pulse = _pulse;
     if (pulse == null) {
       pulse = _pulse = AnimationController(vsync: this, duration: halfCycle);
+      _eased = CurvedAnimation(parent: pulse, curve: motion.tactile);
     } else {
       pulse.duration = halfCycle;
     }
@@ -137,6 +143,8 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    // The curve first: it holds a listener on the controller under it.
+    _eased?.dispose();
     _pulse?.dispose();
     super.dispose();
   }
@@ -145,9 +153,9 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     var reduced = MediaQuery.disableAnimationsOf(context);
     return AnimatedBuilder(
-      animation: _pulse!,
+      animation: _eased!,
       builder: (context, _) {
-        var t = (widget.live && !reduced) ? _pulse!.value : 0.0;
+        var t = (widget.live && !reduced) ? _eased!.value : 0.0;
         return Opacity(
           opacity: 1 - WizBadge.pulseOpacityDip * t,
           child: Transform.scale(

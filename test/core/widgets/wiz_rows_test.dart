@@ -32,10 +32,27 @@ void main() {
     expect(find.text('Living Room'), findsOneWidget);
     expect(find.text('3 lights'), findsOneWidget);
     expect(find.text('T'), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(WizTopBar)).height,
-      greaterThanOrEqualTo(56),
+    // Exactly the floor, not merely past it: title (30 x 1.06) plus 2 plus
+    // sub-line (13 x 1.45) is 52.65, so the bar's own minimum is what the
+    // measurement is reading.
+    expect(tester.getSize(find.byType(WizTopBar)).height, WizTopBar.minHeight);
+  });
+
+  testWidgets('a top bar in a tall parent still measures its own height', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        const SizedBox(
+          width: 350,
+          height: 300,
+          child: Column(
+            children: [WizTopBar(title: 'Living Room', subtitle: '3 lights')],
+          ),
+        ),
+      ),
     );
+    expect(tester.getSize(find.byType(WizTopBar)).height, WizTopBar.minHeight);
   });
 
   testWidgets('list rows tap and long-press with feedback', (tester) async {
@@ -62,6 +79,35 @@ void main() {
     expect(taps, 1);
     expect(longs, 1);
     expect(feedback.played.first, FeedbackKind.press);
+  });
+
+  testWidgets('a title-only row still clears the touch floor', (tester) async {
+    // The shortest row there is: no icon well, no meta.
+    Widget row() => SizedBox(
+      width: 350,
+      child: WizListRow(title: 'Living Room', onTap: () {}),
+    );
+    var floor = WizSpace.standard.hitMin;
+    await tester.pumpWidget(wizTestApp(row()));
+    expect(
+      tester.getSize(find.byType(WizListRow)).height,
+      greaterThanOrEqualTo(floor),
+    );
+    // Shrunk to the smallest text scale the platforms offer, the title and
+    // its padding come to 40: what keeps the row tappable is the
+    // constraint, not arithmetic that happens to land on 44.
+    await tester.pumpWidget(
+      wizTestApp(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(0.82)),
+          child: row(),
+        ),
+      ),
+    );
+    expect(
+      tester.getSize(find.byType(WizListRow)).height,
+      greaterThanOrEqualTo(floor),
+    );
   });
 
   testWidgets('badge, stat tile and empty state render their copy', (
@@ -195,5 +241,8 @@ void main() {
     var mono = tester.widget<Text>(find.text('2700'));
     expect(mono.style!.fontFamily, WizType.familyMono);
     expect(mono.style!.fontSize, type.readout.fontSize);
+    // The mono face has to ask for tabular figures; the display face's
+    // token already carries them.
+    expect(mono.style!.fontFeatures, WizReadout.tabular);
   });
 }

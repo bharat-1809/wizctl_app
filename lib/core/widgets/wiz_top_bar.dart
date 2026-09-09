@@ -4,6 +4,9 @@ import '../theme/wiz_theme.dart';
 
 /// Screen header: optional leading key, display-face title with sub-line,
 /// trailing slot.
+///
+/// The titles ellipsise, so the bar needs a bounded width: the top of a
+/// screen's column, or an `Expanded`/`Flexible` in a row.
 class WizTopBar extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -37,6 +40,10 @@ class WizTopBar extends StatelessWidget {
           if (leading != null) ...[leading!, SizedBox(width: gap)],
           Expanded(
             child: Column(
+              // Without this the titles take every pixel of a bounded
+              // height offered from above — a `Center`, a sized box — and
+              // the bar measures that instead of its own [minHeight].
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

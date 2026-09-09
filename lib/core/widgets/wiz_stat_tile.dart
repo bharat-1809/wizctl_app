@@ -4,9 +4,13 @@ import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
+import 'wiz_numeral.dart';
 import 'wiz_surface.dart';
 
 /// Small instrument tile: caps label with glyph, then a display-face value.
+///
+/// Its label ellipsises, so the tile needs a bounded width: give it a grid
+/// cell, or an `Expanded`/`Flexible` in a row.
 class WizStatTile extends StatelessWidget {
   final WizIconData icon;
   final String label;
@@ -30,10 +34,9 @@ class WizStatTile extends StatelessWidget {
   static const FontWeight valueWeight = FontWeight.w800;
 
   /// The unit rides the value's baseline: StatTile.jsx `fontSize: 13,
-  /// fontWeight: 600` and the `gap: 2` between the two.
+  /// fontWeight: 600`. The gap between the two is [WizNumeral.unitGap].
   static const double unitSize = 13;
   static const FontWeight unitWeight = FontWeight.w600;
-  static const double unitGap = 2;
 
   /// The label's glyph (spec §11.2, "caption with 14 icon";
   /// `WizCtl_Mobile.dc.html` builds the tile icons as `this.ic(…, 14)`) and
@@ -78,41 +81,23 @@ class WizStatTile extends StatelessWidget {
           ),
           // StatTile.jsx `gap: 12` between the label and the value.
           SizedBox(height: wiz.space.s5),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            // StatTile.jsx `alignItems: 'baseline'`: the unit sits on the
-            // numeral's baseline, not centred against its cap height.
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: numeral.copyWith(
-                    fontSize: valueSize,
-                    fontWeight: valueWeight,
-                    color: accent ? c.amber400 : c.textPrimary,
-                  ),
-                ),
-              ),
-              if (unit != null)
-                Padding(
-                  // The gap hangs off the unit rather than sitting between
-                  // the two as a box of its own: every child of a baseline
-                  // row has to have a baseline to align to.
-                  padding: const EdgeInsets.only(left: unitGap),
-                  child: Text(
-                    unit!,
-                    style: numeral.copyWith(
-                      fontSize: unitSize,
-                      fontWeight: unitWeight,
-                      color: c.textTertiary,
-                    ),
-                  ),
-                ),
-            ],
+          WizNumeral(
+            value: value,
+            unit: unit,
+            valueStyle: numeral.copyWith(
+              fontSize: valueSize,
+              fontWeight: valueWeight,
+              color: accent ? c.amber400 : c.textPrimary,
+            ),
+            unitStyle: numeral.copyWith(
+              fontSize: unitSize,
+              fontWeight: unitWeight,
+              color: c.textTertiary,
+            ),
+            gap: WizNumeral.unitGap,
+            // The tile always has a width to work in, so a long value
+            // shortens rather than running past the panel edge.
+            flexible: true,
           ),
         ],
       ),

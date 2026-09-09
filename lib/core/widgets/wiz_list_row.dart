@@ -10,6 +10,9 @@ import 'wiz_surface.dart';
 
 /// One line in a list of rooms, lights or settings: leading icon well,
 /// title, meta, trailing slot. Rows have no dividers; lists use gaps.
+///
+/// The title and meta ellipsise, so a row needs a bounded width: a vertical
+/// list, or an `Expanded`/`Flexible` in a row.
 class WizListRow extends StatelessWidget {
   final WizIconData? icon;
   final Widget? iconWidget;
@@ -64,84 +67,92 @@ class WizListRow extends StatelessWidget {
     var gap = wiz.space.s5 + wiz.space.s1;
     var interactive = onTap != null || onLongPress != null;
 
-    Widget body(bool pressed) => WizSurface(
-      spec: pressed
-          ? wiz.elevation.pressed
-          : (active ? wiz.elevation.raised : wiz.elevation.panel),
-      radius: BorderRadius.circular(wiz.space.r3),
-      gradient: active
-          ? wizVertical(c.surfaceKey, c.surfaceRaised)
-          : wizVertical(c.surfaceRaised, c.surfacePanel),
-      // The JSX ring is an *inset* one, which a `WizInset` cannot express:
-      // with no offset and no blur, `paintInsets` differences the shape
-      // against itself and paints nothing. So the hairline is drawn just
-      // outside the shape instead, the way `WizElevation.glowAmber`'s
-      // `spreadRadius: 1` ring is.
-      glow: active
-          ? [
-              BoxShadow(
-                color: c.amber500.withValues(alpha: activeRingAlpha),
-                spreadRadius: 1,
-              ),
-            ]
-          : const [],
-      padding: EdgeInsets.symmetric(vertical: wiz.space.s5, horizontal: gap),
-      child: Row(
-        children: [
-          if (icon != null || iconWidget != null) ...[
-            WizSurface(
-              spec: wiz.elevation.well,
-              radius: BorderRadius.circular(wiz.space.r2),
-              color: c.char1000,
-              width: well,
-              height: well,
-              alignment: Alignment.center,
-              child:
-                  iconWidget ??
-                  WizIcon(
-                    icon!,
-                    size: glyph,
-                    color: active ? c.amber400 : c.textTertiary,
-                  ),
-            ),
-            SizedBox(width: gap),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: wiz.typography.body.copyWith(
-                    fontSize: titleSize,
-                    fontWeight: titleWeight,
-                    letterSpacing: titleSize * WizType.rowTitleTracking,
-                    color: c.textPrimary,
-                    height: titleHeight,
-                  ),
+    Widget body(bool pressed) => ConstrainedBox(
+      // A row is a touch target, and a title-only one is exactly as tall as
+      // its copy and padding. The floor is read from the token every other
+      // key in the kit reads it from, rather than left to arithmetic that
+      // happens to land on it.
+      constraints: BoxConstraints(minHeight: wiz.space.hitMin),
+      child: WizSurface(
+        spec: pressed
+            ? wiz.elevation.pressed
+            : (active ? wiz.elevation.raised : wiz.elevation.panel),
+        radius: BorderRadius.circular(wiz.space.r3),
+        gradient: active
+            ? wizVertical(c.surfaceKey, c.surfaceRaised)
+            : wizVertical(c.surfaceRaised, c.surfacePanel),
+        // The JSX ring is an *inset* one, which a `WizInset` cannot express:
+        // with no offset and no blur, `paintInsets` differences the shape
+        // against itself and paints nothing. So the hairline is drawn just
+        // outside the shape instead, the way `WizElevation.glowAmber`'s
+        // `spreadRadius: 1` ring is. A pressed row drops it: ListRow.jsx
+        // gives a row that is down `elev-pressed` and nothing else.
+        glow: active && !pressed
+            ? [
+                BoxShadow(
+                  color: c.amber500.withValues(alpha: activeRingAlpha),
+                  spreadRadius: 1,
                 ),
-                if (meta != null)
-                  Padding(
-                    // ListRow.jsx `marginTop: 1`: half the 2 px `s1` step,
-                    // the smallest gap the scale reaches.
-                    padding: EdgeInsets.only(top: wiz.space.s1 / 2),
-                    child: Text(
-                      meta!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: wiz.typography.bodySm.copyWith(
-                        color: c.textTertiary,
-                      ),
+              ]
+            : const [],
+        padding: EdgeInsets.symmetric(vertical: wiz.space.s5, horizontal: gap),
+        child: Row(
+          children: [
+            if (icon != null || iconWidget != null) ...[
+              WizSurface(
+                spec: wiz.elevation.well,
+                radius: BorderRadius.circular(wiz.space.r2),
+                color: c.char1000,
+                width: well,
+                height: well,
+                alignment: Alignment.center,
+                child:
+                    iconWidget ??
+                    WizIcon(
+                      icon!,
+                      size: glyph,
+                      color: active ? c.amber400 : c.textTertiary,
+                    ),
+              ),
+              SizedBox(width: gap),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: wiz.typography.body.copyWith(
+                      fontSize: titleSize,
+                      fontWeight: titleWeight,
+                      letterSpacing: titleSize * WizType.rowTitleTracking,
+                      color: c.textPrimary,
+                      height: titleHeight,
                     ),
                   ),
-              ],
+                  if (meta != null)
+                    Padding(
+                      // ListRow.jsx `marginTop: 1`: half the 2 px `s1` step,
+                      // the smallest gap the scale reaches.
+                      padding: EdgeInsets.only(top: wiz.space.s1 / 2),
+                      child: Text(
+                        meta!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: wiz.typography.bodySm.copyWith(
+                          color: c.textTertiary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          if (trailing != null) ...[SizedBox(width: gap), trailing!],
-        ],
+            if (trailing != null) ...[SizedBox(width: gap), trailing!],
+          ],
+        ),
       ),
     );
 

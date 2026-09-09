@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/wiz_theme.dart';
+import 'wiz_numeral.dart';
 
 enum WizReadoutSize { sm, md, lg }
 
@@ -35,15 +36,18 @@ class WizReadout extends StatelessWidget {
   static const double lgSize = 48;
 
   /// The unit is set relative to the numeral it follows: Readout.jsx
-  /// `fontSize: '0.44em'`, with the `gap: 2` between them.
+  /// `fontSize: '0.44em'`. The gap between them is [WizNumeral.unitGap].
   static const double unitRatio = 0.44;
-  static const double unitGap = 2;
 
   /// Readout.jsx `fontWeight: mono ? 500 : 800` for the numeral, and 600
   /// for the unit.
   static const FontWeight numeralWeight = FontWeight.w800;
   static const FontWeight monoWeight = FontWeight.w500;
   static const FontWeight unitWeight = FontWeight.w600;
+
+  /// Readout.jsx `fontVariantNumeric: 'tabular-nums'`, declared the way
+  /// `WizType` declares it on the `readout` token.
+  static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +65,15 @@ class WizReadout extends StatelessWidget {
     };
     // Readout.jsx `fontFamily: mono ? 'var(--font-mono)' :
     // 'var(--font-display)'` with `lineHeight: 1`; the unit inherits the
-    // face and overrides only size, weight and colour.
+    // face and overrides only size, weight and colour. `tabular-nums` is
+    // set on the flex parent either way, so the mono face — whose `code`
+    // token does not carry the feature the `readout` token does — asks for
+    // it here, and a readout never reflows as its digits change. A null
+    // leaves the display branch on the feature its token already declares.
     var style = (mono ? wiz.typography.code : wiz.typography.readout).copyWith(
       fontSize: fs,
       fontWeight: mono ? monoWeight : numeralWeight,
+      fontFeatures: mono ? tabular : null,
       height: 1,
       color: color,
     );
@@ -82,29 +91,16 @@ class WizReadout extends StatelessWidget {
           // Readout.jsx `gap: 4` under the label.
           SizedBox(height: wiz.space.s2),
         ],
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          // Readout.jsx `alignItems: 'baseline'`.
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(value, style: style),
-            if (unit != null)
-              Padding(
-                // The gap hangs off the unit rather than sitting between the
-                // two as a box of its own: every child of a baseline row has
-                // to have a baseline to align to.
-                padding: const EdgeInsets.only(left: unitGap),
-                child: Text(
-                  unit!,
-                  style: style.copyWith(
-                    fontSize: fs * unitRatio,
-                    fontWeight: unitWeight,
-                    color: c.textTertiary,
-                  ),
-                ),
-              ),
-          ],
+        WizNumeral(
+          value: value,
+          unit: unit,
+          valueStyle: style,
+          unitStyle: style.copyWith(
+            fontSize: fs * unitRatio,
+            fontWeight: unitWeight,
+            color: c.textTertiary,
+          ),
+          gap: WizNumeral.unitGap,
         ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_dial_painter.dart';
+import 'wiz_numeral.dart';
 import 'wiz_surface.dart';
 
 /// The dial's face, internal to `WizDial`: the recessed disc with its amber
@@ -197,14 +198,13 @@ class WizDialDisc extends StatelessWidget {
     );
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Text('${value.round()}', style: valueStyle, maxLines: 1),
-          Text(unit, style: unitStyle, maxLines: 1),
-        ],
+      // No gap and nothing flexible: Dial.jsx sets neither, and inside a
+      // `FittedBox` the numeral is measured unbounded.
+      child: WizNumeral(
+        value: '${value.round()}',
+        unit: unit,
+        valueStyle: valueStyle,
+        unitStyle: unitStyle,
       ),
     );
   }

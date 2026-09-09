@@ -35,7 +35,3 @@ Future<void> setSurface(WidgetTester tester, Size size) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 }
-
-/// A finder for a readout's rendered value, e.g. a `Text.rich` that carries
-/// a unit alongside the number.
-Finder readout(String value) => find.textContaining(value);
