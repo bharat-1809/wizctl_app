@@ -54,6 +54,9 @@ class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     var motion = context.wiz.motion;
+    // Read on every call, not only the first: the platform switch can go on
+    // part-way through the rise, and the entrance has to answer for it.
+    var reduced = wizReducedMotion(context);
     var c = _c;
     if (c == null) {
       c = _c = AnimationController(vsync: this, duration: motion.loadIn);
@@ -61,9 +64,20 @@ class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
     } else {
       c.duration = motion.loadIn;
     }
-    if (_started) return;
+    if (_started) {
+      // Switched on mid-rise: land the item where it was heading rather than
+      // leaving it half-risen and half-faded. A slot that has not come up
+      // yet is cancelled, and a run already going is stopped and snapped.
+      if (reduced && c.value < c.upperBound) {
+        _slot?.cancel();
+        _slot = null;
+        c.stop();
+        c.value = c.upperBound;
+      }
+      return;
+    }
     _started = true;
-    if (!widget.enabled || wizReducedMotion(context)) {
+    if (!widget.enabled || reduced) {
       // At rest: risen, opaque, and no controller ever started.
       c.value = c.upperBound;
       return;

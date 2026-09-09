@@ -292,7 +292,10 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
         var drag = _drag.value;
         var height = _sheetHeight;
         // "Proportional scrim": it thins as the sheet is dragged away.
-        var scrim = progress * (1 - (height > 0 ? drag / height : 0.0));
+        // Clamped: a drag can carry the sheet past its own height, and a
+        // fraction over 1 would take the alpha and the blur sigma negative.
+        var away = (height > 0 ? drag / height : 0.0).clamp(0.0, 1.0);
+        var scrim = progress * (1 - away);
         var blur = WizSheetRoute.scrimBlur * scrim;
         return Stack(
           fit: StackFit.expand,

@@ -25,7 +25,7 @@ class _WizGlowState extends State<WizGlow> with SingleTickerProviderStateMixin {
   // duration comes from context.wiz.motion, and an InheritedWidget lookup
   // like that isn't safe before the element has established dependencies.
   AnimationController? _controller;
-  Animation<double>? _opacity;
+  CurvedAnimation? _opacity;
 
   @override
   void didChangeDependencies() {
@@ -58,6 +58,8 @@ class _WizGlowState extends State<WizGlow> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    // The curve first: it holds a listener on the controller under it.
+    _opacity?.dispose();
     _controller?.dispose();
     super.dispose();
   }

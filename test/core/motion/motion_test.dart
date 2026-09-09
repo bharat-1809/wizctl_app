@@ -243,4 +243,46 @@ void main() {
     expect(fade.opacity.value, greaterThan(0));
     expect(fade.opacity.value, lessThan(1));
   });
+  testWidgets('reduced motion switched on mid-rise lands the item at rest', (
+    tester,
+  ) async {
+    Widget app(bool reduced, String tag, int index) => wizTestApp(
+      MediaQuery(
+        // The platform's "reduce motion" switch, over the harness's own
+        // MediaQuery.
+        data: MediaQueryData(disableAnimations: reduced),
+        // Keyed, so the two halves below each get a State of their own.
+        child: RiseIn(
+          key: ValueKey('rise-$tag'),
+          index: index,
+          child: SizedBox(key: Key(tag), height: 10),
+        ),
+      ),
+    );
+
+    // A rise already under way when the switch goes on.
+    await tester.pumpWidget(app(false, 'f', 0));
+    await tester.pump(frame);
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(opacityOf(tester, const Key('f')), inExclusiveRange(0, 1));
+    await tester.pumpWidget(app(true, 'f', 0));
+    expect(opacityOf(tester, const Key('f')), 1);
+    // Returns only because the run was stopped, not merely painted over.
+    await tester.pumpAndSettle();
+    expect(opacityOf(tester, const Key('f')), 1);
+
+    // A rise still waiting for its stagger slot.
+    await tester.pumpWidget(app(false, 'g', 3));
+    await tester.pump(motion.stagger);
+    expect(opacityOf(tester, const Key('g')), 0);
+    await tester.pumpWidget(app(true, 'g', 3));
+    expect(opacityOf(tester, const Key('g')), 1);
+    var at = tester.getTopLeft(find.byKey(const Key('g')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.byKey(const Key('g'))),
+      at,
+      reason: 'the cancelled slot must not come up and move it again',
+    );
+  });
 }
