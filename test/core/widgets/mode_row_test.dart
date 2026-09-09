@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/feedback/feedback_kind.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
+import 'package:wizctl_app/core/theme/wiz_colors.dart';
 import 'package:wizctl_app/core/theme/wiz_motion.dart';
 import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/mode_row.dart';
@@ -30,6 +31,15 @@ void main() {
     await tester.tap(find.text('Cozy'));
     await tester.pumpAndSettle();
     expect(taps, 1);
+    // `:220` `gap:13px`, spent between every child alike — the `Row`'s own
+    // `spacing`, so measuring it once beside the art measures it beside the
+    // chevron too.
+    var space = WizSpace.standard;
+    expect(
+      tester.getTopLeft(find.text('LIGHT MODE')).dx -
+          tester.getTopRight(find.byType(WizSceneArt)).dx,
+      space.s5 + space.s1 / 2,
+    );
   });
 
   testWidgets('solid and flat art render without a scene', (tester) async {
@@ -62,6 +72,41 @@ void main() {
       square,
     );
     expect(tester.getSize(find.byKey(ModeRow.flatArtKey)), square);
+    // And the hairline is drawn *inside* that footprint, over the art: the
+    // ring runs from the tile's own edge exactly one hairline inwards, so
+    // the painted tile is 48 to the pixel. `:221` is an inset shadow; a
+    // spread shadow would ring the outside instead, wider and curving
+    // tighter than the art it traces.
+    var space = WizSpace.standard;
+    var edge = space.hairline;
+    Radius radius(double r) => Radius.circular(r);
+    expect(
+      find
+          .ancestor(
+            of: find.byKey(ModeRow.flatArtKey),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+      paints..drrect(
+        outer: RRect.fromLTRBR(
+          0,
+          0,
+          ModeRow.artSize,
+          ModeRow.artSize,
+          radius(space.r2),
+        ),
+        inner: RRect.fromLTRBR(
+          edge,
+          edge,
+          ModeRow.artSize - edge,
+          ModeRow.artSize - edge,
+          radius(space.r2 - edge),
+        ),
+        color: WizColors.standard.shadowBase.withValues(
+          alpha: ModeRow.artShadowAlpha,
+        ),
+      ),
+    );
   });
 
   testWidgets('the row is one button naming itself once', (tester) async {
@@ -164,5 +209,85 @@ void main() {
     // screen finds only the new one here.
     await tester.pump();
     expect(find.byType(WizSceneArt), findsOneWidget);
+  });
+
+  testWidgets('rebuilding on the same scene does not restart the fade', (
+    tester,
+  ) async {
+    Widget row(int sceneId) => wizTestApp(
+      SizedBox(
+        width: 350,
+        child: ModeRow(art: SceneModeArt(sceneId), name: 'Cozy', onTap: () {}),
+      ),
+    );
+    await tester.pumpWidget(row(6));
+    // A fresh widget carrying the same art. The switcher keys on the art's
+    // identity, not on the instance, so a rebuild from any other change
+    // must not cross-fade the tile against itself.
+    await tester.pumpWidget(row(6));
+    await tester.pump();
+    await tester.pump(WizMotion.standard.panel ~/ 2);
+    expect(find.byType(WizSceneArt), findsOneWidget);
+  });
+
+  testWidgets('two solid colours cross-fade like two scenes', (tester) async {
+    const warm = Color(0xFFFFC98D);
+    const cool = Color(0xFFBFD9FF);
+    Widget row(Color color) => wizTestApp(
+      SizedBox(
+        width: 350,
+        child: ModeRow(
+          art: SolidModeArt(color),
+          name: '2700K white',
+          onTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpWidget(row(warm));
+    await tester.pumpWidget(row(cool));
+    await tester.pump();
+    await tester.pump(WizMotion.standard.panel ~/ 2);
+    // The colour is the identity a solid face fades on, so both swatches are
+    // on screen at once.
+    expect(find.byKey(const ValueKey(warm)), findsOneWidget);
+    expect(find.byKey(const ValueKey(cool)), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey(warm)), findsNothing);
+    expect(find.byKey(const ValueKey(cool)), findsOneWidget);
+  });
+
+  testWidgets('a row with no callback is a disabled button', (tester) async {
+    var handle = tester.ensureSemantics();
+    var feedback = RecordingFeedbackService();
+    await tester.pumpWidget(
+      wizTestApp(
+        const SizedBox(
+          width: 350,
+          child: ModeRow(art: FlatModeArt(), name: 'Nothing set', onTap: null),
+        ),
+        feedback: feedback,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byType(ModeRow)),
+      isSemantics(
+        isButton: true,
+        hasEnabledState: true,
+        isEnabled: false,
+        hasTapAction: false,
+      ),
+    );
+    // The pressable dims what it disables, and a touch neither sinks the
+    // row nor plays a cue.
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Opacity && w.opacity == WizColors.disabledAlpha,
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byType(ModeRow), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(feedback.played, isEmpty);
+    handle.dispose();
   });
 }

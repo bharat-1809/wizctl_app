@@ -133,25 +133,28 @@ class ModeRow extends StatelessWidget {
           horizontal: wiz.space.s5,
         ),
         child: Row(
+          // `:220` `gap:13px`, between every child alike: 12 plus the 1 that
+          // half the 2 px `s1` step gives, the way a `LightCard`'s header
+          // and a `WizStatusBanner` write their own 13.
+          spacing: wiz.space.s5 + wiz.space.s1 / 2,
           children: [
             SizedBox(
               width: artSize,
               height: artSize,
               child: DecoratedBox(
+                // The prototype's hairline is an *inset* shadow, so it
+                // darkens the art's own edge from inside the 48 rather than
+                // ringing the tile from outside. A foreground border traces
+                // the clipped art at the same radius and adds nothing to the
+                // footprint, which a spread shadow would — and it curves
+                // with the art instead of a hair tighter than it.
+                position: DecorationPosition.foreground,
                 decoration: BoxDecoration(
                   borderRadius: artRadius,
-                  // The prototype's `1px` hairline is an *inset* shadow,
-                  // which a `WizInset` cannot express: with no offset and
-                  // no blur, `paintInsets` differences the shape against
-                  // itself and paints nothing. So it is spread just outside
-                  // the shape instead, the way `WizListRow`'s active ring
-                  // is — the art clips to the same radius over it.
-                  boxShadow: [
-                    BoxShadow(
-                      color: c.shadowBase.withValues(alpha: artShadowAlpha),
-                      spreadRadius: wiz.space.hairline,
-                    ),
-                  ],
+                  border: Border.all(
+                    color: c.shadowBase.withValues(alpha: artShadowAlpha),
+                    width: wiz.space.hairline,
+                  ),
                 ),
                 child: ClipRRect(
                   borderRadius: artRadius,
@@ -171,10 +174,6 @@ class ModeRow extends StatelessWidget {
                 ),
               ),
             ),
-            // `:220` `gap:13px`, which the spacing scale does not reach:
-            // the row takes its 14 step beside the art and its 12 step
-            // beside the chevron.
-            SizedBox(width: wiz.space.s5 + wiz.space.s1),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +200,6 @@ class ModeRow extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: wiz.space.s5),
             // `:226` `width:32px;height:32px;border-radius:var(--radius-2);
             // background:var(--char-1000);box-shadow:var(--elev-well);
             // color:var(--text-secondary)`.
