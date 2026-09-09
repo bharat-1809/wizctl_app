@@ -269,25 +269,28 @@ class _WizColorWheelState extends State<WizColorWheel> {
     var increased = _shift(byHue: WizColorWheel.detentDegrees);
     var decreased = _shift(byHue: -WizColorWheel.detentDegrees);
 
-    Widget visual = WizColorWheelDisc(
-      diameter: _diameter,
-      hue: widget.hue,
-      saturation: widget.saturation,
-      dragging: _dragging,
+    // The ring's box is always here, carrying a border only while focused,
+    // the way `WizSlider`'s does: a wrapper that comes and goes changes the
+    // child at the slot above it and costs the disc its element, and with it
+    // any gesture that was running when focus arrived.
+    Widget visual = DecoratedBox(
+      position: DecorationPosition.foreground,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: _focused
+            ? Border.all(
+                color: wiz.colors.focusRing,
+                width: wiz.space.focusRing,
+              )
+            : null,
+      ),
+      child: WizColorWheelDisc(
+        diameter: _diameter,
+        hue: widget.hue,
+        saturation: widget.saturation,
+        dragging: _dragging,
+      ),
     );
-    if (_focused) {
-      visual = DecoratedBox(
-        position: DecorationPosition.foreground,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: wiz.colors.focusRing,
-            width: wiz.space.focusRing,
-          ),
-        ),
-        child: visual,
-      );
-    }
 
     return Semantics(
       slider: true,

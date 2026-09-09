@@ -171,23 +171,26 @@ class _WizDialState extends State<WizDial> {
     var d = widget.size.clamp(WizDial.minSize, WizDial.maxSize);
     var armed = widget.enabled;
 
-    Widget visual = WizDialDisc(
-      diameter: d,
-      pct: _pct,
-      value: widget.value,
-      unit: widget.unit,
-      dragging: _dragStartY != null,
+    // The ring's box is always here, carrying a border only while focused,
+    // the way `WizSlider`'s does: a wrapper that comes and goes changes the
+    // child at the slot above it and costs the disc its element, and with it
+    // any gesture that was running when focus arrived.
+    Widget visual = DecoratedBox(
+      position: DecorationPosition.foreground,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(d),
+        border: _focused
+            ? Border.all(color: c.focusRing, width: wiz.space.focusRing)
+            : null,
+      ),
+      child: WizDialDisc(
+        diameter: d,
+        pct: _pct,
+        value: widget.value,
+        unit: widget.unit,
+        dragging: _dragStartY != null,
+      ),
     );
-    if (_focused) {
-      visual = DecoratedBox(
-        position: DecorationPosition.foreground,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(d),
-          border: Border.all(color: c.focusRing, width: wiz.space.focusRing),
-        ),
-        child: visual,
-      );
-    }
 
     return SizedBox(
       // The dial is exactly as wide as it is told, whatever its label reads.

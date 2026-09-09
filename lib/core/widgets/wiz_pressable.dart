@@ -103,6 +103,19 @@ class _WizPressableState extends State<WizPressable> {
   /// can be driven and asserted from outside the widget.
   final FocusNode _focusNode = FocusNode(debugLabel: 'WizPressable');
 
+  /// Identity for whatever the builder returns, so that the wrappers hover
+  /// and focus add and remove around it cannot cost it its element.
+  ///
+  /// Hover wraps the visual in a [ColorFiltered] and focus in a
+  /// [DecoratedBox]; without a key the child at the animation's slot changes
+  /// type when either appears, and the framework then inflates a fresh
+  /// element tree — a hosted [StatefulWidget] loses its [State] mid-gesture,
+  /// so hovering a light card while its rail is held would drop the drag. A
+  /// [GlobalKey] is re-taken across the move rather than rebuilt. The cheap
+  /// alternative — an always-present [ColorFiltered] — would cost a
+  /// `saveLayer` per card for every frame it is on screen.
+  final GlobalKey _contentKey = GlobalKey(debugLabel: 'WizPressable content');
+
   bool _pressed = false;
   bool _hovered = false;
   bool _focused = false;
@@ -156,7 +169,10 @@ class _WizPressableState extends State<WizPressable> {
       focused: _focused,
     );
 
-    Widget visual = widget.builder(context, state);
+    Widget visual = KeyedSubtree(
+      key: _contentKey,
+      child: widget.builder(context, state),
+    );
     if (widget.semanticsLabel != null) {
       // A given label is the whole node. Left in, the copy the builder draws
       // merges into the node beside it and a `WizButton('Retry')` — whose

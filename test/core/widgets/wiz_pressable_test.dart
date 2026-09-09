@@ -9,6 +9,29 @@ import 'package:wizctl_app/core/widgets/wiz_pressable.dart';
 
 import '../../support/wiz_test_app.dart';
 
+/// A child with a life of its own, so a test can tell a rebuilt subtree from
+/// a re-taken one: [_LifeState.hosted] counts how many have ever been built.
+class _Life extends StatefulWidget {
+  const _Life();
+
+  @override
+  State<_Life> createState() => _LifeState();
+}
+
+class _LifeState extends State<_Life> {
+  static int hosted = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    hosted++;
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const SizedBox(width: 60, height: 44, key: Key('life'));
+}
+
 void main() {
   testWidgets('a press sinks the child, fires feedback and taps', (
     tester,
@@ -556,5 +579,69 @@ void main() {
       isEmpty,
       reason: 'a control that plays its own cue on commit must not double up',
     );
+  });
+  testWidgets('the builder\'s child keeps its State across hover and press', (
+    tester,
+  ) async {
+    // Hover wraps the visual in a `ColorFiltered` and focus in a
+    // `DecoratedBox`. Either arriving changes the child at the animation's
+    // slot, and without an identity the framework inflates a fresh subtree —
+    // a hosted `WizSlider` or `WizToggle` would lose its State part-way
+    // through a gesture.
+    var previous = FocusManager.instance.highlightStrategy;
+    FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = previous);
+
+    _LifeState.hosted = 0;
+    await tester.pumpWidget(
+      wizTestApp(WizPressable(onTap: () {}, builder: (_, _) => const _Life())),
+    );
+    var born = _LifeState.hosted;
+    expect(born, 1);
+    var state = tester.state<_LifeState>(find.byType(_Life));
+
+    var filter = find.descendant(
+      of: find.byType(WizPressable),
+      matching: find.byType(ColorFiltered),
+    );
+    var centre = tester.getCenter(find.byType(WizPressable));
+
+    var mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await tester.pump();
+    await mouse.moveTo(centre);
+    await tester.pumpAndSettle();
+    // The hover has to have actually taken, or the wrapper never changed and
+    // the assertions below would hold for nothing.
+    expect(filter, findsOneWidget, reason: 'the hover never registered');
+
+    // Focus on top of the hover: the other wrapper.
+    tester
+        .widget<FocusableActionDetector>(
+          find.descendant(
+            of: find.byType(WizPressable),
+            matching: find.byType(FocusableActionDetector),
+          ),
+        )
+        .focusNode!
+        .requestFocus();
+    await tester.pumpAndSettle();
+
+    // Pressing drops the hover filter while the finger is down.
+    await mouse.down(centre);
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(filter, findsNothing);
+    await mouse.up();
+    await tester.pumpAndSettle();
+
+    // Hover off, back to the bare visual.
+    await mouse.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
+    expect(filter, findsNothing);
+
+    expect(_LifeState.hosted, born, reason: 'the child was rebuilt from new');
+    expect(tester.state<_LifeState>(find.byType(_Life)), same(state));
   });
 }
