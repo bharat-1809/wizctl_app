@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,23 +65,51 @@ class _WizDialState extends State<WizDial> {
 
   /// The last value [_commit] settled on. `onChangeEnd` reports this rather
   /// than `widget.value`, which is still the old one until whoever owns the
-  /// value has rebuilt this widget.
-  double _committed = 0;
+  /// value has rebuilt this widget. Seeded from the value the dial is
+  /// showing: left at zero, the first arrow key looked like a move even when
+  /// the knob was already against its stop.
+  late double _committed = widget.value;
 
   int? _notch;
   bool _down = false;
   bool _focused = false;
 
-  double get _pct =>
-      ((widget.value - widget.min) / (widget.max - widget.min)).clamp(0.0, 1.0);
+  /// Zero when the range is empty, rather than the NaN that dividing by it
+  /// would put into every angle this drives.
+  double get _pct => widget.max > widget.min
+      ? ((widget.value - widget.min) / (widget.max - widget.min)).clamp(
+          0.0,
+          1.0,
+        )
+      : 0;
 
   /// How far one arrow key, or one assistive-technology increment, moves.
   double get _keyDelta => widget.step * WizDialGeometry.keySteps;
 
   @override
+  void initState() {
+    super.initState();
+    // Seeded, not left null: a keyboard step is a notch crossing like any
+    // other, so the first one sounds like the second, as `WizSlider`'s does.
+    // Only the pointer path re-seeds, where the touch landing is not itself
+    // a crossing.
+    _notch = _notchOf(widget.value);
+  }
+
+  @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Which of the [WizDialGeometry.detents] notches [value] sits in, or null
+  /// when the range is empty and there are no notches to sit in.
+  int? _notchOf(double value) {
+    if (widget.max <= widget.min) return null;
+    return ((value - widget.min) /
+            (widget.max - widget.min) *
+            WizDialGeometry.detents)
+        .round();
   }
 
   /// The nearest value on the scale: clamped to the range, snapped to the
@@ -99,30 +129,38 @@ class _WizDialState extends State<WizDial> {
 
   double _commit(double raw) {
     var next = _snap(raw);
-    var notch =
-        ((next - widget.min) /
-                (widget.max - widget.min) *
-                WizDialGeometry.detents)
-            .round();
-    if (notch != _notch) {
+    var notch = _notchOf(next);
+    if (notch != null && notch != _notch) {
+      // Null on the first sample of a touch: landing somewhere is not
+      // crossing a notch.
       if (_notch != null) context.feedback.play(FeedbackKind.detent);
       _notch = notch;
     }
-    if (next != widget.value) widget.onChanged(next);
+    // Against both, since two samples in one frame can settle on the same
+    // value before the owner has rebuilt this widget with the first.
+    if (next != widget.value && next != _committed) widget.onChanged(next);
     _committed = next;
     return next;
   }
 
   /// One discrete move — an arrow key or an assistive-technology increment.
   /// Unlike a drag it is over the moment it happens, so it reports the end
-  /// of the change itself.
-  void _step(double by) => widget.onChangeEnd?.call(_commit(widget.value + by));
+  /// of the change itself — unless it had nowhere left to go. Measured
+  /// against what the last commit settled on rather than against the
+  /// widget's own value, which a caller that does not feed the change back
+  /// would leave standing, turning every repeat of one key into another
+  /// ended change that moved nothing.
+  void _step(double by) {
+    var from = _committed;
+    var next = _commit(widget.value + by);
+    if (next != from) widget.onChangeEnd?.call(next);
+  }
 
   void _start(DragStartDetails d) {
     _dragStartY = d.localPosition.dy;
     _dragStartValue = widget.value;
     _committed = widget.value;
-    _notch = (_pct * WizDialGeometry.detents).round();
+    _notch = _notchOf(widget.value);
     setState(() => _down = true);
     context.feedback.play(FeedbackKind.press);
   }
@@ -164,11 +202,19 @@ class _WizDialState extends State<WizDial> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+    // Measured from inside the layout: a knob asked for more width than its
+    // parent has draws at the parent's instead, so the disc, the ring around
+    // it and the box the finger lands in all agree.
+    builder: (context, constraints) => _dial(context, constraints.maxWidth),
+  );
+
+  Widget _dial(BuildContext context, double maxWidth) {
     var wiz = context.wiz;
     var c = wiz.colors;
     var m = wiz.motion;
     var d = widget.size.clamp(WizDial.minSize, WizDial.maxSize);
+    if (maxWidth.isFinite) d = math.min(d, maxWidth);
     var armed = widget.enabled;
 
     // The ring's box is always here, carrying a border only while focused,

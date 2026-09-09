@@ -512,4 +512,64 @@ void main() {
       handle.dispose();
     }
   });
+  testWidgets('a second touch reports even when the first was ignored', (
+    tester,
+  ) async {
+    var changed = <double>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        // Uncontrolled: the rail keeps being told 10, so both taps land on a
+        // value it is not showing and both are news to the caller.
+        SizedBox(
+          width: 300,
+          child: WizSlider(value: 10, min: 0, max: 100, onChanged: changed.add),
+        ),
+      ),
+    );
+    var box = tester.getRect(_track);
+    await tester.tapAt(Offset(box.left + box.width / 2, box.center.dy));
+    await tester.pumpAndSettle();
+    await tester.tapAt(Offset(box.left + box.width / 2, box.center.dy));
+    await tester.pumpAndSettle();
+    expect(changed, [
+      50.0,
+      50.0,
+    ], reason: 'the dedupe is scoped to one touch, not to the widget');
+  });
+
+  testWidgets('a value arriving mid-drag does not make a still finger click', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    Widget rail(double value) => wizTestApp(
+      SizedBox(
+        width: 300,
+        child: WizSlider(value: value, min: 0, max: 100, onChanged: (_) {}),
+      ),
+      feedback: feedback,
+    );
+    await tester.pumpWidget(rail(10));
+    var box = tester.getRect(_track);
+    var at = Offset(box.left + box.width * 0.1, box.center.dy);
+
+    var finger = await tester.startGesture(at);
+    // Past the slop, so the drag recogniser owns the gesture.
+    await finger.moveBy(const Offset(40, 0));
+    await tester.pump();
+    feedback.played.clear();
+
+    // Another source moves the light while the finger is still down.
+    await tester.pumpWidget(rail(100));
+    // The finger has not moved since.
+    await finger.moveBy(Offset.zero);
+    await tester.pump();
+    expect(
+      feedback.played,
+      isEmpty,
+      reason: 'the drag owns the notch while a finger is down',
+    );
+
+    await finger.up();
+    await tester.pumpAndSettle();
+  });
 }

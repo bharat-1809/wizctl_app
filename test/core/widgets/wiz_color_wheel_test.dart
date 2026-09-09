@@ -9,6 +9,8 @@ import 'package:wizctl_app/core/theme/wiz_colors.dart';
 import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/wiz_color_wheel.dart';
 
+import 'package:wizctl_app/core/widgets/wiz_color_wheel_disc.dart';
+
 import '../../support/wiz_test_app.dart';
 
 /// The amber ring a keyboard-focused wheel draws (spec §11.2) — matched on
@@ -438,5 +440,38 @@ void main() {
       ),
     );
     handle.dispose();
+  });
+  testWidgets('a wheel in a narrow box paints and reads at the box width', (
+    tester,
+  ) async {
+    var changed = <WizHsv>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 120,
+          child: WizColorWheel(
+            hue: 0,
+            saturation: 0,
+            size: 228,
+            onChanged: changed.add,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(WizColorWheelDisc)),
+      const Size(120, 120),
+      reason: 'the disc paints at the width its parent has, not past it',
+    );
+
+    // Half way out on a 120 disc is (60 - 18) / 2 = 21 px above the centre,
+    // which is hue 0 at saturation .5. Read against the 228 the wheel was
+    // asked for, the same touch would be a fifth of the way out instead.
+    var centre = tester.getCenter(find.byType(WizColorWheel));
+    await tester.tapAt(centre + const Offset(0, -21));
+    await tester.pumpAndSettle();
+    expect(changed, [const WizHsv(0, 0.5)]);
   });
 }

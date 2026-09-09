@@ -103,7 +103,14 @@ class _WizSliderState extends State<WizSlider> {
   @override
   void didUpdateWidget(WizSlider old) {
     super.didUpdateWidget(old);
-    if (widget.value != old.value) _notch = _notchOf(widget.value);
+    // Not while a finger is down: the drag owns the notch, and re-seeding it
+    // from a value that arrived mid-gesture — the owner coercing what it was
+    // handed, or another source moving the light — would have the next
+    // sample measure its crossing from somewhere the finger never was, and
+    // a stationary finger click.
+    if (!_dragging && widget.value != old.value) {
+      _notch = _notchOf(widget.value);
+    }
   }
 
   @override
@@ -171,7 +178,11 @@ class _WizSliderState extends State<WizSlider> {
     }
     _begun = true;
     _notch = null;
+    // Both re-seeded from what the rail is showing, so the dedupe in
+    // [_commit] is scoped to this touch: a caller that ignored the last
+    // gesture must still hear this one land on the same value.
     _gestureStart = widget.value;
+    _committed = widget.value;
     context.feedback.play(FeedbackKind.press);
     _from(dx, width);
   }

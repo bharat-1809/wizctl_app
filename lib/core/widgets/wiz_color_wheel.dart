@@ -57,7 +57,16 @@ class WizColorWheel extends StatefulWidget {
     this.onChangeEnd,
     required this.size,
     this.enabled = true,
-  });
+  }) : assert(
+         360 % detentDegrees == 0,
+         'a detent that does not divide the circle leaves a short notch at '
+         '12 o\'clock, which a hue crossing it would sound twice',
+       ),
+       assert(
+         minSize / 2 > radiusMargin,
+         'the smallest disc has to leave a usable radius outside the '
+         'margin, or every touch on it lands at the centre',
+       );
 
   // ColorWheel.jsx: ring inset, puck, ring width, usable radius margin, detent.
   static const double ringInset = 8;
@@ -73,8 +82,9 @@ class WizColorWheel extends StatefulWidget {
   static const int notches = 360 ~/ detentDegrees;
 
   /// The disc the design draws, at its widest and at its narrowest. Spec
-  /// §14: "the colour wheel is `min(available, 228)`" — 228 is the phone
-  /// tab's width (spec §11.2) — and "touch targets never below 44", the
+  /// §14: "the colour wheel is `min(available, 228)`" — 228 is the wheel the
+  /// phone's Colour tab draws (spec §10.5, "228 on the tab, 196 in the
+  /// sheet, capped by width") — and "touch targets never below 44", the
   /// smallest disc a finger can still aim inside. A caller asking for
   /// anything outside gets the wheel the chassis has room for.
   static const double minSize = 44;
@@ -120,9 +130,19 @@ class _WizColorWheelState extends State<WizColorWheel> {
   /// degrees and saturation to three decimals.
   static const double _saturationSteps = 1000;
 
-  /// The diameter the wheel draws at, and the disc geometry that follows.
-  double get _diameter =>
-      widget.size.clamp(WizColorWheel.minSize, WizColorWheel.maxSize);
+  /// The diameter the wheel last drew at, and the disc geometry that
+  /// follows. Held rather than derived from [WizColorWheel.size] alone: a
+  /// wheel in a box narrower than the size it was asked for paints at the
+  /// box's width, and gesture maths reading the unclamped radius would put
+  /// the colour under the finger somewhere the puck is not. Set from the
+  /// layout on every build, before any touch can arrive.
+  late double _diameter = _diameterFor(double.infinity);
+
+  double _diameterFor(double maxWidth) {
+    var d = widget.size.clamp(WizColorWheel.minSize, WizColorWheel.maxSize);
+    return maxWidth.isFinite ? math.min(d, maxWidth) : d;
+  }
+
   double get _r => _diameter / 2;
   double get _usable => _r - WizColorWheel.radiusMargin;
 
@@ -263,7 +283,17 @@ class _WizColorWheelState extends State<WizColorWheel> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+    // Measured from inside the layout: a wheel asked for more width than its
+    // parent has draws at the parent's instead, so the disc, the ring around
+    // it and the maths that reads a touch all agree.
+    builder: (context, constraints) {
+      _diameter = _diameterFor(constraints.maxWidth);
+      return _wheel(context);
+    },
+  );
+
+  Widget _wheel(BuildContext context) {
     var wiz = context.wiz;
     var armed = widget.enabled;
     var increased = _shift(byHue: WizColorWheel.detentDegrees);

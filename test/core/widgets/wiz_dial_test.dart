@@ -7,6 +7,8 @@ import 'package:wizctl_app/core/theme/wiz_colors.dart';
 import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/wiz_dial.dart';
 
+import 'package:wizctl_app/core/widgets/wiz_dial_disc.dart';
+
 import '../../support/wiz_test_app.dart';
 
 /// The amber ring a keyboard-focused dial draws (spec §11.2) — matched on
@@ -307,5 +309,107 @@ void main() {
     } finally {
       handle.dispose();
     }
+  });
+  testWidgets('the first arrow key sounds like the second', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var value = 50.0;
+    await tester.pumpWidget(
+      wizTestApp(
+        StatefulBuilder(
+          builder: (context, setState) => WizDial(
+            value: value,
+            min: 0,
+            max: 100,
+            step: 1,
+            size: 132,
+            onChanged: (v) => setState(() => value = v),
+          ),
+        ),
+        feedback: feedback,
+      ),
+    );
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+
+    // Forty notches across 0..100 is one every 2.5, and an arrow moves five,
+    // so every step crosses at least one — including the first, which had no
+    // drag to seed the notch it started from.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(feedback.played, [FeedbackKind.detent]);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(feedback.played, [FeedbackKind.detent, FeedbackKind.detent]);
+  });
+
+  testWidgets('a step with nowhere to go ends no change', (tester) async {
+    var changed = <double>[];
+    var ended = <double>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        WizDial(
+          value: 100,
+          min: 10,
+          max: 100,
+          size: 132,
+          onChanged: changed.add,
+          onChangeEnd: ended.add,
+        ),
+      ),
+    );
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(changed, isEmpty);
+    expect(ended, isEmpty, reason: 'a held arrow at max is not a change');
+  });
+
+  testWidgets('an empty range lays out rather than dividing by it', (
+    tester,
+  ) async {
+    var changed = <double>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        WizDial(value: 20, min: 20, max: 20, size: 132, onChanged: changed.add),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(changed, isEmpty, reason: 'there is nowhere on an empty range');
+  });
+
+  testWidgets('a knob never draws wider than the box it is given', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 100,
+          child: WizDial(
+            value: 50,
+            min: 10,
+            max: 100,
+            size: 168,
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(WizDialDisc)),
+      const Size(100, 100),
+      reason: 'the disc paints at the width its parent has, not past it',
+    );
   });
 }
