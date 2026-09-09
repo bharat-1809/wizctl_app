@@ -25,6 +25,10 @@ class WizType {
   /// `WizSegmentedControl`).
   static const double segmentTracking = 0.08;
 
+  /// A `WizListRow` title tracks in a hair: -0.005 em (ListRow.jsx, the
+  /// 16 px title's `letterSpacing: '-.005em'`).
+  static const double rowTitleTracking = -0.005;
+
   // SceneTile.jsx label — the design system's scene *chip*: UI face 13.5/15
   // with letter-spacing -0.005 em.
   static const double sceneLabelTracking = -0.005;
