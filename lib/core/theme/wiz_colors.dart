@@ -148,4 +148,14 @@ class WizColors {
   /// The warm shadow cast inside a lit amber track — a groove in hot metal
   /// is brown, not black: Toggle.jsx `inset 0 2px 5px rgba(120,60,0,.55)`.
   final Color shadowAmber = const Color(0xFF783C00);
+
+  // Fixture hero materials (prototype hero markup): the shade's shaded
+  // bottom (`linear-gradient(180deg,#3A3A42,#141418 62%)`,
+  // `design/reference/WizCtl_Mobile.dc.html:257`), the bulb's neck
+  // (`linear-gradient(180deg,#2E2E36,#1C1C22)`, Mobile:266) and the unlit
+  // glass of its globe (Mobile:267).
+  final Color shadeBottom = const Color(0xFF141418);
+  final Color neckTop = const Color(0xFF2E2E36);
+  final Color neckBottom = const Color(0xFF1C1C22);
+  final Color glass = const Color(0xF018181D); // rgba(24,24,29,.94)
 }
