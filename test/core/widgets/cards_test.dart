@@ -143,8 +143,11 @@ void main() {
     await tester.tap(find.text('Bedside bulb'));
     await tester.pumpAndSettle();
     expect(opened, 1);
-    // The card itself is a key, and a key going down is a press.
-    expect(feedback.played, [FeedbackKind.press]);
+    // The card is silent under the finger: its own cue would fire at the
+    // arena's tap-down deadline, which a finger holding the rail's handle
+    // reaches too, and the card would then click twice and sink under the
+    // handle. `LightCard.jsx` has no pointer-down cue either.
+    expect(feedback.played, isEmpty);
   });
 
   testWidgets('the card, its toggle and its rail are three nodes', (

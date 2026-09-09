@@ -24,6 +24,9 @@ export 'light_card_brightness.dart' show WizBrightnessControl;
 ///
 /// The well and the brightness row are [LightCardWell] and
 /// [LightCardBrightness]; this file is the card's chassis, copy and switch.
+///
+/// `LightCard.jsx` is `design/reference/_ds_bundle.js:1844`–`:1994`; the
+/// bare `:nnnn` citations below are lines of that file.
 class LightCard extends StatelessWidget {
   final String name;
   final String? meta;
@@ -236,6 +239,13 @@ class LightCard extends StatelessWidget {
     return WizPressable(
       onTap: onTap,
       scale: m.cardScale,
+      // Silent under the finger. The card's own key would fire at the
+      // arena's 100 ms tap-down, which a finger resting on the rail's handle
+      // reaches before the drag recogniser claims it — so holding the handle
+      // played `press` twice and sank the card under it. `LightCard.jsx` has
+      // no pointer-down cue of its own; only `RoomCard.jsx` (`:2014`) plays
+      // one, and its tile hosts nothing draggable.
+      feedback: null,
       // No `semanticsLabel`: the pressable already marks the node a button,
       // and the name and meta inside it name it. Naming it again would have
       // assistive tech read the light's name twice.
