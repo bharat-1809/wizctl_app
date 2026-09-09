@@ -132,9 +132,12 @@ void main() {
         ),
       ),
     );
+    // The flag has to sit on the node holding the copy, not on the band
+    // above it: an explicit-children container absorbs no words, so a screen
+    // reader would announce an empty region.
     expect(
-      tester.getSemantics(find.byType(WizStatusBanner)),
-      isSemantics(isLiveRegion: true),
+      tester.getSemantics(find.text('No reply from this light')),
+      isSemantics(isLiveRegion: true, label: 'No reply from this light'),
     );
 
     await tester.pumpWidget(
@@ -144,13 +147,17 @@ void main() {
           child: WizStatusBanner(
             status: WizStatus.info,
             title: 'Rooms live in this home only',
+            body: 'Nothing is uploaded',
           ),
         ),
       ),
     );
     expect(
-      tester.getSemantics(find.byType(WizStatusBanner)),
-      isSemantics(isLiveRegion: false),
+      tester.getSemantics(find.text('Rooms live in this home only')),
+      isSemantics(
+        isLiveRegion: false,
+        label: 'Rooms live in this home only\nNothing is uploaded',
+      ),
     );
     handle.dispose();
   });

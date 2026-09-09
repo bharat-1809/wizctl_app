@@ -81,6 +81,13 @@ class ToastController extends ChangeNotifier {
 
   int _seq = 0;
 
+  /// Set by [dispose]. A queue can outlive its layer by a moment — a command
+  /// that reports back after the screen is gone — and a [push] or
+  /// [pushAfter] arriving then would notify a disposed [ChangeNotifier], or
+  /// arm a timer that nothing is left to cancel. After this every entry
+  /// point is a no-op.
+  bool _disposed = false;
+
   ToastController({
     this.duration = defaultDuration,
     this.max = defaultMax,
@@ -137,6 +144,7 @@ class ToastController extends ChangeNotifier {
       actionLabel: actionLabel,
       onAction: onAction,
     );
+    if (_disposed) return toast.id;
     _show(toast);
     return toast.id;
   }
@@ -161,6 +169,7 @@ class ToastController extends ChangeNotifier {
       actionLabel: actionLabel,
       onAction: onAction,
     );
+    if (_disposed) return toast.id;
     _pending[toast.id] = (
       Timer(delay, () {
         var entry = _pending.remove(toast.id);
@@ -182,6 +191,7 @@ class ToastController extends ChangeNotifier {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
+    if (_disposed) return;
     var pending = _pending.remove(id);
     if (pending != null) {
       pending.$1.cancel();
@@ -215,6 +225,10 @@ class ToastController extends ChangeNotifier {
   }
 
   void dismiss(String id) {
+    // Guarded like the three above, so "no-op after dispose" is the whole
+    // contract rather than three quarters of it: a dismiss key tapped in the
+    // frame the layer goes away would otherwise notify a dead notifier.
+    if (_disposed) return;
     _pending.remove(id)?.$1.cancel();
     _expiry.remove(id)?.cancel();
     var before = _toasts.length;
@@ -226,6 +240,7 @@ class ToastController extends ChangeNotifier {
   /// controller would call [dismiss] and notify a disposed [ChangeNotifier].
   @override
   void dispose() {
+    _disposed = true;
     for (var timer in _expiry.values) {
       timer.cancel();
     }

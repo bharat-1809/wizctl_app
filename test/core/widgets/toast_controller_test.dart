@@ -159,4 +159,26 @@ void main() {
       expect(feedback.played, [FeedbackKind.confirm]);
     });
   });
+
+  test('every entry point is a no-op once the controller is disposed', () {
+    fakeAsync((async) {
+      var feedback = RecordingFeedbackService();
+      var c = ToastController(feedback: feedback);
+      c.dispose();
+      // A command reporting back after its screen is gone. `pushAfter` is
+      // the dangerous one: nothing is left that could cancel its timer, so
+      // it would fire into a disposed ChangeNotifier.
+      c.pushAfter(
+        WizMotion.standard.toastDelay,
+        tone: WizToastTone.loading,
+        title: 'late',
+      );
+      var id = c.push(tone: WizToastTone.success, title: 'later');
+      c.update(id, tone: WizToastTone.error, title: 'later still');
+      c.dismiss(id);
+      expect(async.pendingTimers, isEmpty);
+      async.flushTimers();
+      expect(feedback.played, isEmpty);
+    });
+  });
 }

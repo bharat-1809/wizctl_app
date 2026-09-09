@@ -67,20 +67,54 @@ void main() {
     c.dispose();
   });
 
-  testWidgets('a toast is a live region, so it is announced once', (
+  testWidgets('the live region is the node that carries the words', (
     tester,
   ) async {
     var handle = tester.ensureSemantics();
     var c = ToastController();
     await tester.pumpWidget(_host(c));
-    c.push(tone: WizToastTone.info, title: 'Room saved');
-    await tester.pumpAndSettle();
-    expect(
-      tester.getSemantics(find.byType(WizToast)),
-      isSemantics(isLiveRegion: true),
+    c.push(
+      tone: WizToastTone.info,
+      title: 'Room saved',
+      body: 'Kitchen is empty',
     );
+    await tester.pumpAndSettle();
+    // The flag on its own announces nothing: the node carrying it has to be
+    // the one holding the copy, or a screen reader reads out an empty
+    // region. Title and body merge into it; the keys stay outside.
+    expect(
+      tester.getSemantics(find.text('Room saved')),
+      isSemantics(isLiveRegion: true, label: 'Room saved\nKitchen is empty'),
+    );
+    expect(find.semantics.byLabel('Room saved\nKitchen is empty'), findsOne);
     handle.dispose();
     c.dispose();
+  });
+
+  testWidgets('a toast with no keys still announces itself once', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      wizTestApp(
+        const SizedBox(
+          width: 350,
+          child: WizToast(
+            data: WizToastData(
+              id: 't0',
+              tone: WizToastTone.success,
+              title: 'Cozy applied',
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.text('Cozy applied')),
+      isSemantics(isLiveRegion: true, label: 'Cozy applied'),
+    );
+    expect(find.semantics.byLabel('Cozy applied'), findsOne);
+    handle.dispose();
   });
 
   testWidgets('an action key fires the toast action', (tester) async {
@@ -174,6 +208,62 @@ void main() {
       expect(icon.color, entry.value.$2, reason: '${entry.key} colour');
       expect(icon.size, WizToast.glyph);
     }
+  });
+
+  testWidgets('reduced motion lands a toast in place on the first frame', (
+    tester,
+  ) async {
+    var moving = ToastController();
+    await tester.pumpWidget(_host(moving));
+    moving.push(tone: WizToastTone.success, title: 'Cozy applied');
+    await tester.pumpAndSettle();
+    var settled = tester.getRect(find.byType(WizToast));
+
+    var still = ToastController();
+    await tester.pumpWidget(
+      wizTestApp(
+        MediaQuery(
+          // The platform's "reduce motion" switch, over the harness's own
+          // MediaQuery.
+          data: const MediaQueryData(
+            size: Size(390, 600),
+            disableAnimations: true,
+          ),
+          child: SizedBox(
+            width: 390,
+            height: 600,
+            child: Stack(
+              children: [
+                WizToastLayer(
+                  controller: still,
+                  placement: WizToastPlacement.aboveTabBar,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    still.push(tone: WizToastTone.success, title: 'Cozy applied');
+    // One frame only: with animations off there is no entrance left to play,
+    // so the toast is already where the moving one ends up.
+    await tester.pump();
+    expect(tester.getRect(find.byType(WizToast)), settled);
+    expect(
+      tester
+          .widget<Opacity>(
+            find
+                .ancestor(
+                  of: find.byType(WizToast),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          )
+          .opacity,
+      1,
+    );
+    moving.dispose();
+    still.dispose();
   });
 
   testWidgets('the queue stacks newest above oldest, above the tab bar', (

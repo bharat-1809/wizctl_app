@@ -18,7 +18,8 @@ class WizToastLayer extends StatelessWidget {
   final WizToastPlacement placement;
 
   /// The window's bottom safe-area inset, so the stack clears the home
-  /// indicator. Added to whatever the placement already reserves.
+  /// indicator — not the tab bar height; the placement adds that. Added to
+  /// whatever the placement already reserves.
   final double bottomInset;
 
   const WizToastLayer({
@@ -45,7 +46,7 @@ class WizToastLayer extends StatelessWidget {
     var desktop = placement == WizToastPlacement.bottomRight;
     // ToastStack.jsx pins the stack `left`/`right` to `--space-6`
     // (`design/reference/_ds_bundle.js:2544`); desktop.jsx overrides it to a
-    // fixed width against `--space-8` (`:3758`).
+    // fixed width against `--space-8` (`:3759`).
     var margin = desktop ? wiz.space.s8 : wiz.space.s6;
     return Positioned(
       left: desktop ? null : margin,

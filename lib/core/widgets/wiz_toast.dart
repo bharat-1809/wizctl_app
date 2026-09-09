@@ -63,16 +63,13 @@ class WizToast extends StatelessWidget {
       WizToastTone.info => (WizIcons.zap, c.textSecondary),
     };
     return Semantics(
-      // Ruling: every toast is a live region, so a screen reader announces
-      // it once when it arrives. The JSX narrows this to errors
-      // (`design/reference/_ds_bundle.js:2453`); a toast is the only report
-      // a write gets, so none of them may pass silently.
+      // The card is a container whose children are explicit, so the action
+      // and dismiss keys stay their own nodes: `WizPressable` annotates with
+      // `container: false`, so without this the whole toast collapses into a
+      // single unlabelled button. The live region is *not* here — a node
+      // with explicit children absorbs no words, so it would announce
+      // nothing; it goes around the copy below instead.
       container: true,
-      liveRegion: true,
-      // Without this the action and dismiss keys merge into the live region
-      // and the toast becomes one unlabelled button: `WizPressable` marks
-      // itself with `container: false`, so only the region above it can
-      // force its keys to stay separate nodes.
       explicitChildNodes: true,
       child: WizSurface(
         spec: WizShadowSpec(
@@ -111,34 +108,47 @@ class WizToast extends StatelessWidget {
                   : WizIcon(icon, size: glyph, color: color),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    data.title,
-                    style: wiz.typography.body.copyWith(
-                      fontSize: titleSize,
-                      fontWeight: titleWeight,
-                      // Toast.jsx `letterSpacing: '-.005em'` (`:2493`), the
-                      // em value the kit states once on the row title.
-                      letterSpacing: titleSize * WizType.rowTitleTracking,
-                      color: c.textPrimary,
-                    ),
-                  ),
-                  if (data.body != null)
-                    Padding(
-                      // Toast.jsx `marginTop: 1` (`:2498`).
-                      padding: EdgeInsets.only(top: wiz.space.s1 / 2),
-                      child: Text(
-                        data.body!,
-                        style: wiz.typography.bodySm.copyWith(
-                          fontSize: bodySize,
-                          color: c.textTertiary,
-                        ),
+              // Ruling: every toast is a live region, so a screen reader
+              // announces it once when it arrives. The JSX narrows this to
+              // errors (`design/reference/_ds_bundle.js:2453`); a toast is
+              // the only report a write gets, so none may pass silently.
+              //
+              // It sits on the copy rather than on the card: with no
+              // explicit children of its own this node absorbs both Texts,
+              // so the region announces "title, body" — while the keys
+              // outside it stay separately reachable.
+              child: Semantics(
+                container: true,
+                liveRegion: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      data.title,
+                      style: wiz.typography.body.copyWith(
+                        fontSize: titleSize,
+                        fontWeight: titleWeight,
+                        // Toast.jsx `letterSpacing: '-.005em'` (`:2493`), the
+                        // em value the kit states once on the row title.
+                        letterSpacing: titleSize * WizType.rowTitleTracking,
+                        color: c.textPrimary,
                       ),
                     ),
-                ],
+                    if (data.body != null)
+                      Padding(
+                        // Toast.jsx `marginTop: 1` (`:2498`).
+                        padding: EdgeInsets.only(top: wiz.space.s1 / 2),
+                        child: Text(
+                          data.body!,
+                          style: wiz.typography.bodySm.copyWith(
+                            fontSize: bodySize,
+                            color: c.textTertiary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             if (data.actionLabel != null)

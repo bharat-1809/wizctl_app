@@ -62,14 +62,13 @@ class WizStatusBanner extends StatelessWidget {
       WizStatus.info => (WizIcons.terminal, c.textSecondary),
     };
     return Semantics(
-      // StatusBanner.jsx `role: status === 'error' ? 'alert' : 'status'`
-      // (`design/reference/_ds_bundle.js:2361`): only a failure interrupts.
+      // The band is a container whose children are explicit, so an [action]
+      // key stays its own node: `WizPressable` annotates with
+      // `container: false`, so without this the whole banner collapses into
+      // a single unlabelled button. The live region is *not* here — a node
+      // with explicit children absorbs no words, so it would announce
+      // nothing; it goes around the copy below instead.
       container: true,
-      liveRegion: status == WizStatus.error,
-      // Without this an [action] key merges into the band and the whole
-      // banner becomes one button: `WizPressable` marks itself with
-      // `container: false`, so only the band above it can force the key to
-      // stay a separate node.
       explicitChildNodes: true,
       child: WizSurface(
         spec: wiz.elevation.well,
@@ -98,34 +97,47 @@ class WizStatusBanner extends StatelessWidget {
                   : WizIcon(icon, size: glyph, color: color),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: wiz.typography.body.copyWith(
-                      fontSize: titleSize,
-                      fontWeight: titleWeight,
-                      // StatusBanner.jsx `letterSpacing: '-.005em'` (`:2400`),
-                      // the em value the kit states once on the row title.
-                      letterSpacing: titleSize * WizType.rowTitleTracking,
-                      color: c.textPrimary,
-                    ),
-                  ),
-                  if (body != null)
-                    Padding(
-                      // StatusBanner.jsx `marginTop: 1` (`:2406`): half the
-                      // 2 px `s1` step, the smallest gap the scale reaches.
-                      padding: EdgeInsets.only(top: wiz.space.s1 / 2),
-                      child: Text(
-                        body!,
-                        style: wiz.typography.bodySm.copyWith(
-                          color: c.textTertiary,
-                        ),
+              // StatusBanner.jsx `role: status === 'error' ? 'alert' :
+              // 'status'` (`design/reference/_ds_bundle.js:2361`): only a
+              // failure interrupts.
+              //
+              // It sits on the copy rather than on the band: with no
+              // explicit children of its own this node absorbs both Texts,
+              // so the region announces "title, body" — while an action key
+              // outside it stays separately reachable.
+              child: Semantics(
+                container: true,
+                liveRegion: status == WizStatus.error,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: wiz.typography.body.copyWith(
+                        fontSize: titleSize,
+                        fontWeight: titleWeight,
+                        // StatusBanner.jsx `letterSpacing: '-.005em'`
+                        // (`:2400`), the em value the kit states once on the
+                        // row title.
+                        letterSpacing: titleSize * WizType.rowTitleTracking,
+                        color: c.textPrimary,
                       ),
                     ),
-                ],
+                    if (body != null)
+                      Padding(
+                        // StatusBanner.jsx `marginTop: 1` (`:2406`): half the
+                        // 2 px `s1` step, the smallest gap the scale reaches.
+                        padding: EdgeInsets.only(top: wiz.space.s1 / 2),
+                        child: Text(
+                          body!,
+                          style: wiz.typography.bodySm.copyWith(
+                            color: c.textTertiary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             ?action,
