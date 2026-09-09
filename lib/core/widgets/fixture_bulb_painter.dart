@@ -116,8 +116,11 @@ void paintBulb(
   canvas.restore();
 
   // Mobile:267 is `inset 0 -10px 20px …, inset 0 3px 0 …, var(--elev-knob)`,
-  // and the knob recipe carries inner shadows of its own; CSS draws the
-  // earlier shadow over the later, so the knob's land on top.
+  // and the knob recipe carries inner shadows of its own, so the globe wears
+  // all three sets. The list is the CSS one, in the CSS order; `paintInsets`
+  // draws it last-on-top, so the knob's pair finishes over the globe's own
+  // where CSS would have had the globe's over the knob's. Both grooves are
+  // near-black on the same edge, so the two stackings are the same picture.
   paintInsets(canvas, globe, [
     WizInset(
       offsetY: FixtureGeometry.globeGrooveOffset,

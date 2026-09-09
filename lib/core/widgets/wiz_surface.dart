@@ -13,6 +13,16 @@ const double _insetShadowBleed = 64;
 /// area outside the shape, shifted by the inset's offset, blurred, clipped
 /// to the shape. A blur of zero with a 1 px offset is the hard highlight or
 /// groove line every raised or recessed part carries.
+///
+/// The list is painted in order, so the **last** entry lands on top. CSS is
+/// the other way round — the first `box-shadow` is drawn over the ones
+/// after it — so a spec transcribed straight from `elevation.css`, as every
+/// [WizShadowSpec] in the kit is, stacks its insets in the opposite order.
+/// That does not show, because the two halves of a pair sit on opposite
+/// edges: a positive offset shifts the hole down and uncovers a line along
+/// the top, a negative one uncovers a line along the bottom. They meet only
+/// where a blur is wide enough to cross the part. A caller that needs one
+/// of them over the other lists that one last.
 void paintInsets(Canvas canvas, RRect rrect, List<WizInset> insets) {
   if (insets.isEmpty) return;
   var outer = rrect.outerRect.inflate(_insetShadowBleed);
