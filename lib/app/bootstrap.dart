@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../core/feedback/audio_player_port.dart';
@@ -14,6 +16,30 @@ class AppServices {
   final ToastController toasts;
 
   const AppServices({required this.feedback, required this.toasts});
+}
+
+/// The open licences the app ships, by the family each covers. Both faces
+/// are under the SIL Open Font License, whose terms require the licence to
+/// travel with the software, so the text is bundled and handed to the
+/// registry rather than merely linked.
+///
+/// The third face, Neumatic Compressed, is a commercial one and carries no
+/// licence file here; see the README.
+const Map<String, String> _fontLicences = {
+  'Hanken Grotesk': 'assets/fonts/OFL-HankenGrotesk.txt',
+  'JetBrains Mono': 'assets/fonts/OFL-JetBrainsMono.txt',
+};
+
+/// Adds the bundled font licences to the registry the standard
+/// `LicensePage` reads, so they are listed beside the packages'.
+void registerFontLicences() {
+  LicenseRegistry.addLicense(() async* {
+    for (var entry in _fontLicences.entries) {
+      yield LicenseEntryWithLineBreaks([
+        entry.key,
+      ], await rootBundle.loadString(entry.value));
+    }
+  });
 }
 
 /// The pixel ratio the grain tile is rendered at. Read from the implicit
@@ -42,6 +68,7 @@ Future<AppServices> bootstrap({
   HapticMapper? haptics,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerFontLicences();
 
   // Guarded on its own: a texture that will not render is a flat chassis,
   // not a dead app, and an unhandled throw here would take `main` down before

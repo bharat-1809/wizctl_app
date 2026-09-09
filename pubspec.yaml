@@ -35,6 +35,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    # The two open licences the app ships and registers at start, so the
+    # standard licence page lists them (see `lib/app/bootstrap.dart`).
+    - assets/fonts/OFL-HankenGrotesk.txt
+    - assets/fonts/OFL-JetBrainsMono.txt
   fonts:
     - family: NeumaticCompressed
       fonts:
