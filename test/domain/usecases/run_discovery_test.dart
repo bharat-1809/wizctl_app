@@ -104,35 +104,38 @@ void main() {
     },
   );
 
+  // The sweep here runs on '10.0.5' while the network reports '192.168.1':
+  // the sweep is the one that knows which range it actually walked, so its
+  // subnet is what the finished result carries (spec §5.7.5).
   test('sweep mode maps progress and richer replies', () async {
     gateway.sweepEvents = [
       const ScanProgress(
         addressesProbed: 16,
         addressCount: 254,
         fraction: 0.03,
-        subnet: '192.168.1',
+        subnet: '10.0.5',
       ),
-      const ScanFound(DiscoveredLight(ip: '192.168.1.131', mac: 'm1')),
+      const ScanFound(DiscoveredLight(ip: '10.0.5.131', mac: 'm1')),
       const ScanUpdated(
         DiscoveredLight(
-          ip: '192.168.1.131',
+          ip: '10.0.5.131',
           mac: 'm1',
           moduleName: 'ESP01_SHTW1C_31',
         ),
       ),
       const ScanFailed(
-        addressRange: '192.168.1.200-192.168.1.254',
+        addressRange: '10.0.5.200-10.0.5.254',
         error: 'socket closed',
       ),
       const ScanProgress(
         addressesProbed: 254,
         addressCount: 254,
         fraction: 1,
-        subnet: '192.168.1',
+        subnet: '10.0.5',
       ),
       const ScanDone([
         DiscoveredLight(
-          ip: '192.168.1.131',
+          ip: '10.0.5.131',
           mac: 'm1',
           moduleName: 'ESP01_SHTW1C_31',
         ),
@@ -145,7 +148,7 @@ void main() {
         .toList();
     expect(progress.first.phase, DiscoveryPhase.sweeping);
     expect(progress.last.probed, 254);
-    expect(progress.last.subnet, '192.168.1');
+    expect(progress.last.subnet, '10.0.5');
     expect(updates.whereType<DeviceFound>(), hasLength(1));
     expect(
       updates.whereType<DeviceUpdated>().single.device.bulbClass,
@@ -156,8 +159,13 @@ void main() {
       BulbClass.tw,
     );
     expect((updates.last as DiscoveryFinished).failedRanges, [
-      '192.168.1.200-192.168.1.254',
+      '10.0.5.200-10.0.5.254',
     ]);
+    expect(
+      (updates.last as DiscoveryFinished).subnet,
+      '10.0.5',
+      reason: 'the sweep knows the range it walked; the monitor may not',
+    );
   });
 
   test('a gateway failure surfaces as DiscoveryFailed', () async {

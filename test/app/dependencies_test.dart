@@ -62,6 +62,23 @@ void main() {
     await sub.cancel();
   });
 
+  test('build leaves the network monitor running', () async {
+    var deps = await _build(FakeGateway());
+    addTearDown(deps.dispose);
+
+    // No explicit start or refresh here: build owns the monitor's lifecycle,
+    // so the first poll is already in flight when build returns.
+    await pumpEventQueue();
+
+    expect(deps.network.current, '192.168.1');
+    expect(
+      deps.network.isOffNetwork('10.0.0'),
+      isTrue,
+      reason: 'a live monitor knows the subnet and can answer off-network',
+    );
+    expect(deps.network.isOffNetwork('192.168.1'), isFalse);
+  });
+
   test('dispose closes everything', () async {
     var deps = await _build(FakeGateway());
 

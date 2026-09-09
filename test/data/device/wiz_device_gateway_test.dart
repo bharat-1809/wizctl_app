@@ -7,7 +7,9 @@ import 'package:wizctl_app/domain/entities/entities.dart';
 import '../../support/fake_bulb.dart';
 
 void main() {
-  const bulbPort = 39441;
+  // The bulb takes an ephemeral port (`listenPort: 0`) and the gateway is
+  // tuned to whatever it got, so a stray process on a fixed port can't fail
+  // the run. The reply and dead ports stay fixed: nothing listens on those.
   const replyPort = 39442;
   const deadPort = 39443;
 
@@ -15,12 +17,12 @@ void main() {
     'reads state and config from a loopback bulb and sends a pilot',
     () async {
       var bulb = await FakeBulb.start(
-        listenPort: bulbPort,
+        listenPort: 0,
         replyMode: ReplyMode.sourcePort,
       );
       addTearDown(bulb.close);
       var gateway = WizDeviceGateway(
-        tuning: const GatewayTuning(port: bulbPort, localPort: replyPort),
+        tuning: GatewayTuning(port: bulb.port, localPort: replyPort),
       );
       var state = await gateway.readState('127.0.0.1');
       expect(state.isOn, isTrue);
@@ -53,21 +55,24 @@ void main() {
         gateway.send('127.0.0.1', ControlSignal.on()),
         throwsA(isA<DeviceException>()),
       );
-      expect(watch.elapsed, lessThan(const Duration(seconds: 3)));
+      // Generous on purpose: a cold VM JIT-compiles the socket stack inside
+      // the measured region. 10 s still proves the tuning binds the wait,
+      // against the package's ~30 s default for two failing calls.
+      expect(watch.elapsed, lessThan(const Duration(seconds: 10)));
     },
   );
 
   test('probe streams scan events', () async {
     var bulb = await FakeBulb.start(
-      listenPort: bulbPort,
+      listenPort: 0,
       replyMode: ReplyMode.sourcePort,
     );
     addTearDown(bulb.close);
     var gateway = WizDeviceGateway(
-      tuning: const GatewayTuning(
-        port: bulbPort,
+      tuning: GatewayTuning(
+        port: bulb.port,
         localPort: replyPort,
-        readTimeout: Duration(seconds: 1),
+        readTimeout: const Duration(seconds: 1),
       ),
     );
     var events = await gateway.probe(['127.0.0.1']).toList();

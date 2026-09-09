@@ -13,7 +13,11 @@ class DriftRoomRepository implements RoomRepository {
   SimpleSelectStatement<$RoomsTable, RoomRow> _byHome(String homeId) =>
       _db.select(_db.rooms)
         ..where((r) => r.homeId.equals(homeId))
-        ..orderBy([(r) => OrderingTerm.asc(r.sortIndex)]);
+        // Id last so rows sharing a sort index keep one stable order.
+        ..orderBy([
+          (r) => OrderingTerm.asc(r.sortIndex),
+          (r) => OrderingTerm.asc(r.id),
+        ]);
 
   @override
   Stream<List<Room>> watchByHome(String homeId) =>

@@ -142,4 +142,20 @@ void main() {
       reason: 'a loaded state is stale until refreshed',
     );
   });
+
+  test('rooms sharing a sort index come back ordered by id', () async {
+    await homes.insert(home);
+    // Inserted back to front: without the id tie-break SQLite hands them
+    // back in rowid (insertion) order, which the user never chose.
+    await rooms.insert(
+      const Room(id: 'r2', homeId: 'h', name: 'Bedroom', glyph: RoomGlyph.bed),
+    );
+    await rooms.insert(
+      const Room(id: 'r1', homeId: 'h', name: 'Bath', glyph: RoomGlyph.bath),
+    );
+    expect((await rooms.getByHome('h')).map((r) => r.id).toList(), [
+      'r1',
+      'r2',
+    ]);
+  });
 }

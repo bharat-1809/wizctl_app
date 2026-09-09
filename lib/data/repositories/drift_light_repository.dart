@@ -14,9 +14,12 @@ class DriftLightRepository implements LightRepository {
     Expression<bool> Function($LightsTable l) filter,
   ) => _db.select(_db.lights)
     ..where(filter)
+    // Id last so rows sharing a sort index and timestamp keep one stable
+    // order rather than whatever the rowids happen to be.
     ..orderBy([
       (l) => OrderingTerm.asc(l.sortIndex),
       (l) => OrderingTerm.asc(l.addedAt),
+      (l) => OrderingTerm.asc(l.id),
     ]);
 
   List<Light> _map(List<LightRow> rows) =>

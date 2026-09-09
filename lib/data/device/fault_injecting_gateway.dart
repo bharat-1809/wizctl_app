@@ -62,7 +62,9 @@ class FaultInjectingGateway implements DeviceGateway {
 
   @override
   Stream<ScanEvent> probe(Iterable<String> ips, {int rounds = 1}) =>
-      _inner.probe(ips, rounds: rounds);
+      _flags().findNothing
+      ? Stream.value(const ScanDone([]))
+      : _inner.probe(ips, rounds: rounds);
 
   @override
   Stream<ScanEvent> sweep({String? subnet}) {

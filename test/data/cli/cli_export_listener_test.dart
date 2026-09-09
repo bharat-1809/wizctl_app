@@ -8,42 +8,26 @@ import 'package:wizctl_app/data/cli/cli_export_listener.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
 
 import '../../support/fakes.dart';
+import '../../support/in_zone_cancel.dart';
 
-/// Relays [source] through a controller that declares its own `onCancel`,
-/// so `cancel()` returns a freshly created, zone-local future a `fakeAsync`
-/// test can observe. The fakes' `async*` streams instead return the
-/// process-wide `Future._nullFuture` sentinel, pinned to whichever zone
-/// first realized it, which never completes inside a `fakeAsync` zone — see
-/// `test/data/repositories/live_state_persister_test.dart` for the same
-/// hazard. Without this, `CliExportListener.dispose()` finishes its final
-/// export but its future is never seen to complete.
-Stream<T> _inZoneCancel<T>(Stream<T> source) {
-  late StreamSubscription<T> upstream;
-  var controller = StreamController<T>(
-    onCancel: () {
-      unawaited(upstream.cancel());
-      return Future.value();
-    },
-  );
-  upstream = source.listen(controller.add);
-  return controller.stream;
-}
-
+/// The fakes' streams relayed through [inZoneCancel], so `cancel()` resolves
+/// inside the `fakeAsync` zone and `CliExportListener.dispose()` is seen to
+/// complete.
 class _InZoneSettings extends FakeSettingsRepository {
   @override
-  Stream<AppSettings> watch() => _inZoneCancel(super.watch());
+  Stream<AppSettings> watch() => inZoneCancel(super.watch());
 }
 
 class _InZoneRooms extends FakeRoomRepository {
   @override
   Stream<List<Room>> watchByHome(String homeId) =>
-      _inZoneCancel(super.watchByHome(homeId));
+      inZoneCancel(super.watchByHome(homeId));
 }
 
 class _InZoneLights extends FakeLightRepository {
   @override
   Stream<List<Light>> watchByHome(String homeId) =>
-      _inZoneCancel(super.watchByHome(homeId));
+      inZoneCancel(super.watchByHome(homeId));
 }
 
 /// A [CliConfigExporter] that counts exports instead of touching the disk,
@@ -62,7 +46,43 @@ class _CountingExporter extends CliConfigExporter {
   }
 }
 
+/// A [_CountingExporter] that suspends for 10 ms before counting, so a test
+/// can distinguish a caller that awaits the export from one that fires it.
+class _DelayedExporter extends _CountingExporter {
+  @override
+  Future<void> export({
+    required List<Light> lights,
+    required List<Room> rooms,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    return super.export(lights: lights, rooms: rooms);
+  }
+}
+
+/// An exporter that always fails, so a test can watch a failed config write
+/// reach `onError` instead of the zone.
+class _FailingExporter extends _CountingExporter {
+  @override
+  Future<void> export({
+    required List<Light> lights,
+    required List<Room> rooms,
+  }) async {
+    throw StateError('no home directory');
+  }
+}
+
 void main() {
+  Light aLight(String id) => Light(
+    id: id,
+    homeId: 'h',
+    roomId: 'r',
+    name: 'x',
+    ip: id,
+    mac: 'm$id',
+    fixture: Fixture.bulb,
+    addedAt: DateTime(2026),
+  );
+
   test('exports the active home after changes, debounced', () {
     fakeAsync((async) {
       var settings = FakeSettingsRepository();
@@ -157,6 +177,75 @@ void main() {
       expect(disposed, isTrue);
       async.elapse(const Duration(milliseconds: 600));
       expect(exporter.exports, 1, reason: 'the cancelled timer never fires');
+    });
+  });
+
+  test('dispose awaits an export the debounce already fired', () {
+    fakeAsync((async) {
+      var settings = _InZoneSettings();
+      var rooms = _InZoneRooms()
+        ..seed([
+          const Room(id: 'r', homeId: 'h', name: 'A', glyph: RoomGlyph.sofa),
+        ]);
+      var lights = _InZoneLights();
+      var exporter = _DelayedExporter();
+      var listener = CliExportListener(
+        settings: settings,
+        rooms: rooms,
+        lights: lights,
+        exporter: exporter,
+        debounce: const Duration(milliseconds: 500),
+      );
+      listener.start();
+      async.flushMicrotasks();
+      settings.save(const AppSettings(activeHomeId: 'h'));
+      async.flushMicrotasks();
+      lights.insert(aLight('1'));
+      async.elapse(const Duration(milliseconds: 500));
+      expect(exporter.exports, 0, reason: 'fired, still exporting');
+      var disposed = false;
+      unawaited(listener.dispose().then((_) => disposed = true));
+      async.flushMicrotasks();
+      expect(disposed, isFalse, reason: 'the in-flight export is awaited');
+      async.elapse(const Duration(milliseconds: 10));
+      expect(disposed, isTrue);
+      expect(exporter.exports, 1);
+    });
+  });
+
+  test('a failed export reaches onError and dispose still completes', () {
+    fakeAsync((async) {
+      var settings = _InZoneSettings();
+      var rooms = _InZoneRooms()
+        ..seed([
+          const Room(id: 'r', homeId: 'h', name: 'A', glyph: RoomGlyph.sofa),
+        ]);
+      var lights = _InZoneLights();
+      Object? error;
+      StackTrace? stack;
+      var listener = CliExportListener(
+        settings: settings,
+        rooms: rooms,
+        lights: lights,
+        exporter: _FailingExporter(),
+        debounce: const Duration(milliseconds: 500),
+        onError: (e, s) {
+          error = e;
+          stack = s;
+        },
+      );
+      listener.start();
+      async.flushMicrotasks();
+      settings.save(const AppSettings(activeHomeId: 'h'));
+      async.flushMicrotasks();
+      lights.insert(aLight('1'));
+      async.elapse(const Duration(milliseconds: 600));
+      expect(error, isA<StateError>());
+      expect(stack, isNotNull);
+      var disposed = false;
+      unawaited(listener.dispose().then((_) => disposed = true));
+      async.flushMicrotasks();
+      expect(disposed, isTrue);
     });
   });
 }

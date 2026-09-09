@@ -171,4 +171,29 @@ void main() {
       0,
     );
   });
+
+  test('a colour outside the channel range is clamped, not thrown', () async {
+    var n = await ApplyColour(
+      resolver: resolver,
+      store: store,
+      pipeline: pipeline,
+    )(const LightTarget('1'), const Rgb(300, -20, 128));
+    expect(n, 1);
+    expect(gateway.sends.single.$2.r, 255);
+    expect(gateway.sends.single.$2.g, 0);
+    expect(gateway.sends.single.$2.b, 128);
+    expect(store.of('1').rgb, const Rgb(255, 0, 128));
+  });
+
+  test('an unknown scene id sends nothing and reports zero', () async {
+    expect(
+      await ApplyScene(resolver: resolver, store: store, pipeline: pipeline)(
+        const WholeHomeTarget('h'),
+        999,
+      ),
+      0,
+    );
+    expect(gateway.sends, isEmpty);
+    expect(store.of('1').active, isNot(ActiveChannel.scene));
+  });
 }

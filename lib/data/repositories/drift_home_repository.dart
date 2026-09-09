@@ -11,9 +11,12 @@ class DriftHomeRepository implements HomeRepository {
   DriftHomeRepository(this._db);
 
   SimpleSelectStatement<$HomesTable, HomeRow> get _ordered =>
+      // Id last so rows sharing a sort index and timestamp keep one stable
+      // order rather than whatever the rowids happen to be.
       _db.select(_db.homes)..orderBy([
         (h) => OrderingTerm.asc(h.sortIndex),
         (h) => OrderingTerm.asc(h.createdAt),
+        (h) => OrderingTerm.asc(h.id),
       ]);
 
   @override

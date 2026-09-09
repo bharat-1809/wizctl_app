@@ -48,8 +48,10 @@ class WizDeviceGateway implements DeviceGateway {
   Future<T> _guard<T>(String ip, Future<T> Function() op) async {
     try {
       return await op();
-    } catch (e) {
-      throw DeviceException(mapError(e, ip));
+    } catch (e, stack) {
+      // Keep the original stack: the socket frame is what tells you which
+      // call actually failed, and a bare throw would start from here.
+      Error.throwWithStackTrace(DeviceException(mapError(e, ip)), stack);
     }
   }
 

@@ -96,6 +96,10 @@ class RunDiscovery {
     var byMac = <String, DiscoveredDevice>{};
     var failedRanges = <String>[];
 
+    // The range the sweep says it walked. It knows better than the monitor,
+    // which may have moved on, or have no address at all (spec §5.7.5).
+    String? sweptSubnet;
+
     Future<(DiscoveredDevice, LiveState?)> enrich(DiscoveredLight raw) async {
       var device = DiscoveredDevice.fromDiscovered(
         raw,
@@ -198,6 +202,7 @@ class RunDiscovery {
         await for (var event in _gateway.sweep()) {
           switch (event) {
             case ScanProgress p:
+              sweptSubnet = p.subnet ?? sweptSubnet;
               yield PhaseChanged(
                 DiscoveryProgress(
                   phase: DiscoveryPhase.sweeping,
@@ -222,7 +227,7 @@ class RunDiscovery {
       }
       yield DiscoveryFinished(
         byMac.values.toList(),
-        await _network.currentSubnet(),
+        sweptSubnet ?? await _network.currentSubnet(),
         failedRanges: failedRanges,
       );
     } on DeviceException catch (e) {

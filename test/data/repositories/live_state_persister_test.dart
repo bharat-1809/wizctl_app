@@ -7,6 +7,7 @@ import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/domain/services/live_state_store.dart';
 
 import '../../support/fakes.dart';
+import '../../support/in_zone_cancel.dart';
 
 /// A [FakeLiveStatePersistence] whose `save` suspends for 10 ms before
 /// delegating, so a test can distinguish a caller that awaits the write from
@@ -19,30 +20,21 @@ class _DelayedFakeLiveStatePersistence extends FakeLiveStatePersistence {
   }
 }
 
+/// A [FakeLiveStatePersistence] whose `save` always fails, so a test can
+/// watch a failed write reach `onError` instead of the zone.
+class _FailingFakeLiveStatePersistence extends FakeLiveStatePersistence {
+  @override
+  Future<void> save(Map<String, LiveState> states) async {
+    throw StateError('disk full');
+  }
+}
+
 /// A [LiveStateStore] whose `watchAll` subscription's `cancel()` resolves
-/// inside the current zone. The base store's broadcast controller declares
-/// no `onCancel`, so `cancel()` returns the process-wide `Future._nullFuture`
-/// sentinel, which is pinned to whichever zone first realized it; inside a
-/// different `fakeAsync` zone that future never completes, so
-/// `flushMicrotasks`/`elapse` can't observe it. Relaying events through a
-/// controller that declares its own `onCancel` — returning a freshly
-/// created, zone-local future rather than awaiting the upstream
-/// subscription's own (equally pinned) cancel future — lets a test actually
-/// observe `LiveStatePersister.dispose()` finish cancelling its
-/// subscription.
+/// inside the current zone, so a `fakeAsync` test can observe
+/// `LiveStatePersister.dispose()` finish cancelling it — see [inZoneCancel].
 class _InZoneCancelStore extends LiveStateStore {
   @override
-  Stream<Map<String, LiveState>> watchAll() {
-    late StreamSubscription<Map<String, LiveState>> upstream;
-    var controller = StreamController<Map<String, LiveState>>(
-      onCancel: () {
-        unawaited(upstream.cancel());
-        return Future.value();
-      },
-    );
-    upstream = super.watchAll().listen(controller.add);
-    return controller.stream;
-  }
+  Stream<Map<String, LiveState>> watchAll() => inZoneCancel(super.watchAll());
 }
 
 void main() {
@@ -94,6 +86,60 @@ void main() {
       expect(persistence.stored['a']!.isOn, isTrue);
       async.elapse(const Duration(milliseconds: 500));
       expect(persistence.saves, 1);
+      store.dispose();
+    });
+  });
+
+  test('dispose awaits a write the debounce already fired', () {
+    fakeAsync((async) {
+      var store = _InZoneCancelStore();
+      var persistence = _DelayedFakeLiveStatePersistence();
+      var persister = LiveStatePersister(
+        store: store,
+        persistence: persistence,
+        debounce: const Duration(milliseconds: 500),
+      );
+      persister.start();
+      async.flushMicrotasks();
+      store.put('a', LiveState.initial.copyWith(isOn: true));
+      async.elapse(const Duration(milliseconds: 500));
+      expect(persistence.saves, 0, reason: 'fired, still writing');
+      var disposed = false;
+      unawaited(persister.dispose().then((_) => disposed = true));
+      async.flushMicrotasks();
+      expect(disposed, isFalse, reason: 'the in-flight write is awaited');
+      async.elapse(const Duration(milliseconds: 10));
+      expect(disposed, isTrue);
+      expect(persistence.saves, 1);
+      store.dispose();
+    });
+  });
+
+  test('a failed write reaches onError and dispose still completes', () {
+    fakeAsync((async) {
+      var store = _InZoneCancelStore();
+      var persistence = _FailingFakeLiveStatePersistence();
+      Object? error;
+      StackTrace? stack;
+      var persister = LiveStatePersister(
+        store: store,
+        persistence: persistence,
+        debounce: const Duration(milliseconds: 500),
+        onError: (e, s) {
+          error = e;
+          stack = s;
+        },
+      );
+      persister.start();
+      async.flushMicrotasks();
+      store.put('a', LiveState.initial.copyWith(isOn: true));
+      async.elapse(const Duration(milliseconds: 600));
+      expect(error, isA<StateError>());
+      expect(stack, isNotNull);
+      var disposed = false;
+      unawaited(persister.dispose().then((_) => disposed = true));
+      async.flushMicrotasks();
+      expect(disposed, isTrue);
       store.dispose();
     });
   });

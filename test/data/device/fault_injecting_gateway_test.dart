@@ -43,6 +43,9 @@ void main() {
     var events = await gateway.sweep().toList();
     expect(events.whereType<ScanProgress>(), hasLength(4));
     expect((events.last as ScanDone).lights, isEmpty);
+    var probed = await gateway.probe(['1.2.3.4']).toList();
+    expect(probed, [const ScanDone([])], reason: 'a probe finds nothing too');
+    expect(inner.probeCalls, isEmpty, reason: 'the real probe never ran');
     var passthrough = FaultInjectingGateway(
       inner,
       flags: () => DebugFlags.none,

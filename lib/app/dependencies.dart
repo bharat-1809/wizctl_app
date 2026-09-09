@@ -44,10 +44,25 @@ class AppDependencies {
   final LiveStatePersister persister;
   final DeviceGateway gateway;
   final NetworkInfo networkInfo;
+
+  /// The subnet poller behind every off-network banner. [build] has already
+  /// started it and [dispose] cancels it, so the shell neither starts nor
+  /// stops it; `refresh()` is only for forcing an early re-read.
   final NetworkMonitor network;
   final TargetResolver resolver;
   final DeviceCommandPipeline pipeline;
   final RefreshStates refreshStates;
+
+  /// Polling. Unlike [network] this one is inert until the shell drives it,
+  /// in this order:
+  ///
+  /// * `sync.activateHome(id)` before `sync.onColdStart()` — a cold start
+  ///   with no active home reads nothing;
+  /// * `sync.onPaused()` and `sync.onResumed()` from the app lifecycle;
+  /// * `sync.pauseForDiscovery()` and `sync.resumeAfterDiscovery()` around
+  ///   every discovery run, so a scan never races the poller;
+  /// * `sync.registerScope(ids)` per visible screen, disposed with that
+  ///   screen, so only what is on screen is polled (spec §5.8).
   final SyncCoordinator sync;
   final RunDiscovery runDiscovery;
   final BlinkLight blinkLight;
@@ -121,10 +136,34 @@ class AppDependencies {
     required this.ids,
   });
 
+  /// The `library` shown on a reported background-write failure.
+  static const String errorLibrary = 'wizctl data';
+
+  /// Where the debounced writers' failures go: the Flutter error handler,
+  /// which logs in debug and reaches crash reporting in release, rather than
+  /// an uncaught error that would take the zone down.
+  static void _report(Object error, StackTrace stack) =>
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: errorLibrary,
+        ),
+      );
+
   /// Only the desktop builds share a filesystem with the CLI (spec §16).
   static bool get _isDesktop =>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
+  /// Builds the graph and starts what owns its own clock: the live-state
+  /// persister, the CLI export listener and [network]. [dispose] stops all
+  /// three, so a build must be disposed.
+  ///
+  /// What the shell still owes, in order (see [sync]):
+  /// `sync.activateHome(id)` before `sync.onColdStart()`; `sync.onPaused()`
+  /// and `sync.onResumed()` from the app lifecycle;
+  /// `sync.pauseForDiscovery()` and `sync.resumeAfterDiscovery()` around
+  /// every discovery; `sync.registerScope(ids)` per visible screen.
   static Future<AppDependencies> build({
     AppDatabase? database,
     DeviceGateway? gateway,
@@ -146,8 +185,11 @@ class AppDependencies {
     var persistence = DriftLiveStatePersistence(db);
 
     var store = LiveStateStore()..seed(await persistence.load());
-    var persister = LiveStatePersister(store: store, persistence: persistence)
-      ..start();
+    var persister = LiveStatePersister(
+      store: store,
+      persistence: persistence,
+      onError: _report,
+    )..start();
 
     DeviceGateway device = gateway ?? WizDeviceGateway();
     NetworkInfo info = networkInfo ?? IoNetworkInfo();
@@ -159,7 +201,9 @@ class AppDependencies {
       );
       info = FaultInjectingNetworkInfo(info, flags: () => flags.value);
     }
-    var network = NetworkMonitor(info);
+    // Idempotent, and dispose() cancels it: the banner is live from launch
+    // rather than from whenever the first screen thinks to ask.
+    var network = NetworkMonitor(info)..start();
 
     Future<String?> homeSubnet() async {
       var id = (await settings.get()).activeHomeId;
@@ -197,6 +241,7 @@ class AppDependencies {
           homeDirectory:
               homeDirectory ?? CliConfigExporter.defaultHomeDirectory,
         ),
+        onError: _report,
       )..start();
     }
 
