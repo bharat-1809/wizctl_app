@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/feedback/feedback_kind.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
+import 'package:wizctl_app/core/icons/wiz_icon.dart';
 import 'package:wizctl_app/core/icons/wiz_icon_data.dart';
+import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/wiz_pressable.dart';
 import 'package:wizctl_app/core/widgets/wiz_rail.dart';
 import 'package:wizctl_app/core/widgets/wiz_segmented_control.dart';
@@ -21,17 +23,36 @@ const List<WizSegment<String>> _segments = [
   WizSegment(value: 'dynamic', label: 'Dynamic'),
 ];
 
-/// The focus node the press recipe owns for the item that renders [label] —
-/// requested directly rather than tabbed to, so the test does not depend on
-/// where the app's traversal happens to start.
-FocusNode _focusOf(WidgetTester tester, Finder label) => tester
+/// The item box around [inner]: the pressable, hit padding included, which
+/// is the box the finger has to land in.
+Finder _itemOf(Finder inner) =>
+    find.ancestor(of: inner, matching: find.byType(WizPressable));
+
+/// A tab bar item has no text, so its icon stands in for one.
+Finder _glyph(WizIconData icon) =>
+    find.byWidgetPredicate((w) => w is WizIcon && w.icon == icon);
+
+/// The focus node the press recipe owns for the item that renders [inner].
+FocusNode _focusOf(WidgetTester tester, Finder inner) => tester
     .widget<FocusableActionDetector>(
       find.descendant(
-        of: find.ancestor(of: label, matching: find.byType(WizPressable)),
+        of: _itemOf(inner),
         matching: find.byType(FocusableActionDetector),
       ),
     )
     .focusNode!;
+
+/// Tabs forward until the item around [inner] holds primary focus. Walking
+/// the traversal proves the item is reachable from the keyboard, which
+/// asking its node for focus directly would not.
+Future<void> _tabTo(WidgetTester tester, Finder inner, {int limit = 8}) async {
+  for (var i = 0; i < limit; i++) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    if (_focusOf(tester, inner).hasPrimaryFocus) return;
+  }
+  fail('$limit tabs never reached $inner');
+}
 
 void main() {
   testWidgets('the segmented cap sits under the selected segment and travels', (
@@ -196,7 +217,7 @@ void main() {
     expect(find.text('Bedroom'), findsNothing);
   });
 
-  testWidgets('a focused segment commits on Enter and on Space', (
+  testWidgets('a segment tabbed to commits on Enter and on Space', (
     tester,
   ) async {
     // The highlight only shows when the last interaction was a key.
@@ -224,14 +245,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    _focusOf(tester, find.text('STATIC')).requestFocus();
-    await tester.pumpAndSettle();
+    await _tabTo(tester, find.text('STATIC'));
+    expect(_focusOf(tester, find.text('STATIC')).hasPrimaryFocus, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(value, 'static');
 
-    _focusOf(tester, find.text('DYNAMIC')).requestFocus();
-    await tester.pumpAndSettle();
+    await _tabTo(tester, find.text('DYNAMIC'));
+    expect(_focusOf(tester, find.text('DYNAMIC')).hasPrimaryFocus, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pumpAndSettle();
     expect(value, 'dynamic');
@@ -374,5 +395,211 @@ void main() {
       findsNothing,
       reason: 'the label is the tooltip, not a rendered row',
     );
+  });
+
+  testWidgets('a segment clears the touch floor at both sizes', (tester) async {
+    var hitMin = WizSpace.standard.hitMin;
+    Widget control(WizSegmentSize size) => SizedBox(
+      width: 330,
+      child: WizSegmentedControl<String>(
+        segments: _segments,
+        value: 'colour',
+        size: size,
+        onChanged: (_) {},
+      ),
+    );
+
+    await tester.pumpWidget(wizTestApp(control(WizSegmentSize.md)));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(WizSegmentedControl<String>)).height, 52);
+    expect(tester.getSize(_itemOf(find.text('COLOUR'))).height, 52);
+    expect(
+      tester.getRect(_cap).height,
+      44,
+      reason: 'the cap keeps the height the spec draws it at',
+    );
+
+    await tester.pumpWidget(wizTestApp(control(WizSegmentSize.sm)));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSize(find.byType(WizSegmentedControl<String>)).height,
+      hitMin,
+      reason: 'a small control is still the 44 track it always was',
+    );
+    expect(
+      tester.getSize(_itemOf(find.text('COLOUR'))).height,
+      greaterThanOrEqualTo(hitMin),
+    );
+    expect(
+      tester.getRect(_cap).height,
+      36,
+      reason: 'while its cap stays the 36 the spec draws',
+    );
+  });
+
+  testWidgets('a rail row clears the touch floor and keeps its 42 cap', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          height: 600,
+          child: WizRail<String>(
+            sections: const [
+              WizRailSection(
+                title: 'Rooms',
+                items: [
+                  WizRailItem(
+                    value: 'living',
+                    label: 'Living Room',
+                    icon: WizIcons.sofa,
+                  ),
+                  WizRailItem(
+                    value: 'bedroom',
+                    label: 'Bedroom',
+                    icon: WizIcons.bed,
+                  ),
+                ],
+              ),
+            ],
+            value: 'living',
+            onChanged: (_) {},
+          ),
+        ),
+        size: const Size(1280, 800),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSize(_itemOf(find.text('Living Room'))).height,
+      greaterThanOrEqualTo(WizSpace.standard.hitMin),
+    );
+    expect(tester.getRect(_cap).height, WizRail.itemHeight);
+    expect(
+      tester.getRect(_cap).center.dy,
+      closeTo(tester.getRect(find.text('Living Room')).center.dy, 1),
+      reason: 'the hit padding grew the row, not the cap on it',
+    );
+    // The pitch the rail always had: 42 drawn, 6 between.
+    expect(
+      tester.getRect(_itemOf(find.text('Bedroom'))).center.dy -
+          tester.getRect(_itemOf(find.text('Living Room'))).center.dy,
+      48,
+    );
+  });
+
+  testWidgets('a tab square clears the touch floor and its cap covers it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 350,
+          child: WizTabBar<String>(
+            tabs: const [
+              WizTab(value: 'home', icon: WizIcons.house, label: 'Home'),
+              WizTab(value: 'rooms', icon: WizIcons.layoutGrid, label: 'Rooms'),
+            ],
+            value: 'home',
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSize(_itemOf(_glyph(WizIcons.house))).height,
+      greaterThanOrEqualTo(WizSpace.standard.hitMin),
+    );
+    expect(tester.getSize(_itemOf(_glyph(WizIcons.house))), const Size(52, 52));
+    expect(tester.getRect(_cap).size, const Size(52, 52));
+  });
+
+  testWidgets('tapping the segment already selected says nothing', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    var changes = 0;
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 330,
+          child: WizSegmentedControl<String>(
+            segments: _segments,
+            value: 'colour',
+            onChanged: (_) => changes++,
+          ),
+        ),
+        feedback: feedback,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('COLOUR'));
+    await tester.pumpAndSettle();
+    expect(changes, 0);
+    expect(feedback.played, isEmpty);
+  });
+
+  testWidgets('tapping the tab already selected says nothing', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var changes = 0;
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 350,
+          child: WizTabBar<String>(
+            tabs: const [
+              WizTab(value: 'home', icon: WizIcons.house, label: 'Home'),
+              WizTab(value: 'rooms', icon: WizIcons.layoutGrid, label: 'Rooms'),
+            ],
+            value: 'home',
+            onChanged: (_) => changes++,
+          ),
+        ),
+        feedback: feedback,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(_glyph(WizIcons.house));
+    await tester.pumpAndSettle();
+    expect(changes, 0);
+    expect(feedback.played, isEmpty);
+  });
+
+  testWidgets('tapping the rail row already selected says nothing', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    var changes = 0;
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          height: 600,
+          child: WizRail<String>(
+            sections: const [
+              WizRailSection(
+                title: 'Rooms',
+                items: [
+                  WizRailItem(
+                    value: 'living',
+                    label: 'Living Room',
+                    icon: WizIcons.sofa,
+                  ),
+                ],
+              ),
+            ],
+            value: 'living',
+            onChanged: (_) => changes++,
+          ),
+        ),
+        feedback: feedback,
+        size: const Size(1280, 800),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Living Room'));
+    await tester.pumpAndSettle();
+    expect(changes, 0);
+    expect(feedback.played, isEmpty);
   });
 }

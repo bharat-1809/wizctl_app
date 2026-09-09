@@ -6,6 +6,7 @@ import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
 import '../layout/wiz_breakpoints.dart';
 import '../layout/wiz_layout.dart';
+import '../theme/wiz_space.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_cap_tracker.dart';
@@ -85,6 +86,15 @@ class WizRail<T> extends StatefulWidget {
 
 class _WizRailState<T> extends State<WizRail<T>>
     with WizCapTracker<WizRail<T>> {
+  /// Half the shortfall between the 42 the rail draws a row at and the 44
+  /// touch floor (spec §399; Sidebar.jsx `height: 42`), padded onto each
+  /// side of the row's hit area. Derived rather than written out, so it
+  /// stays right if either number moves. The row pitch pays for it out of
+  /// the gap below the row and the caption's padding above, so the rail
+  /// looks exactly as it did — the rail shows from the expanded width up,
+  /// which includes a landscape tablet, so this is not a desktop-only part.
+  double _rowHitPad(WizSpace space) => (space.hitMin - WizRail.itemHeight) / 2;
+
   /// The rail is as wide as the window can afford, unless the caller has
   /// pinned it (spec §11.2: 264, 288 on a wide window, 72 icon-only).
   double _width(BuildContext context) {
@@ -102,6 +112,7 @@ class _WizRailState<T> extends State<WizRail<T>>
     var m = wiz.motion;
     var s = wiz.space;
     var radius = BorderRadius.circular(s.r2);
+    var hitPad = _rowHitPad(s);
 
     Widget itemFor(WizRailItem<T> it) {
       var on = it.value == widget.value;
@@ -117,6 +128,8 @@ class _WizRailState<T> extends State<WizRail<T>>
           feedback: null,
           semanticsLabel: it.label,
           focusRadius: radius,
+          // The 42 row keeps its cap; the finger gets the 44 minimum.
+          hitPadding: EdgeInsets.symmetric(vertical: hitPad),
           // The rail's list scrolls, so the press waits for the arena.
           arenaResolved: true,
           onTap: () {
@@ -205,7 +218,10 @@ class _WizRailState<T> extends State<WizRail<T>>
               // width change, which relays out without a rebuild here.
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  measureCap(widget.value);
+                  measureCap(
+                    widget.value,
+                    inset: EdgeInsets.symmetric(vertical: hitPad),
+                  );
                   return Stack(
                     key: containerKey,
                     children: [
@@ -233,9 +249,12 @@ class _WizRailState<T> extends State<WizRail<T>>
                             if (i > 0) SizedBox(height: s.s8),
                             if (!widget.collapsed)
                               Padding(
+                                // Less the row's top hit padding, so the
+                                // first row of a section sits where it
+                                // always did under its caption.
                                 padding: EdgeInsets.only(
                                   left: s.s3,
-                                  bottom: s.s3,
+                                  bottom: s.s3 - hitPad,
                                 ),
                                 child: Text(
                                   widget.sections[i].title.toUpperCase(),
@@ -249,7 +268,9 @@ class _WizRailState<T> extends State<WizRail<T>>
                               j < widget.sections[i].items.length;
                               j++
                             ) ...[
-                              if (j > 0) SizedBox(height: s.s3),
+                              // Less both rows' hit padding, so the pitch
+                              // from one row to the next is unchanged.
+                              if (j > 0) SizedBox(height: s.s3 - 2 * hitPad),
                               itemFor(widget.sections[i].items[j]),
                             ],
                           ],

@@ -14,7 +14,15 @@ mixin WizCapTracker<T extends StatefulWidget> on State<T> {
   ///
   /// Called from inside a [LayoutBuilder] so a resize — which relays out
   /// without rebuilding — re-measures too.
-  void measureCap(Object? active) {
+  ///
+  /// [inset] is the part of an item's layout box that is hit area rather
+  /// than cap. `WizPressable.hitPadding` is a plain [Padding] applied
+  /// outside the press transform, so an item padded out to the 44 touch
+  /// floor (spec §399) measures taller than the part the cap covers.
+  /// Deflating by the same insets keeps the cap on the visual — and keeps
+  /// the measurement immune to the press scale, which is inside the
+  /// transform and so never reaches the measured box.
+  void measureCap(Object? active, {EdgeInsets inset = EdgeInsets.zero}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       var container = containerKey.currentContext?.findRenderObject();
@@ -29,7 +37,7 @@ mixin WizCapTracker<T extends StatefulWidget> on State<T> {
         return;
       }
       var offset = item.localToGlobal(Offset.zero, ancestor: container);
-      var rect = offset & item.size;
+      var rect = inset.deflateRect(offset & item.size);
       if (rect != capRect) setState(() => capRect = rect);
     });
   }

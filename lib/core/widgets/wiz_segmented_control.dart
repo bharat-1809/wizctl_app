@@ -109,6 +109,14 @@ class _WizSegmentedControlState<T> extends State<WizSegmentedControl<T>>
           feedback: null,
           semanticsLabel: seg.label,
           focusRadius: pill,
+          // The cap keeps the height the spec draws it at and the finger
+          // gets the 44 minimum (spec §399), the way a `WizChip`'s 36 cap
+          // does. The padding is the track's own, spent on the item
+          // instead, so the control is exactly as tall as it was and a
+          // small control's 36 cap sits in a 44 target.
+          hitPadding: const EdgeInsets.symmetric(
+            vertical: WizSegmentedControl.trackPad,
+          ),
           // Segmented controls ride inside scrolling sheets and panels.
           arenaResolved: true,
           onTap: () {
@@ -174,12 +182,22 @@ class _WizSegmentedControlState<T> extends State<WizSegmentedControl<T>>
       spec: wiz.elevation.well,
       radius: pill,
       gradient: wizVertical(c.char1000, c.char900),
-      padding: const EdgeInsets.all(WizSegmentedControl.trackPad),
+      // Horizontal only: the vertical 4 is carried by each item's hit
+      // padding instead, which puts it inside the touch target rather than
+      // outside it. The track measures the same either way.
+      padding: const EdgeInsets.symmetric(
+        horizontal: WizSegmentedControl.trackPad,
+      ),
       // Layout alone does not rebuild, so the measurement is scheduled from
       // here: a resized track re-measures without a rebuild from above.
       child: LayoutBuilder(
         builder: (context, constraints) {
-          measureCap(widget.value);
+          measureCap(
+            widget.value,
+            inset: const EdgeInsets.symmetric(
+              vertical: WizSegmentedControl.trackPad,
+            ),
+          );
           return Stack(
             key: containerKey,
             children: [
