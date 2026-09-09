@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +24,26 @@ final Finder _focusRing = find.descendant(
             WizColors.standard.focusRing,
   ),
 );
+
+/// The centre wash: the one radial gradient the disc paints.
+final Finder _wash = find.descendant(
+  of: find.byType(WizColorWheel),
+  matching: find.byWidgetPredicate(
+    (w) =>
+        w is DecoratedBox &&
+        w.decoration is BoxDecoration &&
+        (w.decoration as BoxDecoration).gradient is RadialGradient,
+  ),
+);
+
+/// Where a 200 px wheel puts [hue] at [saturation], as a global offset from
+/// the disc's [centre]: the same maths the puck rides, so a gesture aimed
+/// here lands on that colour. The usable radius is 100 − the 18 px margin.
+Offset _at(Offset centre, double hue, double saturation) {
+  var radians = (hue - 90) * math.pi / 180;
+  var reach = (100 - WizColorWheel.radiusMargin) * saturation;
+  return centre + Offset(math.cos(radians) * reach, math.sin(radians) * reach);
+}
 
 /// The wheel's own focus node, so keyboard focus can be driven from outside.
 FocusNode _focusNodeOf(WidgetTester tester) => tester
@@ -98,6 +120,119 @@ void main() {
     );
   });
 
+  testWidgets('crossing 12 o\'clock sounds one detent, not two', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    await tester.pumpWidget(
+      wizTestApp(
+        WizColorWheel(hue: 345, saturation: 1, size: 200, onChanged: (_) {}),
+        feedback: feedback,
+      ),
+    );
+    var centre = tester.getCenter(find.byType(WizColorWheel));
+    // Down inside notch 23, then straight out to the rim — 49 px, enough for
+    // the pan to win its arena, and all of it at one hue — and only then
+    // across the seam. 356° and 2° are both inside the notch that spans 12
+    // o'clock, so the ring notches once on the way into it and not again on
+    // the way out.
+    var touch = await tester.startGesture(_at(centre, 345, 0.4));
+    await touch.moveTo(_at(centre, 345, 1));
+    await tester.pump();
+    await touch.moveTo(_at(centre, 356, 1));
+    await tester.pump();
+    await touch.moveTo(_at(centre, 2, 1));
+    await tester.pump();
+    await touch.up();
+    await tester.pumpAndSettle();
+    expect(
+      feedback.played.where((k) => k == FeedbackKind.detent).length,
+      1,
+      reason: 'the notch at the top is one notch, not both 0 and 24',
+    );
+  });
+
+  testWidgets('a drag ends once, on the colour it settled on', (tester) async {
+    var value = const WizHsv(0, 1);
+    var changed = <WizHsv>[];
+    var ended = <WizHsv>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        StatefulBuilder(
+          builder: (context, setState) => WizColorWheel(
+            hue: value.hue,
+            saturation: value.saturation,
+            size: 200,
+            onChanged: (v) {
+              changed.add(v);
+              setState(() => value = v);
+            },
+            onChangeEnd: ended.add,
+          ),
+        ),
+      ),
+    );
+    await tester.timedDrag(
+      find.byType(WizColorWheel),
+      const Offset(0, 80),
+      const Duration(milliseconds: 300),
+    );
+    await tester.pumpAndSettle();
+    // Straight down from the centre is hue 180, and 80 of the 82 usable
+    // pixels out is saturation 0.976.
+    expect(ended, [const WizHsv(180, 0.976)]);
+    expect(
+      ended.single,
+      changed.last,
+      reason: 'the change that ended is the last one it reported',
+    );
+  });
+
+  testWidgets('a second touch reports even when the first was ignored', (
+    tester,
+  ) async {
+    var changed = <WizHsv>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        // Uncontrolled: the wheel keeps being told hue 0, so both taps land
+        // on a colour it is not showing and both are news to the caller.
+        WizColorWheel(hue: 0, saturation: 1, size: 200, onChanged: changed.add),
+      ),
+    );
+    var centre = tester.getCenter(find.byType(WizColorWheel));
+    await tester.tapAt(_at(centre, 90, 1));
+    await tester.pumpAndSettle();
+    await tester.tapAt(_at(centre, 90, 1));
+    await tester.pumpAndSettle();
+    expect(changed, [
+      const WizHsv(90, 1),
+      const WizHsv(90, 1),
+    ], reason: 'the dedupe is scoped to one touch, not to the widget');
+  });
+
+  testWidgets('a tap on the puck changes nothing and ends nothing', (
+    tester,
+  ) async {
+    var changed = <WizHsv>[];
+    var ended = <WizHsv>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        WizColorWheel(
+          hue: 180,
+          saturation: 1,
+          size: 200,
+          onChanged: changed.add,
+          onChangeEnd: ended.add,
+        ),
+      ),
+    );
+    var centre = tester.getCenter(find.byType(WizColorWheel));
+    await tester.tapAt(_at(centre, 180, 1));
+    await tester.pumpAndSettle();
+    expect(changed, isEmpty);
+    expect(ended, isEmpty, reason: 'nothing moved, so nothing ended');
+  });
+
   testWidgets('the wheel never grows past the width a phone gives it', (
     tester,
   ) async {
@@ -106,9 +241,34 @@ void main() {
         WizColorWheel(hue: 0, saturation: 1, size: 400, onChanged: (_) {}),
       ),
     );
-    // The number itself, not the token that sets it: 228 is what spec §14
-    // promises, and a token that drifted would still have to answer for it.
+    // The numbers themselves, not the tokens that set them: 228 is what
+    // spec §14 promises and 44 the touch target it will not go below, and a
+    // token that drifted would still have to answer for both.
     expect(tester.getSize(find.byType(WizColorWheel)), const Size(228, 228));
+
+    await tester.pumpWidget(
+      wizTestApp(
+        WizColorWheel(hue: 0, saturation: 1, size: 10, onChanged: (_) {}),
+      ),
+    );
+    expect(tester.getSize(find.byType(WizColorWheel)), const Size(44, 44));
+  });
+
+  testWidgets('the centre wash reaches the corner of its box', (tester) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        WizColorWheel(hue: 30, saturation: 1, size: 200, onChanged: (_) {}),
+      ),
+    );
+    var gradient =
+        (tester.widget<DecoratedBox>(_wash).decoration as BoxDecoration)
+                .gradient!
+            as RadialGradient;
+    // CSS sizes a `radial-gradient` to the farthest corner; Flutter measures
+    // `radius` against the shortest side, so the square wash box needs √2/2
+    // to put the 62 % stop where the design does.
+    expect(gradient.radius, math.sqrt2 / 2);
+    expect(gradient.stops, <double>[0, WizColorWheel.whiteStop]);
   });
 
   testWidgets('a keyboard-focused wheel draws the amber ring round its disc', (

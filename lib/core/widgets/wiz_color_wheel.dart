@@ -67,9 +67,17 @@ class WizColorWheel extends StatefulWidget {
   static const double detentDegrees = 15;
   static const double whiteStop = 0.62;
 
-  /// The widest disc the design draws. Spec §14: "the colour wheel is
-  /// `min(available, 228)`" — 228 is the phone tab's width (spec §11.2), so
-  /// a caller asking for more gets the wheel the chassis has room for.
+  /// How many notches go round the ring: 360° at [detentDegrees] each. The
+  /// notch at the top is one notch and not both 0 and 24, so a hue crossing
+  /// 12 o'clock sounds once (spec §11.2, "a detent every 15° of hue").
+  static const int notches = 360 ~/ detentDegrees;
+
+  /// The disc the design draws, at its widest and at its narrowest. Spec
+  /// §14: "the colour wheel is `min(available, 228)`" — 228 is the phone
+  /// tab's width (spec §11.2) — and "touch targets never below 44", the
+  /// smallest disc a finger can still aim inside. A caller asking for
+  /// anything outside gets the wheel the chassis has room for.
+  static const double minSize = 44;
   static const double maxSize = 228;
 
   /// How far one arrow key moves saturation. Spec §14 gives the wheel no
@@ -113,7 +121,8 @@ class _WizColorWheelState extends State<WizColorWheel> {
   static const double _saturationSteps = 1000;
 
   /// The diameter the wheel draws at, and the disc geometry that follows.
-  double get _diameter => math.min(widget.size, WizColorWheel.maxSize);
+  double get _diameter =>
+      widget.size.clamp(WizColorWheel.minSize, WizColorWheel.maxSize);
   double get _r => _diameter / 2;
   double get _usable => _r - WizColorWheel.radiusMargin;
 
@@ -151,8 +160,11 @@ class _WizColorWheelState extends State<WizColorWheel> {
         _saturationSteps,
   );
 
-  /// Which 15° notch — one [WizColorWheel.detentDegrees] wide — [hue] is in.
-  int _notchOf(double hue) => (hue / WizColorWheel.detentDegrees).round();
+  /// Which 15° notch — one [WizColorWheel.detentDegrees] wide — [hue] is in,
+  /// counted round the ring so the notch spanning 12 o'clock is one notch:
+  /// 355° and 3° are both notch 0, and passing between them sounds once.
+  int _notchOf(double hue) =>
+      (hue / WizColorWheel.detentDegrees).round() % WizColorWheel.notches;
 
   /// The colour one arrow key away: [byHue] degrees round the ring, or
   /// [bySaturation] out from the centre.
@@ -199,7 +211,11 @@ class _WizColorWheelState extends State<WizColorWheel> {
     if (!_begun) {
       _begun = true;
       _notch = null;
+      // Both re-seeded from what the wheel is showing, so the dedupe below
+      // is scoped to this touch: a caller that ignored the last gesture
+      // must still hear this one land on the same colour.
       _gestureStart = _value;
+      _committed = _value;
       context.feedback.play(FeedbackKind.press);
     }
     _from(local);

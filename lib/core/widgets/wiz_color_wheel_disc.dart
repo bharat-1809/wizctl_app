@@ -15,7 +15,8 @@ import 'wiz_surface.dart';
 /// Everything it draws it is told — it holds no gesture, focus or semantics
 /// logic, and never changes a colour. Those all stay in [WizColorWheel].
 class WizColorWheelDisc extends StatelessWidget {
-  /// The disc's diameter, already clamped to the design's range.
+  /// The disc's diameter, already clamped to
+  /// `[WizColorWheel.minSize, WizColorWheel.maxSize]`.
   final double diameter;
 
   /// Where the puck sits: hue in degrees from 12 o'clock, saturation as the
@@ -38,6 +39,11 @@ class WizColorWheelDisc extends StatelessWidget {
   /// ColorWheel.jsx centre wash:
   /// `radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 62%)`.
   static const double _whiteAlpha = .95;
+
+  /// CSS `radial-gradient` sizes to farthest-corner; Flutter's `radius` is a
+  /// fraction of the shortest side, so the square wash box needs √2/2 to
+  /// reach the corner.
+  static const double _washRadius = math.sqrt2 / 2;
 
   /// ColorWheel.jsx inner disc: `inset 0 2px 10px rgba(0,0,0,.45)`.
   static const double _innerInsetAlpha = .45;
@@ -116,6 +122,7 @@ class WizColorWheelDisc extends StatelessWidget {
       ),
       radius: BorderRadius.circular(inner / 2),
       gradient: RadialGradient(
+        radius: _washRadius,
         colors: <Color>[
           c.highlightBase.withValues(alpha: _whiteAlpha),
           c.highlightBase.withValues(alpha: 0),
