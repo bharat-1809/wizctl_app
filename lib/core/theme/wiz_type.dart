@@ -29,6 +29,16 @@ class WizType {
   /// 16 px title's `letterSpacing: '-.005em'`).
   static const double rowTitleTracking = -0.005;
 
+  /// A `RoomCard` title tracks twice as tight as a row's: -0.01 em
+  /// (RoomCard.jsx, the 19 px name's `letterSpacing: '-.01em'`,
+  /// `design/reference/_ds_bundle.js:2065`).
+  static const double roomTitleTracking = -0.01;
+
+  /// A `LightCard`'s brightness meter reads out the other way: 0.015 em
+  /// (LightCard.jsx, the 18 px display readout's `letterSpacing: '.015em'`,
+  /// `design/reference/_ds_bundle.js:1971`).
+  static const double meterReadoutTracking = 0.015;
+
   // SceneTile.jsx label — the design system's scene *chip*: UI face 13.5/15
   // with letter-spacing -0.005 em.
   static const double sceneLabelTracking = -0.005;
