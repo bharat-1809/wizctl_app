@@ -40,9 +40,10 @@ class WizSceneArt extends StatelessWidget {
     fade: 0.72,
   );
 
-  /// The "top-left sheen" of spec §331, whose geometry the spec leaves open;
-  /// these are the plan's numbers for it (task 16 brief, step 4): a
-  /// 58 %×44 % bloom at (28 %, 18 %), inside and above the `from` bloom.
+  /// The "top-left sheen" of spec §331, whose geometry the spec leaves open.
+  /// The reference draws it as
+  /// `radial-gradient(58% 44% at 28% 18%, …, transparent 68%)`
+  /// (`design/reference/WizCtl_Mobile.dc.html:393`).
   static const _Bloom _sheenBloom = (
     cx: 0.28,
     cy: 0.18,
@@ -51,15 +52,22 @@ class WizSceneArt extends StatelessWidget {
     fade: 0.68,
   );
 
-  /// How opaque the sheen's centre is — the plan's value (task 16 brief,
-  /// step 4: `Colors.white.withValues(alpha: .30)`), taken here from the
-  /// theme's [WizColors.highlightBase] rather than a literal white.
+  /// How opaque the sheen's centre is: `rgba(255,255,255,.30)` in
+  /// `design/reference/WizCtl_Mobile.dc.html:393`, taken here from the
+  /// theme's `colors.highlightBase` rather than a literal white.
   static const double _sheenAlpha = .30;
 
   /// Spec §331: "linear 158° `from → to`". A CSS angle is a direction
   /// measured clockwise from straight up, so the gradient axis is
   /// (sin 158°, −cos 158°) = (0.375, 0.927) in screen coordinates, pointing
   /// down and to the right; begin is its negation in Alignment's -1..1 box.
+  ///
+  /// The *direction* is exact; the *length* is not. CSS sizes its gradient
+  /// line so the end stops sit at the corners' projections — 1.302·w on a
+  /// square at this angle — whereas these alignments span a chord of 1.0·w,
+  /// so the blend runs slightly steeper than CSS between the same two
+  /// colours. Both endpoints are the full `from` and `to`, and the blooms
+  /// dominate the corners, so the difference is not visible on a tile.
   static const Alignment _blendBegin = Alignment(-0.375, -0.927);
   static const Alignment _blendEnd = Alignment(0.375, 0.927);
 
@@ -97,7 +105,7 @@ class WizSceneArt extends StatelessWidget {
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _SceneArtPainter(
+              painter: WizSceneArtPainter(
                 from,
                 to,
                 sheen ? context.wiz.colors.highlightBase : null,
@@ -112,14 +120,17 @@ class WizSceneArt extends StatelessWidget {
   }
 }
 
-class _SceneArtPainter extends CustomPainter {
+/// Public only so widget tests can tell the art's own layer apart from the
+/// [WizGrain] stacked over it; nothing outside this library may paint with it.
+@visibleForTesting
+class WizSceneArtPainter extends CustomPainter {
   final Color from;
   final Color to;
 
   /// The sheen's colour, or null when this art has no sheen.
   final Color? highlight;
 
-  _SceneArtPainter(this.from, this.to, this.highlight);
+  WizSceneArtPainter(this.from, this.to, this.highlight);
 
   void _bloom(Canvas canvas, Size size, _Bloom at, Color color) {
     canvas.save();
@@ -163,6 +174,6 @@ class _SceneArtPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SceneArtPainter old) =>
+  bool shouldRepaint(WizSceneArtPainter old) =>
       old.from != from || old.to != to || old.highlight != highlight;
 }

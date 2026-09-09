@@ -25,8 +25,14 @@ class WizType {
   /// `WizSegmentedControl`).
   static const double segmentTracking = 0.08;
 
-  // SceneTile.jsx label: UI face 13.5/15 with letter-spacing -0.005 em.
+  // SceneTile.jsx label — the design system's scene *chip*: UI face 13.5/15
+  // with letter-spacing -0.005 em.
   static const double sceneLabelTracking = -0.005;
+
+  /// The scene *tile*'s label is the display face and tracks the other way:
+  /// 0.02 em in both variants (`design/reference/WizCtl_Mobile.dc.html:396`
+  /// for the 20 px tab grid, `:562` for the 14 px sheet).
+  static const double sceneTileTracking = 0.02;
 
   // WIZCTL wordmark (Sidebar brand): display face, weight 900, 0.02 em.
   static const double wordmarkTracking = 0.02;
