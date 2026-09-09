@@ -105,6 +105,59 @@ void main() {
     );
   });
 
+  testWidgets('a slow drag opens one change, not one per recogniser', (
+    tester,
+  ) async {
+    var feedback = RecordingFeedbackService();
+    var value = 10.0;
+    var ended = <double>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 300,
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return WizSlider(
+                value: value,
+                min: 10,
+                max: 100,
+                onChanged: (v) => setState(() => value = v),
+                onChangeEnd: ended.add,
+              );
+            },
+          ),
+        ),
+        feedback: feedback,
+      ),
+    );
+    var rect = tester.getRect(_track);
+    var half = Offset(rect.left + rect.width * 0.5, rect.center.dy);
+
+    // Held past the tap recogniser's 100 ms deadline, so `onTapDown` fires
+    // before the drag wins the arena, then wandering off the landing point
+    // and back to it.
+    var touch = await tester.startGesture(half);
+    await tester.pump(const Duration(milliseconds: 150));
+    await touch.moveBy(const Offset(40, 0));
+    await tester.pump(const Duration(milliseconds: 50));
+    await touch.moveTo(half);
+    await tester.pump(const Duration(milliseconds: 50));
+    await touch.up();
+    await tester.pumpAndSettle();
+
+    expect(
+      feedback.played.where((k) => k == FeedbackKind.press).length,
+      1,
+      reason: 'one touch is one press, whichever recogniser opened it',
+    );
+    expect(value, closeTo(55, 1));
+    expect(
+      ended,
+      [55.0],
+      reason: 'measured against where the touch landed, not where it wandered',
+    );
+  });
+
   testWidgets('a tap that lands on the current value ends no change', (
     tester,
   ) async {
@@ -162,7 +215,10 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(_track).height, WizSpace.standard.hitMin);
+    // The number itself, not the token that sets it: 44 is the touch
+    // target the spec promises, and a token that drifted would still have
+    // to answer for it.
+    expect(tester.getSize(_track).height, 44);
   });
 
   testWidgets('a keyboard-focused slider draws the amber ring around its box', (
@@ -187,7 +243,7 @@ void main() {
     expect(border.top.width, WizSpace.standard.focusRing);
     expect(
       tester.getSize(_focusRing),
-      Size(300, WizSpace.standard.hitMin),
+      const Size(300, 44),
       reason: 'the ring traces the box the finger lands on',
     );
   });
@@ -288,6 +344,128 @@ void main() {
     expect(ended, [2750.0, 2700.0]);
   });
 
+  testWidgets('the first arrow key sounds like the second', (tester) async {
+    var feedback = RecordingFeedbackService();
+    var value = 50.0;
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 300,
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return WizSlider(
+                value: value,
+                min: 0,
+                max: 100,
+                step: 5,
+                onChanged: (v) => setState(() => value = v),
+              );
+            },
+          ),
+        ),
+        feedback: feedback,
+      ),
+    );
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+
+    // A twentieth of 0..100 is 5, so every step of 5 crosses a notch —
+    // including the first, which had no gesture to open it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(feedback.played, [FeedbackKind.detent]);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(feedback.played, [FeedbackKind.detent, FeedbackKind.detent]);
+  });
+
+  testWidgets('an empty range lays out rather than dividing by it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 300,
+          child: WizSlider(value: 20, min: 20, max: 20, onChanged: (_) {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(_track).height, 44);
+  });
+
+  testWidgets('a step with nowhere to go ends no change', (tester) async {
+    var changed = <double>[];
+    var ended = <double>[];
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 300,
+          child: WizSlider(
+            value: 100,
+            min: 0,
+            max: 100,
+            onChanged: changed.add,
+            onChangeEnd: ended.add,
+          ),
+        ),
+      ),
+    );
+    _focusNodeOf(tester).requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(changed, isEmpty);
+    expect(ended, isEmpty, reason: 'a held arrow at max is not a change');
+  });
+
+  testWidgets('only the light-emitting fills glow, and a colour fill is it', (
+    tester,
+  ) async {
+    Future<BoxDecoration> fillOf(WizSliderFill fill) async {
+      await tester.pumpWidget(
+        wizTestApp(
+          SizedBox(
+            width: 300,
+            child: WizSlider(
+              value: 50,
+              min: 0,
+              max: 100,
+              fill: fill,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return tester
+              .widget<DecoratedBox>(find.byKey(const Key('wiz-slider-fill')))
+              .decoration
+          as BoxDecoration;
+    }
+
+    expect(
+      (await fillOf(WizSliderFill.brightness)).boxShadow,
+      isNotEmpty,
+      reason: 'brightness is light coming out of the rail',
+    );
+    expect(
+      (await fillOf(WizSliderFill.speed)).boxShadow,
+      anyOf(isNull, isEmpty),
+      reason: 'speed is a rate, not an emission',
+    );
+
+    var colour = await fillOf(WizSliderFill.colour(WizColors.standard.hueTeal));
+    expect((colour.gradient! as LinearGradient).colors, [
+      WizColors.standard.hueTeal,
+      WizColors.standard.hueTeal,
+    ]);
+    expect((colour.boxShadow ?? []), isEmpty);
+  });
+
   testWidgets('assistive tech sees a labelled slider that reports its value', (
     tester,
   ) async {
@@ -314,6 +492,10 @@ void main() {
         isSemantics(
           label: 'Brightness',
           value: '50%',
+          // A step reads out the number it would land on. The caller's
+          // readout is one fixed string, so it cannot speak for all three.
+          increasedValue: '51',
+          decreasedValue: '49',
           isSlider: true,
           hasEnabledState: true,
           isEnabled: true,
