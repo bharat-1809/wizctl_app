@@ -11,7 +11,8 @@ import 'wiz_surface.dart';
 /// never collapses and then jumps.
 class WizSkeleton extends StatefulWidget {
   /// Null fills the width it is offered, as Skeleton.jsx's `width = '100%'`
-  /// does — so a skeleton needs a parent that bounds it.
+  /// does. A skeleton therefore needs a parent that bounds it: in an
+  /// unbounded row it asserts rather than quietly measuring nothing.
   final double? width;
 
   final double height;
@@ -97,12 +98,17 @@ class _WizSkeletonState extends State<WizSkeleton>
         widget.circle ? widget.height / 2 : wiz.space.r2,
       ),
       gradient: wizVertical(c.char1000, c.char900),
-      width: widget.circle ? widget.height : widget.width,
+      // `double.infinity`, not null: the sheen is a childless `DecoratedBox`,
+      // which takes `constraints.smallest` and so collapses a null width to
+      // nothing under loose constraints. Same idiom as a full-width
+      // `WizButton` (`wiz_button.dart`).
+      width: widget.circle ? widget.height : (widget.width ?? double.infinity),
       height: widget.height,
       child: AnimatedBuilder(
         animation: sheen,
         // Hoisted out of the builder: only the offset changes.
         child: DecoratedBox(
+          key: const Key('wiz-skeleton-sheen'),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [

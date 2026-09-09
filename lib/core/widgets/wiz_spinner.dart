@@ -9,6 +9,7 @@ import 'wiz_surface.dart';
 /// A needle sweeping a recessed ring: the inline loader, only ever inside a
 /// key, a banner or a toast. Anything larger gets a [WizFilamentBar].
 class WizSpinner extends StatefulWidget {
+  /// The well's diameter; the ring and needle scale off it.
   final double size;
 
   /// Amber for work the user asked for, secondary ink for background work.

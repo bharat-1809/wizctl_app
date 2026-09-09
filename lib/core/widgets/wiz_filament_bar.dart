@@ -18,6 +18,8 @@ class WizFilamentBar extends StatefulWidget {
   /// Optional caption above the wire, uppercased by the bar.
   final String? label;
 
+  /// How tall the wire is. The kit only ever uses the default; a caller
+  /// matching some other instrument's rail is the exception.
   final double thickness;
 
   const WizFilamentBar({
@@ -258,6 +260,11 @@ class _WizFilamentBarState extends State<WizFilamentBar>
       children: [
         if (widget.label != null) _caption(wiz, pct),
         Semantics(
+          // Flutter has no progressbar role, so a bar says what it is doing
+          // and how far along it is. Its own node whenever it has either to
+          // say, so an ancestor cannot swallow them — and no empty node when
+          // it has neither.
+          container: widget.label != null || pct != null,
           label: widget.label,
           value: pct == null ? null : _percent(pct),
           // The hot spot is measured in fractions of the wire, so the wire

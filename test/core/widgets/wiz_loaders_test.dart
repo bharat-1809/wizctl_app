@@ -63,7 +63,7 @@ void main() {
     var b = tester.getRect(find.byKey(const Key('wiz-filament-hot')));
     expect(a.left, isNot(closeTo(b.left, 0.5)));
     expect(find.byKey(const Key('wiz-filament-fill')), findsNothing);
-    expect(find.text('%'), findsNothing);
+    expect(find.textContaining('%'), findsNothing);
   });
 
   testWidgets('a filament stops its loop once it becomes determinate', (
@@ -82,6 +82,42 @@ void main() {
     var track = tester.getRect(find.byKey(const Key('wiz-filament-track')));
     var fill = tester.getRect(find.byKey(const Key('wiz-filament-fill')));
     expect(fill.width, closeTo(track.width * 0.25, 1));
+  });
+
+  testWidgets('a determinate filament tells assistive tech both numbers', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      wizTestApp(
+        const SizedBox(
+          width: 300,
+          child: WizFilamentBar(value: 0.5, label: 'Sweeping subnet'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.semantics.byLabel('Sweeping subnet'), findsOne);
+    expect(
+      find.semantics.byLabel('Sweeping subnet'),
+      isSemantics(value: '50%'),
+      reason:
+          'Flutter has no progressbar role, so label plus value is the '
+          'closest a bar can get',
+    );
+    handle.dispose();
+  });
+
+  testWidgets('an unlabelled indeterminate filament reads out no percentage', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      wizTestApp(const SizedBox(width: 300, child: WizFilamentBar())),
+    );
+    await tester.pump();
+    expect(find.semantics.byValue(RegExp('%')), findsNothing);
+    handle.dispose();
   });
 
   testWidgets('skeleton and spinner sizes', (tester) async {
@@ -108,6 +144,39 @@ void main() {
     expect(tester.getSize(find.byType(WizSpinner)), const Size(22, 22));
   });
 
+  testWidgets('a skeleton with no width fills the one it is offered', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(const SizedBox(width: 300, child: WizSkeleton(height: 14))),
+    );
+    await tester.pump();
+    expect(tester.getSize(find.byType(WizSkeleton)), const Size(300, 14));
+  });
+
+  testWidgets('a skeleton offered a loose width takes all of it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wizTestApp(const WizSkeleton(height: 14)));
+    await tester.pump();
+    var body = tester.getSize(find.byType(Scaffold));
+    expect(tester.getSize(find.byType(WizSkeleton)).width, body.width);
+  });
+
+  testWidgets('the sheen crosses the skeleton', (tester) async {
+    await tester.pumpWidget(
+      wizTestApp(const SizedBox(width: 300, child: WizSkeleton(height: 14))),
+    );
+    // Bounded pumps only: the sheen never settles.
+    await tester.pump();
+    var a = tester.getRect(find.byKey(const Key('wiz-skeleton-sheen')));
+    await tester.pump(const Duration(milliseconds: 400));
+    var b = tester.getRect(find.byKey(const Key('wiz-skeleton-sheen')));
+    expect(a.left, isNot(closeTo(b.left, 0.5)));
+    // The band is the width of the well it crosses, not a sliver of it.
+    expect(a.width, closeTo(300, 1));
+  });
+
   testWidgets('reduced motion parks every loader', (tester) async {
     await tester.pumpWidget(
       wizTestApp(
@@ -126,10 +195,17 @@ void main() {
       ),
     );
     await tester.pump();
-    var a = tester.getRect(find.byKey(const Key('wiz-filament-hot')));
+    var hotA = tester.getRect(find.byKey(const Key('wiz-filament-hot')));
+    var sheenA = tester.getRect(find.byKey(const Key('wiz-skeleton-sheen')));
     await tester.pump(const Duration(milliseconds: 400));
-    var b = tester.getRect(find.byKey(const Key('wiz-filament-hot')));
-    expect(a.left, b.left);
+    expect(
+      tester.getRect(find.byKey(const Key('wiz-filament-hot'))).left,
+      hotA.left,
+    );
+    expect(
+      tester.getRect(find.byKey(const Key('wiz-skeleton-sheen'))).left,
+      sheenA.left,
+    );
     // No ticker is left running, so the scheduler drains: this returning at
     // all is the assertion that the loops were skipped, not merely hidden.
     await tester.pumpAndSettle();
