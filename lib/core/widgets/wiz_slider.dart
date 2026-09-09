@@ -307,7 +307,10 @@ class _WizSliderState extends State<WizSlider> {
           Padding(
             // Slider.jsx column `gap: 10`.
             padding: EdgeInsets.only(bottom: wiz.space.s2 + wiz.space.s3),
-            child: _header(wiz),
+            // The rail's node below already carries the label and the
+            // readout as its value; the header is the same pair drawn, and
+            // announcing it too would read the rail twice.
+            child: ExcludeSemantics(child: _header(wiz)),
           ),
         Semantics(
           slider: true,

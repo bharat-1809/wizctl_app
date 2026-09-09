@@ -285,12 +285,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // One node per segment, addressed by pattern: the pressable's plain
-    // label merges with the uppercased word the item draws, exactly as it
-    // does everywhere else in the kit (see `wiz_scene_tile_test.dart`).
-    expect(find.semantics.byLabel(RegExp('Colour')), findsOne);
+    // One node per segment, named exactly as the segment is: the item's own
+    // uppercased copy is excluded, so the label the caller gave is the whole
+    // node.
+    expect(find.semantics.byLabel('Colour'), findsOne);
     expect(
-      find.semantics.byLabel(RegExp('Colour')),
+      find.semantics.byLabel('Colour'),
       isSemantics(
         isButton: true,
         isEnabled: true,
@@ -300,21 +300,15 @@ void main() {
       ),
     );
     expect(
-      find.semantics.byLabel(RegExp('Dynamic')),
+      find.semantics.byLabel('Dynamic'),
       isSemantics(hasSelectedState: true, isSelected: false),
     );
 
-    tester.semantics.tap(find.semantics.byLabel(RegExp('Dynamic')));
+    tester.semantics.tap(find.semantics.byLabel('Dynamic'));
     await tester.pumpAndSettle();
     expect(value, 'dynamic');
-    expect(
-      find.semantics.byLabel(RegExp('Dynamic')),
-      isSemantics(isSelected: true),
-    );
-    expect(
-      find.semantics.byLabel(RegExp('Colour')),
-      isSemantics(isSelected: false),
-    );
+    expect(find.semantics.byLabel('Dynamic'), isSemantics(isSelected: true));
+    expect(find.semantics.byLabel('Colour'), isSemantics(isSelected: false));
     handle.dispose();
   });
 

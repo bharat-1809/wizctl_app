@@ -157,6 +157,24 @@ class _WizPressableState extends State<WizPressable> {
     );
 
     Widget visual = widget.builder(context, state);
+    if (widget.semanticsLabel != null) {
+      // A given label is the whole node. Left in, the copy the builder draws
+      // merges into the node beside it and a `WizButton('Retry')` — whose
+      // cap prints `RETRY` — reads "Retry\nRETRY".
+      //
+      // Excluded here rather than through `Semantics.excludeSemantics` on
+      // the node below: that flag drops the *whole* descendant subtree,
+      // which includes the `Focus` inside `FocusableActionDetector`, and a
+      // key that no longer reports `isFocusable` cannot be reached by
+      // keyboard or by switch control. Nothing else under the node
+      // annotates — the gesture detector is already excluded — so this
+      // covers exactly the drawn copy.
+      //
+      // A pressable that gives no label of its own is named by the copy
+      // inside it and keeps that subtree, and so does every nested control
+      // a card holds.
+      visual = ExcludeSemantics(child: visual);
+    }
     if (widget.hover && _hovered && !_pressed && widget.enabled) {
       visual = ColorFiltered(
         colorFilter: ColorFilter.matrix(_brightness(motion.hoverBrightness)),

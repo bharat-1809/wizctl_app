@@ -153,11 +153,9 @@ class LightCard extends StatelessWidget {
 
     Widget? second;
     if (dims) {
-      // A node of its own, for the switch's reason and one more. An inert
-      // rail annotates with no actions either, so without this it would
-      // swallow the card's copy and leave the card button unnamed. Holding
-      // it also keeps the rail's own "BRIGHTNESS 70%" header off the card's
-      // label, where it read as a second announcement of the rail.
+      // A node of its own, for the switch's reason. An inert rail annotates
+      // with no actions either, so without this it would swallow the card's
+      // copy and leave the card button unnamed.
       second = Semantics(
         container: true,
         child: LightCardBrightness(

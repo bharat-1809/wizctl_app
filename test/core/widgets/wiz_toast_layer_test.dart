@@ -131,8 +131,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     // A key inside the live region stays its own node rather than merging
-    // into it; the button's own uppercase cap joins its label.
-    expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+    // into it, named exactly as the caller labelled it.
+    expect(find.bySemanticsLabel('Retry'), findsOneWidget);
     await tester.tap(find.byType(WizButton));
     await tester.pumpAndSettle();
     expect(retries, 1);

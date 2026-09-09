@@ -87,7 +87,7 @@ void main() {
       ),
     );
     expect(
-      find.semantics.byLabel(RegExp('Cozy')),
+      find.semantics.byLabel('Cozy'),
       isSemantics(
         isButton: true,
         hasEnabledState: true,

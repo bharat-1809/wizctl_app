@@ -110,7 +110,7 @@ void main() {
         ),
       ),
     );
-    expect(find.bySemanticsLabel(RegExp('^Retry')), findsOneWidget);
+    expect(find.bySemanticsLabel('Retry'), findsOneWidget);
     await tester.tap(find.byType(WizButton));
     await tester.pumpAndSettle();
     expect(retries, 1);

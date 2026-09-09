@@ -82,7 +82,11 @@ class _WizSpinnerState extends State<WizSpinner>
     var wiz = context.wiz;
     var c = wiz.colors;
     return Semantics(
-      // Spinner.jsx `role="status" aria-label="Loading"`.
+      // Spinner.jsx `role="status" aria-label="Loading"`. Its own node: a
+      // bare label merges into whichever node it lands in, so a spinner
+      // sitting inside a key or a banner would otherwise pour "Loading" into
+      // that part's label rather than announcing itself.
+      container: true,
       label: 'Loading',
       child: WizSurface(
         spec: wiz.elevation.well,

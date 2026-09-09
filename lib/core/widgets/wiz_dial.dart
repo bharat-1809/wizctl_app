@@ -246,12 +246,17 @@ class _WizDialState extends State<WizDial> {
           if (widget.label != null) ...[
             // Dial.jsx column `gap: 10`.
             SizedBox(height: wiz.space.s2 + wiz.space.s3),
-            Text(
-              widget.label!.toUpperCase(),
-              style: wiz.typography.label.copyWith(color: c.textTertiary),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            // The knob's node above already carries the label and the value;
+            // the caption is the same word drawn, and announcing it too
+            // would read the dial twice.
+            ExcludeSemantics(
+              child: Text(
+                widget.label!.toUpperCase(),
+                style: wiz.typography.label.copyWith(color: c.textTertiary),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ],

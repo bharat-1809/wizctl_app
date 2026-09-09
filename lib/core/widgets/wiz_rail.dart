@@ -126,7 +126,12 @@ class _WizRailState<T> extends State<WizRail<T>>
           travel: 0,
           // Silent on press: the cue belongs to the change, below.
           feedback: null,
-          semanticsLabel: it.label,
+          // The label carries the count, because the pressable's own label
+          // is the whole node and the meta drawn beside the name is excluded
+          // with the rest of the row's copy.
+          semanticsLabel: it.meta == null
+              ? it.label
+              : '${it.label}, ${it.meta}',
           focusRadius: radius,
           // The 42 row keeps its cap; the finger gets the 44 minimum.
           hitPadding: EdgeInsets.symmetric(vertical: hitPad),
@@ -187,7 +192,16 @@ class _WizRailState<T> extends State<WizRail<T>>
           ),
         ),
       );
-      if (widget.collapsed) body = Tooltip(message: it.label, child: body);
+      if (widget.collapsed) {
+        // The tooltip is the sighted hint for a collapsed row; the row's own
+        // node already carries the name, so a second announcement of it
+        // would only double the label up.
+        body = Tooltip(
+          message: it.label,
+          excludeFromSemantics: true,
+          child: body,
+        );
+      }
       return body;
     }
 

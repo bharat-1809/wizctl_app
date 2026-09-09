@@ -259,7 +259,10 @@ class _WizFilamentBarState extends State<WizFilamentBar>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.label != null) _caption(wiz, pct),
+        // The wire's node below already carries the label and the percentage
+        // as its value; the caption is the same pair drawn, and announcing
+        // it too would read the bar twice.
+        if (widget.label != null) ExcludeSemantics(child: _caption(wiz, pct)),
         Semantics(
           // Flutter has no progressbar role, so a bar says what it is doing
           // and how far along it is. Its own node whenever it has either to
