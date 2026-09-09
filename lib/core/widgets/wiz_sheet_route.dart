@@ -19,6 +19,10 @@ class WizSheetRoute extends StatefulWidget {
   final List<Widget>? footer;
   final double? maxWidth;
 
+  /// Whether [body] goes inside the sheet's own scroll view — see
+  /// `showWizSheet`, which documents both sides.
+  final bool scrollable;
+
   /// The route's own transition. The rise, the fade and the scrim all come
   /// off this one value.
   final Animation<double> animation;
@@ -29,6 +33,7 @@ class WizSheetRoute extends StatefulWidget {
     required this.body,
     required this.footer,
     required this.maxWidth,
+    required this.scrollable,
     required this.animation,
   });
 
@@ -46,7 +51,8 @@ class WizSheetRoute extends StatefulWidget {
   static const double rise = 14;
 
   /// `maxHeight: '86%'` (`:2672`); spec §11.2, "max height 86 %" — of the
-  /// whole sheet, padding included.
+  /// whole sheet, padding included, and of what the keyboard leaves of the
+  /// window.
   static const double maxHeightFraction = 0.86;
 
   /// `width: centred ? 'min(520px,100%)' : '100%'` (`:2671`); spec §11.2,
@@ -58,9 +64,9 @@ class WizSheetRoute extends StatefulWidget {
   /// 6 px blur". The 72 % is `WizColors.surfaceScrim` itself.
   static const double scrimBlur = 6;
 
-  /// Drag past this much of the sheet's travel, or flick faster than this,
-  /// and it goes rather than springing back (spec §11.2, "drag to dismiss
-  /// with proportional scrim").
+  /// Drag past this much of the sheet's own height, or flick faster than
+  /// this, and it goes rather than springing back (spec §11.2, "drag to
+  /// dismiss with proportional scrim").
   static const double dismissFraction = 0.3;
   static const double dismissVelocity = 700;
 
@@ -74,12 +80,29 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
   /// isn't safe before the element has established dependencies.
   CurvedAnimation? _entrance;
 
+  /// The entrance and the drag together — everything the scrim, the fade and
+  /// the sheet's offset are repainted from.
+  Listenable? _repaint;
+
   /// The platform's "reduce motion" switch, read where the dependency is
   /// registered. Under it the sheet is simply there, at rest, on frame one.
   bool _reduced = false;
 
-  /// How far a finger has pulled the sheet down, in logical pixels.
-  double _drag = 0;
+  /// How far a finger has pulled the sheet down, in logical pixels. A
+  /// notifier rather than state, so a drag repaints the scrim and the offset
+  /// without rebuilding the sheet's own subtree every frame.
+  final ValueNotifier<double> _drag = ValueNotifier<double>(0);
+
+  /// Sits on the sheet's outermost box, so a drag can be measured against the
+  /// height the sheet actually took.
+  final GlobalKey _sheetKey = GlobalKey();
+
+  /// The sheet's laid-out height — what a drag is judged against, rather than
+  /// the 86 % cap, which a short sheet never comes near.
+  double get _sheetHeight {
+    var box = _sheetKey.currentContext?.findRenderObject();
+    return box is RenderBox && box.hasSize ? box.size.height : 0;
+  }
 
   @override
   void didChangeDependencies() {
@@ -88,7 +111,9 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
     _reduced = MediaQuery.disableAnimationsOf(context);
     var entrance = _entrance;
     if (entrance == null) {
-      _entrance = CurvedAnimation(parent: widget.animation, curve: settle);
+      entrance = CurvedAnimation(parent: widget.animation, curve: settle);
+      _entrance = entrance;
+      _repaint = Listenable.merge(<Listenable>[entrance, _drag]);
     } else {
       entrance.curve = settle;
     }
@@ -97,24 +122,27 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
   @override
   void dispose() {
     _entrance?.dispose();
+    _drag.dispose();
     super.dispose();
   }
 
-  void _dragUpdate(DragUpdateDetails details, double travel) =>
-      setState(() => _drag = (_drag + details.delta.dy).clamp(0, travel));
+  void _dragUpdate(DragUpdateDetails details) =>
+      _drag.value = (_drag.value + details.delta.dy).clamp(0, _sheetHeight);
 
-  void _dragEnd(DragEndDetails details, double travel) {
-    var far = travel > 0 && _drag / travel > WizSheetRoute.dismissFraction;
+  void _dragEnd(DragEndDetails details) {
+    var height = _sheetHeight;
+    var far =
+        height > 0 && _drag.value / height > WizSheetRoute.dismissFraction;
     var flick = (details.primaryVelocity ?? 0) > WizSheetRoute.dismissVelocity;
     if (far || flick) {
       Navigator.of(context).maybePop();
     } else {
-      setState(() => _drag = 0);
+      _drag.value = 0;
     }
   }
 
-  /// Grab handle, title, scrolling body and footer row — the same inside
-  /// whichever shape the sheet took.
+  /// Grab handle, title, body and footer row — the same inside whichever
+  /// shape the sheet took.
   Widget _content(WizTheme wiz, {required bool handle, required double gap}) {
     var c = wiz.colors;
     var actions = widget.footer;
@@ -151,9 +179,15 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
             style: wiz.typography.heading.copyWith(color: c.textPrimary),
           ),
         ),
-        // `overflow: 'auto'` (`:2673`): the body is what gives when the sheet
-        // reaches its 86 %.
-        Flexible(child: SingleChildScrollView(child: widget.body)),
+        // `overflow: 'auto'` (`:2673`): a plain body scrolls inside the sheet
+        // once the sheet reaches its 86 %. A body that is its own viewport
+        // takes the bounded height directly instead — wrapping one would hand
+        // it an unbounded height and throw.
+        Flexible(
+          child: widget.scrollable
+              ? SingleChildScrollView(child: widget.body)
+              : widget.body,
+        ),
         if (actions != null && actions.isNotEmpty)
           Padding(
             // Footer `marginTop: 'var(--space-7)', gap: 'var(--space-4)'`
@@ -181,15 +215,20 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
     var wiz = context.wiz;
     var c = wiz.colors;
     var space = wiz.space;
+    var motion = wiz.motion;
     var size = MediaQuery.sizeOf(context);
     var compact = WizBreakpoints.classify(size.width).isCompact;
-    var travel = size.height * WizSheetRoute.maxHeightFraction;
-    var dragged = travel > 0 ? (_drag / travel).clamp(0.0, 1.0) : 0.0;
+    // The software keyboard lifts a bottom sheet clear of itself, and the
+    // 86 % is of whatever it leaves of the window.
+    var keyboard = compact ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
+    var travel = (size.height - keyboard) * WizSheetRoute.maxHeightFraction;
+    var pad = space.panelPadLg;
     // A bottom sheet runs to the bottom edge of the window, so it clears the
     // home indicator with its own padding rather than with a SafeArea that
-    // would leave the blurred scrim showing beneath it.
-    var pad = space.panelPadLg;
-    var bottom = compact ? pad + MediaQuery.viewPaddingOf(context).bottom : pad;
+    // would leave the blurred scrim showing beneath it. `padding`, not
+    // `viewPadding`: it already has the keyboard's inset taken out of it, so
+    // a raised keyboard and the indicator never pad the sheet twice over.
+    var bottom = compact ? pad + MediaQuery.paddingOf(context).bottom : pad;
     // The same 14 sits under the handle and under the title: `margin:
     // '0 auto 14px'` and `'0 0 14px'` (`:2685`, `:2692`).
     var gap = space.s5 + space.s1;
@@ -213,56 +252,56 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
     );
 
     sheet = GestureDetector(
+      key: _sheetKey,
       // Opaque, so the sheet's whole box stops a pointer — `onClick: e =>
       // e.stopPropagation()` (`:2669`). Without it a tap on a rounded corner,
       // where the surface's own decoration does not answer the hit test,
       // falls through the stack to the scrim and closes the sheet.
       behavior: HitTestBehavior.opaque,
-      onVerticalDragUpdate: compact ? (d) => _dragUpdate(d, travel) : null,
-      onVerticalDragEnd: compact ? (d) => _dragEnd(d, travel) : null,
+      onVerticalDragUpdate: compact ? _dragUpdate : null,
+      onVerticalDragEnd: compact ? _dragEnd : null,
       child: sheet,
     );
 
-    if (compact) {
-      sheet = AnimatedContainer(
-        // Instant while the finger is down, so the sheet tracks it exactly;
-        // the release is the part that animates, home on the settle curve.
-        duration: _drag == 0 ? wiz.motion.release : Duration.zero,
-        curve: wiz.motion.settle,
-        transform: Matrix4.translationValues(0, _drag, 0),
-        child: SizedBox(width: double.infinity, child: sheet),
-      );
-    } else {
-      sheet = Padding(
-        // The scrim pads a centred dialog by 24 (`:2663`), so it never runs
-        // into the window edge.
-        padding: EdgeInsets.all(space.s8),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: widget.maxWidth ?? WizSheetRoute.dialogWidth,
-          ),
-          child: sheet,
-        ),
-      );
-    }
+    sheet = compact
+        ? SizedBox(width: double.infinity, child: sheet)
+        : Padding(
+            // The scrim pads a centred dialog by 24 (`:2663`), so it never
+            // runs into the window edge.
+            padding: EdgeInsets.all(space.s8),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: widget.maxWidth ?? WizSheetRoute.dialogWidth,
+              ),
+              child: sheet,
+            ),
+          );
 
     var entrance = _entrance!;
     return AnimatedBuilder(
-      animation: entrance,
+      animation: _repaint!,
+      // Built once per build rather than once per frame: neither the entrance
+      // nor a drag changes anything inside the sheet.
       child: sheet,
       builder: (context, child) {
         // The settle curve overshoots 1 on its way home. The rise wants that
         // overshoot; every alpha has to be clamped out of it.
         var raw = _reduced ? 1.0 : entrance.value;
         var progress = raw.clamp(0.0, 1.0);
+        var drag = _drag.value;
+        var height = _sheetHeight;
         // "Proportional scrim": it thins as the sheet is dragged away.
-        var scrim = progress * (1 - dragged);
+        var scrim = progress * (1 - (height > 0 ? drag / height : 0.0));
         var blur = WizSheetRoute.scrimBlur * scrim;
         return Stack(
           fit: StackFit.expand,
           children: [
             GestureDetector(
               behavior: HitTestBehavior.opaque,
+              // The route's own `barrierLabel` is the dismiss affordance; a
+              // second, unlabelled full-screen tap target would only clutter
+              // the semantics tree.
+              excludeFromSemantics: true,
               onTap: () => Navigator.of(context).maybePop(),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
@@ -277,24 +316,48 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
             ),
             SafeArea(
               bottom: !compact,
-              child: Align(
-                alignment: compact ? Alignment.bottomCenter : Alignment.center,
-                child: Semantics(
-                  // `role="dialog" aria-modal="true" aria-label={title}`
-                  // (`:2666`–`:2668`).
-                  scopesRoute: true,
-                  namesRoute: true,
-                  explicitChildNodes: true,
-                  label: widget.title,
-                  child: Opacity(
-                    opacity: progress,
-                    child: Transform.translate(
-                      offset: Offset(0, WizSheetRoute.rise * (1 - raw)),
-                      // The body may hold Material widgets, and the route
-                      // sits above the app's own Material.
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: child,
+              child: AnimatedPadding(
+                padding: EdgeInsets.only(bottom: keyboard),
+                duration: _reduced ? Duration.zero : motion.panel,
+                curve: motion.settle,
+                child: Align(
+                  alignment: compact
+                      ? Alignment.bottomCenter
+                      : Alignment.center,
+                  child: Semantics(
+                    // `role="dialog" aria-modal="true" aria-label={title}`
+                    // (`:2666`–`:2668`).
+                    scopesRoute: true,
+                    namesRoute: true,
+                    explicitChildNodes: true,
+                    label: widget.title,
+                    child: Opacity(
+                      opacity: progress,
+                      child: Transform.translate(
+                        offset: Offset(0, WizSheetRoute.rise * (1 - raw)),
+                        // The body may hold Material widgets, and the route
+                        // sits above the app's own Material.
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: compact
+                              ? AnimatedContainer(
+                                  // Instant while the finger is down, so the
+                                  // sheet tracks it exactly; the release is
+                                  // the part that animates, home on the
+                                  // settle curve.
+                                  duration: !_reduced && drag == 0
+                                      ? motion.release
+                                      : Duration.zero,
+                                  curve: motion.settle,
+                                  transform: Matrix4.translationValues(
+                                    0,
+                                    drag,
+                                    0,
+                                  ),
+                                  child: child,
+                                )
+                              : child,
+                        ),
                       ),
                     ),
                   ),

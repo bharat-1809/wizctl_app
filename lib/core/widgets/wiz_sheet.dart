@@ -13,12 +13,21 @@ import 'wiz_sheet_route.dart';
 ///
 /// [footer] is laid out as one row with the last entry taking the rest of it;
 /// [maxWidth] widens the dialog past its 520 default.
+///
+/// [scrollable], the default, puts [builder]'s result inside the sheet's own
+/// scroll view, so an ordinary body — a column of fields, a paragraph — starts
+/// scrolling once the sheet reaches its 86 % cap and needs nothing from the
+/// caller. Pass `false` when the body is itself a viewport (a `ListView`, a
+/// `GridView`, a `CustomScrollView`): it is then handed the sheet's bounded
+/// height directly and owns the scrolling, where wrapping it would give it an
+/// unbounded height and throw.
 Future<T?> showWizSheet<T>(
   BuildContext context, {
   required String title,
   required WidgetBuilder builder,
   List<Widget>? footer,
   double? maxWidth,
+  bool scrollable = true,
 }) {
   var wiz = context.wiz;
   return showGeneralDialog<T>(
@@ -38,6 +47,7 @@ Future<T?> showWizSheet<T>(
       body: builder(context),
       footer: footer,
       maxWidth: maxWidth,
+      scrollable: scrollable,
       animation: animation,
     ),
     // The sheet reads the route's animation itself, so that the scrim, the
