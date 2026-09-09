@@ -24,7 +24,7 @@ typedef WizGlow = ({double top, double height, double width, double blur});
 class FixtureGeometry {
   FixtureGeometry._();
 
-  /// The stage: `height:236px` with the fixture centred (Mobile:253), 350
+  /// The stage: `height:236px` with the fixture centred (Mobile:247), 350
   /// wide — spec §352, "inside a 350×236 design box scaled uniformly to the
   /// available width".
   static const Size box = Size(350, 236);
@@ -52,7 +52,7 @@ class FixtureGeometry {
   ///
   /// `offset` is half the `GEO` entry's `top`, which the prototype applies
   /// as a `margin-top`: the stage centres the fixture's *margin* box
-  /// (`place-items:center`, Mobile:253), so a 34 px margin moves the shade
+  /// (`place-items:center`, Mobile:247), so a 34 px margin moves the shade
   /// itself down by 17.
   static const Map<WizFixture, WizShade> shades = {
     WizFixture.dome: (
@@ -97,6 +97,9 @@ class FixtureGeometry {
   static const double knurlBand = 0.34;
   static const double knurlBandAlpha = 0.5;
 
+  /// Mobile:260 grain over the shade: `background-size:3px 3px;opacity:.7`.
+  static const double shadeGrain = 0.7;
+
   /// Mobile:259, the mouth the light leaves by: `left:6%;right:6%;
   /// bottom:-6%;height:52%;border-radius:50%` filled with
   /// `radial-gradient(60% 100% at 50% 100%,var(--em),var(--emSoft) 58%,
@@ -105,9 +108,17 @@ class FixtureGeometry {
   static const double mouthWidth = 0.88;
   static const double mouthHeight = 0.52;
   static const double mouthDrop = 0.06;
-  static const double mouthRadius = 1;
   static const double mouthSoftStop = 0.58;
   static const double mouthEdgeAlpha = 0.9;
+
+  /// That gradient's ending shape, `60% 100%`: the glow reaches 60 % of the
+  /// mouth's width sideways and its full height upwards. Flutter measures a
+  /// radial radius against the box's shortest side — the height, since all
+  /// four mouths are wider than they are tall — so [mouthRadius] is the
+  /// vertical 100 % and [mouthEllipseX] is applied on top of it as a
+  /// horizontal stretch of `mouthEllipseX × width / height`.
+  static const double mouthRadius = 1;
+  static const double mouthEllipseX = 0.6;
 
   /// Mobile:249-251, the two cords a dome hangs from: `width:1px;
   /// height:74px`, `gap:64px`, `linear-gradient(180deg,
@@ -178,13 +189,18 @@ class FixtureGeometry {
   static const double highlightAlpha = 0.16;
   static const double highlightBlur = 3;
 
+  /// Mobile:274 grain over the globe: `background-size:3px 3px;opacity:.5`.
+  static const double globeGrain = 0.5;
+
   /// Mobile:254, the bloom above the fixture: `top:92px;
   /// width:calc(var(--w) * 1.55);height:190px;border-radius:50%;
   /// filter:blur(34px)`.
   static const WizGlow bloom = (top: 92, height: 190, width: 1.55, blur: 34);
 
   /// Desktop:358, the same bloom in the inspector well: `top:58px;
-  /// width:calc(var(--w) * 1.1);height:110px;filter:blur(24px)`.
+  /// width:calc(var(--w) * 1.1);height:110px;filter:blur(24px)`. That `--w`
+  /// is the fixture's unscaled width — Desktop:359 scales the fixture, not
+  /// the glow — so a compact dome's bloom is 216 × 1.1 wide, not 129.6 × 1.1.
   static const WizGlow compactBloom = (
     top: 58,
     height: 110,

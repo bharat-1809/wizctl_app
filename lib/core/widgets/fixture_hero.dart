@@ -229,6 +229,7 @@ class _FixtureHeroState extends State<FixtureHero>
                 compact: widget.compact,
                 colors: wiz.colors,
                 elevation: wiz.elevation,
+                space: wiz.space,
               ),
             ),
           ),

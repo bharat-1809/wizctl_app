@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/fixture_hero.dart';
 import 'package:wizctl_app/core/widgets/fixture_hero_painter.dart';
 
@@ -130,6 +131,19 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(painterOf(tester).breath, 1);
+
+    // Both stages are `overflow:hidden;border-radius:var(--radius-4)`
+    // (Mobile:247, Desktop:357), and a compact bloom is drawn past the
+    // bottom of its 132-tall box, so the painter clips before it draws.
+    expect(
+      find.byType(FixtureHero),
+      paints..clipRRect(
+        rrect: RRect.fromRectAndRadius(
+          Offset.zero & tester.getSize(find.byType(FixtureHero)),
+          Radius.circular(WizSpace.standard.r4),
+        ),
+      ),
+    );
   });
 
   testWidgets('a change of emission eases over the light duration', (
@@ -152,6 +166,37 @@ void main() {
     expect(painterOf(tester).emission.alpha, closeTo(lit.alpha, 0.001));
 
     // Dispose the tree so the breathe's ticker does not outlive the test.
+    await tester.pumpWidget(wizTestApp(const SizedBox()));
+  });
+
+  testWidgets('an equal emission does not restart the ramp', (tester) async {
+    var lit = WizEmission.lit(color: litColour, brightness: 100);
+    await tester.pumpWidget(wizTestApp(hero(WizFixture.bulb, WizEmission.off)));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(wizTestApp(hero(WizFixture.bulb, lit)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    var midway = painterOf(tester).emission.alpha;
+
+    // A parent rebuilding with a freshly built but equal emission — what a
+    // screen does on any unrelated state change. The ramp must carry on,
+    // not start its 420 ms over from here.
+    await tester.pumpWidget(
+      wizTestApp(
+        hero(
+          WizFixture.bulb,
+          WizEmission.lit(color: litColour, brightness: 100),
+        ),
+      ),
+    );
+    await tester.pump(Duration.zero);
+    expect(painterOf(tester).emission.alpha, closeTo(midway, 0.001));
+
+    // The remaining 220 ms of the original ramp land it exactly on the new
+    // emission; a restarted one would still be short of it.
+    await tester.pump(const Duration(milliseconds: 220));
+    expect(painterOf(tester).emission.alpha, closeTo(lit.alpha, 0.001));
+
     await tester.pumpWidget(wizTestApp(const SizedBox()));
   });
 }
