@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../motion/reduced_motion.dart';
 import '../theme/wiz_theme.dart';
 import 'toast_controller.dart';
 import 'wiz_toast.dart';
@@ -101,7 +102,7 @@ class _Enter extends StatelessWidget {
   Widget build(BuildContext context) {
     var motion = context.wiz.motion;
     // Reduced motion starts the toast where it ends: present, not moving.
-    var reduced = MediaQuery.disableAnimationsOf(context);
+    var reduced = wizReducedMotion(context);
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: reduced ? 1 : 0, end: 1),
       // Toast.jsx `animation: 'wz-toast-in var(--dur-panel) var(--ease-settle)'`

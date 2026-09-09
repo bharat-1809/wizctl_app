@@ -178,6 +178,25 @@ void main() {
     );
   });
 
+  testWidgets('reduced motion stops the live dot rather than only its paint', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wizTestApp(
+        const MediaQuery(
+          // The platform's "reduce motion" switch, over the harness's own
+          // MediaQuery.
+          data: MediaQueryData(disableAnimations: true),
+          child: WizBadge(label: 'Live', tone: WizBadgeTone.online, dot: true),
+        ),
+      ),
+    );
+    // The pulse is a loop: a gated paint over a running ticker would never
+    // settle, and this would time out.
+    await tester.pumpAndSettle();
+    expect(find.text('LIVE'), findsOneWidget);
+  });
+
   testWidgets('a stat tile sets its unit in the face of the value', (
     tester,
   ) async {

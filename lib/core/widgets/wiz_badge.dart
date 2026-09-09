@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../motion/reduced_motion.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_surface.dart';
 
@@ -106,6 +107,11 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   /// `var(--ease-tactile)`, so the dip is eased, not linear.
   CurvedAnimation? _eased;
 
+  /// The platform's "reduce motion" switch, read where the dependency is
+  /// registered so that turning it on stops the pulse rather than merely
+  /// freezing what it paints.
+  bool _reduced = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -115,6 +121,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
     // it takes half the token to get there.
     var motion = context.wiz.motion;
     var halfCycle = motion.ping ~/ 2;
+    _reduced = wizReducedMotion(context);
     var pulse = _pulse;
     if (pulse == null) {
       pulse = _pulse = AnimationController(vsync: this, duration: halfCycle);
@@ -128,7 +135,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   /// Runs the pulse for a live dot and parks a still one at rest.
   void _sync() {
     var pulse = _pulse!;
-    if (widget.live) {
+    if (widget.live && !_reduced) {
       if (!pulse.isAnimating) pulse.repeat(reverse: true);
     } else if (pulse.isAnimating) {
       pulse.stop();
@@ -151,11 +158,10 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    var reduced = MediaQuery.disableAnimationsOf(context);
     return AnimatedBuilder(
       animation: _eased!,
       builder: (context, _) {
-        var t = (widget.live && !reduced) ? _eased!.value : 0.0;
+        var t = (widget.live && !_reduced) ? _eased!.value : 0.0;
         return Opacity(
           opacity: 1 - WizBadge.pulseOpacityDip * t,
           child: Transform.scale(

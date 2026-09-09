@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduced_motion.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_surface.dart';
@@ -54,7 +55,7 @@ class _WizSpinnerState extends State<WizSpinner>
   void didChangeDependencies() {
     super.didChangeDependencies();
     var motion = context.wiz.motion;
-    _reduced = MediaQuery.disableAnimationsOf(context);
+    _reduced = wizReducedMotion(context);
     var spin = _spin;
     if (spin == null) {
       spin = _spin = AnimationController(vsync: this, duration: motion.spin);

@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 import '../layout/wiz_breakpoints.dart';
+import '../motion/reduced_motion.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_surface.dart';
@@ -108,7 +109,7 @@ class _WizSheetRouteState extends State<WizSheetRoute> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     var settle = context.wiz.motion.settle;
-    _reduced = MediaQuery.disableAnimationsOf(context);
+    _reduced = wizReducedMotion(context);
     var entrance = _entrance;
     if (entrance == null) {
       entrance = CurvedAnimation(parent: widget.animation, curve: settle);

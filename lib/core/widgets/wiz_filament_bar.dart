@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduced_motion.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_filament_painter.dart';
@@ -80,7 +81,7 @@ class _WizFilamentBarState extends State<WizFilamentBar>
   void didChangeDependencies() {
     super.didChangeDependencies();
     var motion = context.wiz.motion;
-    _reduced = MediaQuery.disableAnimationsOf(context);
+    _reduced = wizReducedMotion(context);
     var run = _run;
     if (run == null) {
       run = _run = AnimationController(vsync: this, duration: motion.filament);
