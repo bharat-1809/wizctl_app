@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../copy/strings.dart';
 import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
 import '../theme/wiz_textures.dart';
@@ -174,9 +175,8 @@ class LightCard extends StatelessWidget {
         children: [
           WizIcon(WizIcons.wifi, size: unreachableGlyph, color: c.signalDanger),
           Expanded(
-            // Task 27 swaps this for the shared string.
             child: Text(
-              'No response on the local network',
+              Strings.noResponse,
               style: wiz.typography.bodySm.copyWith(color: c.signalDanger),
             ),
           ),

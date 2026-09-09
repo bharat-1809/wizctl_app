@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../copy/strings.dart';
 import '../theme/wiz_theme.dart';
 import 'wiz_sheet_route.dart';
 
@@ -35,7 +36,7 @@ Future<T?> showWizSheet<T>(
     // Also what arms Escape: `_DismissModalAction` fires only on a route
     // whose barrier is dismissible.
     barrierDismissible: true,
-    barrierLabel: 'Close',
+    barrierLabel: Strings.close,
     // The sheet paints its own scrim and blur across the whole route, so the
     // route's own barrier stays invisible underneath it.
     barrierColor: wiz.colors.surfaceScrim.withValues(alpha: 0),

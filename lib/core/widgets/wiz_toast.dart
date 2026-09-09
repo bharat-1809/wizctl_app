@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../copy/strings.dart';
 import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
 import '../theme/wiz_elevation.dart';
@@ -183,8 +184,7 @@ class _DismissKey extends StatelessWidget {
     return WizPressable(
       onTap: onDismiss,
       scale: wiz.motion.smallKeyScale,
-      // Task 27 swaps this for the shared string.
-      semanticsLabel: 'Dismiss',
+      semanticsLabel: Strings.dismiss,
       focusRadius: radius,
       // The cap is drawn smaller than the touch minimum, so the hit area
       // grows around it, the way a `WizIconKey`'s does.

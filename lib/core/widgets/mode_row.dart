@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../copy/strings.dart';
 import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
 import '../motion/reduced_motion.dart';
@@ -47,7 +48,7 @@ class ModeRow extends StatelessWidget {
     required this.art,
     required this.name,
     required this.onTap,
-    this.label = 'Light mode',
+    this.label = Strings.lightMode,
   });
 
   /// The art square (`:221` `width:48px;height:48px`; spec §11.2, "48 art
