@@ -8,6 +8,8 @@ import 'package:wizctl_app/core/theme/wiz_space.dart';
 import 'package:wizctl_app/core/widgets/mode_row.dart';
 import 'package:wizctl_app/core/widgets/wiz_scene_art.dart';
 
+import 'package:wizctl_app/core/copy/strings.dart';
+
 import '../../support/wiz_test_app.dart';
 
 void main() {
@@ -289,5 +291,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(feedback.played, isEmpty);
     handle.dispose();
+  });
+  testWidgets('scene art for an id the design has none for is the flat face', (
+    tester,
+  ) async {
+    // `ModeRow(SceneModeArt(0))` reaches the row straight from a bulb with
+    // no scene set; a rhythm id past the 1000 the library knows arrives the
+    // same way.
+    for (var id in [0, 1001]) {
+      await tester.pumpWidget(
+        wizTestApp(
+          SizedBox(
+            width: 350,
+            child: ModeRow(
+              art: SceneModeArt(id),
+              name: Strings.nothingSet,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'scene $id threw');
+      expect(find.byType(WizSceneArt), findsOneWidget);
+
+      var art = tester
+          .widget<CustomPaint>(
+            find.byWidgetPredicate(
+              (w) => w is CustomPaint && w.painter is WizSceneArtPainter,
+            ),
+          )
+          .painter!;
+      expect(
+        art,
+        isA<WizSceneArtPainter>()
+            .having((p) => p.from, 'from', WizColors.standard.char800)
+            .having((p) => p.to, 'to', WizColors.standard.char900),
+      );
+    }
   });
 }

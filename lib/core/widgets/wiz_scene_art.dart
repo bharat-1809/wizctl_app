@@ -12,8 +12,13 @@ typedef _Bloom = ({double cx, double cy, double rx, double ry, double fade});
 /// bottom-right bloom, a diagonal blend and the grain. Every tile is a slot
 /// keyed `scene-<id>` so real artwork can replace it later.
 class WizSceneArt extends StatelessWidget {
-  final Color from;
-  final Color to;
+  /// The two colours the art blends, or null for the flat face — the
+  /// theme's `char800 → char900`, which only a build can read. A scene id
+  /// [sceneGradients] has no entry for wears it: a bulb reports 0 when no
+  /// scene is set (`WizLightState.isSceneMode` is `sceneId > 0`) and can
+  /// report a rhythm id past the 1000 the library enumerates.
+  final Color? from;
+  final Color? to;
   final BorderRadius radius;
   final bool sheen;
   final double grainOpacity;
@@ -73,8 +78,8 @@ class WizSceneArt extends StatelessWidget {
 
   const WizSceneArt({
     super.key,
-    required this.from,
-    required this.to,
+    required Color this.from,
+    required Color this.to,
     required this.radius,
     this.sheen = false,
     this.grainOpacity = grainOpacityDefault,
@@ -85,6 +90,10 @@ class WizSceneArt extends StatelessWidget {
   ///
   /// Carries the spec's `scene-<id>` key unless the caller gives its own, so
   /// the slot can be found and swapped for real artwork later (spec §331).
+  ///
+  /// An id with no art of its own degrades to the flat face rather than
+  /// throwing: the id is whatever a bulb reported, which is 0 when nothing
+  /// is set and may be a rhythm id past the 1000 the library knows.
   WizSceneArt.scene(
     int id, {
     Key? key,
@@ -92,12 +101,18 @@ class WizSceneArt extends StatelessWidget {
     this.sheen = false,
     this.grainOpacity = grainOpacityDefault,
     this.child,
-  }) : from = sceneGradients[id]!.from,
-       to = sceneGradients[id]!.to,
+  }) : from = sceneGradients[id]?.from,
+       to = sceneGradients[id]?.to,
        super(key: key ?? ValueKey('scene-$id'));
 
   @override
   Widget build(BuildContext context) {
+    var c = context.wiz.colors;
+    // The flat face `ModeRow`'s `FlatModeArt` wears (`:873`
+    // `const flat = 'linear-gradient(180deg,#24242A,#16161A)'`, which is
+    // `char800 → char900`), read from the theme rather than stated twice.
+    var blendFrom = from ?? c.char800;
+    var blendTo = to ?? c.char900;
     return ClipRRect(
       borderRadius: radius,
       child: Stack(
@@ -106,9 +121,9 @@ class WizSceneArt extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(
               painter: WizSceneArtPainter(
-                from,
-                to,
-                sheen ? context.wiz.colors.highlightBase : null,
+                blendFrom,
+                blendTo,
+                sheen ? c.highlightBase : null,
               ),
             ),
           ),

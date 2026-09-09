@@ -7,6 +7,9 @@ import 'package:wizctl_app/core/theme/wiz_type.dart';
 import 'package:wizctl_app/core/widgets/wiz_scene_art.dart';
 import 'package:wizctl_app/core/widgets/wiz_scene_tile.dart';
 
+import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/core/theme/wiz_colors.dart';
+
 import '../../support/wiz_test_app.dart';
 
 /// The label scrim: the only [Container] the tile decorates with a gradient.
@@ -256,5 +259,53 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('a scene id with no art of its own wears the flat face', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    // 0 is what a bulb reports when no scene is set, and firmware can
+    // report a rhythm id past the 1000 the library enumerates. Neither is
+    // in `SCENE_GRADIENTS`, and both reach a tile straight off the wire.
+    for (var id in [0, 1001]) {
+      await tester.pumpWidget(
+        wizTestApp(
+          SizedBox(
+            width: 160,
+            child: WizSceneTile(
+              sceneId: id,
+              selected: false,
+              height: 82,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'scene $id threw');
+
+      var art = tester
+          .widget<CustomPaint>(
+            find.byWidgetPredicate(
+              (w) => w is CustomPaint && w.painter is WizSceneArtPainter,
+            ),
+          )
+          .painter!;
+      expect(
+        art,
+        isA<WizSceneArtPainter>()
+            .having((p) => p.from, 'from', WizColors.standard.char800)
+            .having((p) => p.to, 'to', WizColors.standard.char900),
+        reason: 'the flat face is the one a mode with nothing set wears',
+      );
+      expect(find.text(Strings.nothingSet), findsOneWidget);
+      expect(find.semantics.byLabel(Strings.nothingSet), findsOne);
+      expect(
+        find.byKey(Key('scene-pip-$id')),
+        findsNothing,
+        reason: 'an unknown scene is not announced as dynamic',
+      );
+    }
+    handle.dispose();
   });
 }

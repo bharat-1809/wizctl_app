@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../copy/strings.dart';
 import '../feedback/feedback_kind.dart';
 import '../theme/wiz_theme.dart';
 import '../theme/wiz_type.dart';
@@ -112,7 +113,12 @@ class WizSceneTile extends StatelessWidget {
     var wiz = context.wiz;
     var c = wiz.colors;
     var m = wiz.motion;
-    var scene = sceneGradients[sceneId]!;
+    // The id is whatever a bulb reported: 0 when no scene is set, and
+    // possibly a rhythm id past the 1000 the library enumerates. A tile with
+    // no art for its id wears the flat face `WizSceneArt` falls back to,
+    // under the name a mode with nothing set carries, and shows no pip.
+    var scene = sceneGradients[sceneId];
+    var sceneName = scene?.name ?? Strings.nothingSet;
     var spec = switch (variant) {
       WizSceneTileVariant.tab => _tabSpec,
       WizSceneTileVariant.sheet => _sheetSpec,
@@ -168,14 +174,14 @@ class WizSceneTile extends StatelessWidget {
               ),
             ),
             child: Text(
-              scene.name,
+              sceneName,
               style: label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
-        if (scene.isDynamic)
+        if (scene?.isDynamic ?? false)
           Positioned(
             top: wiz.space.s4,
             right: wiz.space.s4,
@@ -217,7 +223,7 @@ class WizSceneTile extends StatelessWidget {
       enabled: onTap != null,
       feedback: selected ? FeedbackKind.press : FeedbackKind.tick,
       scale: m.pressScale,
-      semanticsLabel: scene.name,
+      semanticsLabel: sceneName,
       toggled: selected,
       focusRadius: border,
       builder: (context, state) => DecoratedBox(
