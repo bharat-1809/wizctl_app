@@ -2,21 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../icons/wiz_icon.dart';
 import '../icons/wiz_icon_data.dart';
-import '../theme/wiz_elevation.dart';
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
 import '../theme/wiz_type.dart';
+import 'light_card_brightness.dart';
+import 'light_card_well.dart';
 import 'wiz_glow.dart';
 import 'wiz_pressable.dart';
-import 'wiz_slider.dart';
 import 'wiz_surface.dart';
 import 'wiz_toggle.dart';
 
-/// Which brightness control a [LightCard] carries under its header: the
-/// draggable rail (a phone, and a room's list), a read-only meter (the
-/// desktop grid, where the rail belongs to the inspector instead), or
-/// neither — a plug switches power only, so there is nothing to dim.
-enum WizBrightnessControl { rail, meter, none }
+export 'light_card_brightness.dart' show WizBrightnessControl;
 
 /// A single light: name, mode or address meta, power switch, and brightness
 /// as a rail (phone) or a read-only meter (desktop grid). A plug shows
@@ -24,6 +20,9 @@ enum WizBrightnessControl { rail, meter, none }
 ///
 /// The name and meta ellipsise, so a card needs a bounded width: a vertical
 /// list, or a grid tile.
+///
+/// The well and the brightness row are [LightCardWell] and
+/// [LightCardBrightness]; this file is the card's chassis, copy and switch.
 class LightCard extends StatelessWidget {
   final String name;
   final String? meta;
@@ -54,35 +53,11 @@ class LightCard extends StatelessWidget {
     this.onTap,
   });
 
-  /// What a bulb dims between (spec §5, `brightness /*10–100*/`; LightCard.jsx
-  /// `min: 10, max: 100`, `design/reference/_ds_bundle.js:1936`). Stated here
-  /// rather than read from the `wizctl` package: the kit knows no protocol.
-  static const double brightnessMin = 10;
-  static const double brightnessMax = 100;
-
-  /// The icon well and its glyph: LightCard.jsx `width: 46, height: 46`
-  /// (`design/reference/_ds_bundle.js:1887`) and `size: 22` (`:1900`).
-  /// Spec §11.2, "46 icon well".
-  static const double well = 46;
-  static const double glyph = 22;
-
-  /// The lit well's fill: LightCard.jsx
-  /// `radial-gradient(circle at 50% 30%,var(--amber-400),var(--amber-700))`
-  /// (`:1893`). 30 % down the well is -0.4 in [Alignment]'s -1..1 space, and
-  /// a CSS radial gradient given no size is `farthest-corner`, which from
-  /// there reaches sqrt(0.5² + 0.7²) of a square well's side — Flutter
-  /// defaults to 0.5, which would compress amber 700 into the middle.
-  static const Alignment wellGradientCentre = Alignment(0, -0.4);
-  static const double wellGradientRadius = 0.86;
-
-  /// The lit well's rim and emission: LightCard.jsx
-  /// `inset 0 1px 0 rgba(255,255,255,.35),0 0 20px -4px rgba(255,176,32,.7)`
-  /// (`:1894`). Unlit it is the plain `--elev-well` of every other well.
-  static const double wellRimOffsetY = 1;
-  static const double wellRimAlpha = 0.35;
-  static const double wellGlowBlur = 20;
-  static const double wellGlowSpread = -4;
-  static const double wellGlowAlpha = 0.7;
+  /// What a bulb dims between: the rail's own bounds, named here too because
+  /// the card is what callers hold. See [LightCardBrightness] for the
+  /// citation.
+  static const double brightnessMin = LightCardBrightness.brightnessMin;
+  static const double brightnessMax = LightCardBrightness.brightnessMax;
 
   /// The name: LightCard.jsx `fontSize: 16.5, fontWeight: 600` (`:1910`,
   /// `:1911`) and `lineHeight: 1.2` (`:1913`); spec §11.2, "name 16.5 / 600".
@@ -94,18 +69,6 @@ class LightCard extends StatelessWidget {
   /// The mono meta, a half step under the `mono` token: LightCard.jsx
   /// `fontSize: 11` (`:1923`); spec §11.2, "mono meta 11".
   static const double metaSize = 11;
-
-  /// The read-only meter: LightCard.jsx `height: 6` (`:1950`); spec §11.2,
-  /// "6 px meter with amber 700 → 300 fill".
-  static const double meterThickness = 6;
-
-  /// Its readout: LightCard.jsx `fontSize: 18, fontWeight: 800` (`:1969`,
-  /// `:1970`) — the size `readoutSm` already carries, stated so the tracking
-  /// beside it reads as the em value it is — and the unit's `fontSize: 10.5`
-  /// (`:1977`). Spec §11.2, "an 18 display readout".
-  static const double meterReadoutSize = 18;
-  static const FontWeight meterReadoutWeight = FontWeight.w800;
-  static const double meterUnitSize = 10.5;
 
   /// The wifi glyph on the unreachable line: LightCard.jsx `size: 15`
   /// (`:1990`).
@@ -128,23 +91,14 @@ class LightCard extends StatelessWidget {
     var c = wiz.colors;
     var m = wiz.motion;
     var lit = on && !unreachable;
-    var showRail = lit && control == WizBrightnessControl.rail;
-    var showMeter = lit && control == WizBrightnessControl.meter;
+    var dims = lit && control != WizBrightnessControl.none;
     var radius = BorderRadius.circular(wiz.space.r4);
 
     var header = Row(
       // LightCard.jsx `gap: 13` (`:1883`), between every child alike.
       spacing: wiz.space.s5 + wiz.space.s1 / 2,
       children: [
-        AnimatedSwitcher(
-          // The gradient and the shadows both change with the state and
-          // neither interpolates, so the two wells cross-fade — the recipe
-          // `WizToggle` uses for its track.
-          duration: m.light,
-          switchInCurve: m.tactile,
-          switchOutCurve: m.tactile,
-          child: _well(wiz, lit),
-        ),
+        LightCardWell(icon: icon, lit: lit),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,20 +151,22 @@ class LightCard extends StatelessWidget {
     );
 
     Widget? second;
-    if (showRail) {
-      second = WizSlider(
-        value: brightness,
-        min: brightnessMin,
-        max: brightnessMax,
-        // The rail is shown live, so it always drags; a card given no
-        // handler simply reports nowhere.
-        onChanged: onBrightness ?? (_) {},
-        onChangeEnd: onBrightnessEnd,
-        label: 'Brightness',
-        readout: '$_pct%',
+    if (dims) {
+      // A node of its own, for the switch's reason and one more. An inert
+      // rail annotates with no actions either, so without this it would
+      // swallow the card's copy and leave the card button unnamed. Holding
+      // it also keeps the rail's own "BRIGHTNESS 70%" header off the card's
+      // label, where it read as a second announcement of the rail.
+      second = Semantics(
+        container: true,
+        child: LightCardBrightness(
+          control: control,
+          brightness: brightness,
+          pct: _pct,
+          onBrightness: onBrightness,
+          onBrightnessEnd: onBrightnessEnd,
+        ),
       );
-    } else if (showMeter) {
-      second = _meter(wiz);
     } else if (unreachable) {
       second = Row(
         // LightCard.jsx `gap: 7` (`:1984`).
@@ -290,114 +246,6 @@ class LightCard extends StatelessWidget {
       // rather than firing under a finger that is on its way to one of them.
       arenaResolved: true,
       builder: (context, state) => card(state.pressed),
-    );
-  }
-
-  /// The icon well. Lit it is a hot amber lens; dark it is the recessed
-  /// charcoal well every other glyph in the kit sits in.
-  Widget _well(WizTheme wiz, bool lit) {
-    var c = wiz.colors;
-    return WizSurface(
-      // Identity, so the switcher above cross-fades on the state rather than
-      // rebuilding one surface whose paint would jump.
-      key: ValueKey(lit),
-      spec: lit
-          ? WizShadowSpec(
-              insets: [
-                WizInset(
-                  offsetY: wellRimOffsetY,
-                  blur: 0,
-                  color: c.highlightBase.withValues(alpha: wellRimAlpha),
-                ),
-              ],
-              outer: [
-                BoxShadow(
-                  color: c.amber500.withValues(alpha: wellGlowAlpha),
-                  blurRadius: wellGlowBlur,
-                  spreadRadius: wellGlowSpread,
-                ),
-              ],
-            )
-          : wiz.elevation.well,
-      radius: BorderRadius.circular(wiz.space.r2),
-      gradient: lit
-          ? RadialGradient(
-              center: wellGradientCentre,
-              radius: wellGradientRadius,
-              colors: [c.amber400, c.amber700],
-            )
-          : null,
-      color: lit ? null : c.char1000,
-      width: well,
-      height: well,
-      alignment: Alignment.center,
-      child: WizIcon(
-        icon,
-        size: glyph,
-        color: lit ? c.textOnAccent : c.textTertiary,
-      ),
-    );
-  }
-
-  /// The read-only brightness meter: a recessed rail with an amber fill and
-  /// the percentage beside it. Shown where the drag belongs to something
-  /// else — the desktop grid, whose inspector owns the rail.
-  Widget _meter(WizTheme wiz) {
-    var c = wiz.colors;
-    var m = wiz.motion;
-    var pill = BorderRadius.circular(wiz.space.pill);
-    return Row(
-      // LightCard.jsx `gap: 12` (`:1945`).
-      spacing: wiz.space.s5,
-      children: [
-        Expanded(
-          child: WizSurface(
-            spec: wiz.elevation.well,
-            radius: pill,
-            gradient: wizVertical(c.char1000, c.char900),
-            height: meterThickness,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: AnimatedFractionallySizedBox(
-                duration: m.light,
-                curve: m.tactile,
-                widthFactor: _pct / 100,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: pill,
-                    // LightCard.jsx
-                    // `linear-gradient(90deg,var(--amber-700),var(--amber-300))`
-                    // (`:1962`), which is what a `LinearGradient` left to its
-                    // own `centerLeft` → `centerRight` already draws.
-                    gradient: LinearGradient(colors: [c.amber700, c.amber300]),
-                  ),
-                  child: const SizedBox(height: meterThickness),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Text.rich(
-          TextSpan(
-            text: '$_pct',
-            children: [
-              TextSpan(
-                text: '%',
-                style: TextStyle(
-                  fontSize: meterUnitSize,
-                  color: c.textTertiary,
-                ),
-              ),
-            ],
-          ),
-          style: wiz.typography.readoutSm.copyWith(
-            fontSize: meterReadoutSize,
-            fontWeight: meterReadoutWeight,
-            letterSpacing: meterReadoutSize * WizType.meterReadoutTracking,
-            color: c.amber400,
-          ),
-        ),
-      ],
     );
   }
 }
