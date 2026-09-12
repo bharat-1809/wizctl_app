@@ -18,14 +18,15 @@ class AppServices {
   const AppServices({required this.feedback, required this.toasts});
 }
 
-/// The open licences the app ships, by the family each covers. Both faces
-/// are under the SIL Open Font License, whose terms require the licence to
-/// travel with the software, so the text is bundled and handed to the
-/// registry rather than merely linked.
+/// The open licences the app ships, by the family each covers. All three
+/// faces are under the SIL Open Font License, whose terms require the
+/// licence to travel with the software, so the text is bundled and handed to
+/// the registry rather than merely linked.
 ///
-/// The third face, Neumatic Compressed, is a commercial one and carries no
+/// The fourth face, Neumatic Compressed, is a commercial one and carries no
 /// licence file here; see the README.
 const Map<String, String> _fontLicences = {
+  'Big Shoulders Display': 'assets/fonts/OFL-BigShouldersDisplay.txt',
   'Hanken Grotesk': 'assets/fonts/OFL-HankenGrotesk.txt',
   'JetBrains Mono': 'assets/fonts/OFL-JetBrainsMono.txt',
 };

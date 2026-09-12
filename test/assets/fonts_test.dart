@@ -7,13 +7,11 @@ import 'package:wizctl_app/app/bootstrap.dart';
 
 void main() {
   const files = [
-    'NeumaticCompressed-Light.otf',
-    'NeumaticCompressed-Regular.otf',
-    'NeumaticCompressed-Medium.otf',
-    'NeumaticCompressed-SemiBold.otf',
-    'NeumaticCompressed-Bold.otf',
+    'BigShouldersDisplay-SemiBold.ttf',
+    'BigShouldersDisplay-Bold.ttf',
+    'BigShouldersDisplay-ExtraBold.ttf',
+    'BigShouldersDisplay-Black.ttf',
     'NeumaticCompressed-ExtraBold.otf',
-    'NeumaticCompressed-Black.otf',
     'HankenGrotesk-Regular.ttf',
     'HankenGrotesk-SemiBold.ttf',
     'HankenGrotesk-Bold.ttf',
@@ -35,6 +33,7 @@ void main() {
       );
     }
     for (var family in [
+      'BigShouldersDisplay',
       'NeumaticCompressed',
       'HankenGrotesk',
       'JetBrainsMono',
@@ -43,8 +42,9 @@ void main() {
     }
   });
 
-  /// The two open licences, by the family each covers.
+  /// The three open licences, by the family each covers.
   const licences = {
+    'Big Shoulders Display': 'assets/fonts/OFL-BigShouldersDisplay.txt',
     'Hanken Grotesk': 'assets/fonts/OFL-HankenGrotesk.txt',
     'JetBrains Mono': 'assets/fonts/OFL-JetBrainsMono.txt',
   };

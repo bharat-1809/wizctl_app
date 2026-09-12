@@ -129,13 +129,10 @@ class LightCardBrightness extends StatelessWidget {
               ),
             ],
           ),
-          // LightCard.jsx tracks the meter at `.015em`
-          // (`design/reference/_ds_bundle.js:1971`); the display floor is
-          // wider.
           style: wiz.typography.readoutSm.copyWith(
             fontSize: meterReadoutSize,
             fontWeight: meterReadoutWeight,
-            letterSpacing: WizType.displayTracking(meterReadoutSize),
+            letterSpacing: meterReadoutSize * WizType.meterReadoutTracking,
             color: c.amber400,
           ),
         ),

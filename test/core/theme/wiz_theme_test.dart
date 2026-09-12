@@ -63,7 +63,9 @@ void main() {
         ),
       ),
     );
-    expect(theme.textTheme.displayLarge?.fontFamily, WizType.familyDisplay);
+    expect(theme.textTheme.displayLarge?.fontFamily, WizType.familyHero);
+    expect(theme.textTheme.displayMedium?.fontFamily, WizType.familyDisplay);
+    expect(theme.textTheme.titleMedium?.fontFamily, WizType.familyDisplay);
     expect(theme.textTheme.bodyMedium?.fontFamily, WizType.familyUi);
   });
 

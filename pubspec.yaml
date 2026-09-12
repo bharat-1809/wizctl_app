@@ -36,27 +36,29 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    # The two open licences the app ships and registers at start, so the
+    # The three open licences the app ships and registers at start, so the
     # standard licence page lists them (see `lib/app/bootstrap.dart`).
+    - assets/fonts/OFL-BigShouldersDisplay.txt
     - assets/fonts/OFL-HankenGrotesk.txt
     - assets/fonts/OFL-JetBrainsMono.txt
   fonts:
+    # The display face. Static instances of Google Fonts'
+    # `BigShouldersDisplay[wght].ttf` at the four weights the kit sets.
+    - family: BigShouldersDisplay
+      fonts:
+        - asset: assets/fonts/BigShouldersDisplay-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BigShouldersDisplay-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BigShouldersDisplay-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/BigShouldersDisplay-Black.ttf
+          weight: 900
+    # The hero's face, at the one weight the hero uses.
     - family: NeumaticCompressed
       fonts:
-        - asset: assets/fonts/NeumaticCompressed-Light.otf
-          weight: 300
-        - asset: assets/fonts/NeumaticCompressed-Regular.otf
-          weight: 400
-        - asset: assets/fonts/NeumaticCompressed-Medium.otf
-          weight: 500
-        - asset: assets/fonts/NeumaticCompressed-SemiBold.otf
-          weight: 600
-        - asset: assets/fonts/NeumaticCompressed-Bold.otf
-          weight: 700
         - asset: assets/fonts/NeumaticCompressed-ExtraBold.otf
           weight: 800
-        - asset: assets/fonts/NeumaticCompressed-Black.otf
-          weight: 900
     - family: HankenGrotesk
       fonts:
         - asset: assets/fonts/HankenGrotesk-Regular.ttf
