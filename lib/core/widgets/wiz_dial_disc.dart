@@ -64,18 +64,25 @@ class WizDialDisc extends StatelessWidget {
       height: d,
       child: Stack(
         children: [
-          // Sweep arc and its glow
+          // The arc's glow, faded through its colour rather than an opacity
+          // layer. An `AnimatedOpacity` whose only content is one blurred
+          // draw has Impeller (Flutter 3.47, macOS) push the opacity into
+          // the blur, which cannot take it: every frame of the fade logged
+          // `Contents::SetInheritedOpacity should never be called…` and drew
+          // the glow at full strength. Two draws under the layer, or a fill
+          // beside the shadow, are fine; a lone glow is exactly this. The
+          // colour's alpha is the same fade one layer cheaper.
           Positioned.fill(
-            child: AnimatedOpacity(
-              opacity: pct > 0 ? 1 : 0,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: pct > 0 ? 1 : 0),
               duration: m.ui,
               curve: m.tactile,
-              child: DecoratedBox(
+              builder: (context, lit, _) => DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: c.amber500.withValues(alpha: _arcGlowAlpha),
+                      color: c.amber500.withValues(alpha: _arcGlowAlpha * lit),
                       blurRadius: _arcGlowBlur,
                     ),
                   ],
