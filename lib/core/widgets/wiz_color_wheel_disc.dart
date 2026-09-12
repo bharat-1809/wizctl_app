@@ -69,14 +69,18 @@ class WizColorWheelDisc extends StatelessWidget {
   /// `conic-gradient(from -90deg, red, yellow, green, teal, cyan, indigo,
   /// violet, magenta, red)` — eight of the kit's hues from 12 o'clock round
   /// to red again, so the ring and the puck agree on where hue 0 sits.
+  ///
+  /// The turn is rotated back a quarter to start at 12, not begun at
+  /// `-π/2`: a [SweepGradient] measures from 3 o'clock and never wraps, so
+  /// a negative start left the quadrant between 12 and 3 clamped to the
+  /// last stop — solid red, with yellow missing and a hard edge at 3.
   Widget _ring(WizTheme wiz) {
     var c = wiz.colors;
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: SweepGradient(
-          startAngle: -math.pi / 2,
-          endAngle: math.pi * 3 / 2,
+          transform: const GradientRotation(-math.pi / 2),
           colors: <Color>[
             c.hueRed,
             c.hueYellow,

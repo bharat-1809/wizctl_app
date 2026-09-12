@@ -59,6 +59,13 @@ class WizDialGeometry {
 /// The recessed disc with the amber sweep arc and the dead wedge at the
 /// bottom. CSS conic angles are from 12 o'clock; Flutter sweeps from 3, so
 /// every angle is shifted by a quarter turn.
+///
+/// The sweep is a full turn from 3 o'clock, rotated to where the arc
+/// starts, rather than a sweep that begins at the arc's own angle. A
+/// [SweepGradient] measures every pixel from 3 o'clock and never wraps: a
+/// `startAngle` below zero puts everything clockwise of 3 o'clock past the
+/// last stop, and the arc came out as a stub at the right with the rest of
+/// the disc transparent.
 class WizDialArcPainter extends CustomPainter {
   final double pct;
   final Color amber600, amber400, amber500, dead;
@@ -84,8 +91,7 @@ class WizDialArcPainter extends CustomPainter {
     // out in the dead colour instead of interpolating through it.
     var clear = dead.withValues(alpha: 0);
     var gradient = SweepGradient(
-      startAngle: startRad,
-      endAngle: startRad + 2 * math.pi,
+      transform: GradientRotation(startRad),
       colors: [amber600, amber400, amber500, dead, dead, clear, clear],
       stops: [
         0,
