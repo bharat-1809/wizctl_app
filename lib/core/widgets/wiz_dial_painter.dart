@@ -38,9 +38,10 @@ class WizDialGeometry {
   /// 0.45 em, and at the prototype's ratios `2700K` ran rim to rim across
   /// the well (0.49 of the diameter in a well 0.53 wide). These keep the
   /// prototype's value-to-unit proportion and put the widest readout,
-  /// `6500K`, at three quarters of the well.
-  static const double valueFont = 0.20;
-  static const double unitFont = 0.09;
+  /// `6500K`, at three fifths of the well, which is where the gallery
+  /// review settled after three quarters still read as crowded.
+  static const double valueFont = 0.16;
+  static const double unitFont = 0.07;
   static const double markHeight = 0.125;
   static const double markTop = 0.05;
 
