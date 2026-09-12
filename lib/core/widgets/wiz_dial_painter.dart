@@ -26,14 +26,21 @@ class WizDialGeometry {
   /// Arrow keys move this many steps: Dial.jsx `commit(value + step * 5)`.
   static const int keySteps = 5;
 
-  /// Ratios of the diameter (knob inset, readout well inset, value font,
-  /// unit font, index mark height and top offset): Dial.jsx `inset: size *
-  /// 0.085`, `inset: size * 0.235`, `fontSize: size * 0.24`, `fontSize:
-  /// size * 0.11`, `height: size * 0.125` and `top: size * 0.05`.
+  /// Ratios of the diameter (knob inset, readout well inset, index mark
+  /// height and top offset): Dial.jsx `inset: size * 0.085`, `inset: size *
+  /// 0.235`, `height: size * 0.125` and `top: size * 0.05`.
   static const double knobInset = 0.085;
   static const double wellInset = 0.235;
-  static const double valueFont = 0.24;
-  static const double unitFont = 0.11;
+
+  /// The readout's value and unit sizes as ratios of the diameter. Dial.jsx
+  /// draws them at `size * 0.24` and `size * 0.11` in Neumatic Compressed,
+  /// whose digits are 0.25 em wide; Big Shoulders Display ExtraBold's are
+  /// 0.45 em, and at the prototype's ratios `2700K` ran rim to rim across
+  /// the well (0.49 of the diameter in a well 0.53 wide). These keep the
+  /// prototype's value-to-unit proportion and put the widest readout,
+  /// `6500K`, at three quarters of the well.
+  static const double valueFont = 0.20;
+  static const double unitFont = 0.09;
   static const double markHeight = 0.125;
   static const double markTop = 0.05;
 
