@@ -6,6 +6,7 @@ import '../feedback/feedback_kind.dart';
 import '../feedback/feedback_scope.dart';
 import '../theme/wiz_colors.dart';
 import '../theme/wiz_theme.dart';
+import '../theme/wiz_type.dart';
 import 'wiz_slider_fill.dart';
 import 'wiz_slider_rail.dart';
 
@@ -253,6 +254,7 @@ class _WizSliderState extends State<WizSlider> {
             widget.readout!,
             style: wiz.typography.readoutSm.copyWith(
               fontSize: WizSlider._readoutSize,
+              letterSpacing: WizType.displayTracking(WizSlider._readoutSize),
               color: c.textPrimary,
             ),
           ),

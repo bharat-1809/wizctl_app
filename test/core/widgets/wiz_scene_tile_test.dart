@@ -202,8 +202,8 @@ void main() {
       var style = tester.widget<Text>(find.text('Ocean')).style!;
       expect(
         style.letterSpacing,
-        style.fontSize! * WizType.sceneTileTracking,
-        reason: '$variant tracks 0.02 em',
+        WizType.displayTracking(style.fontSize!),
+        reason: '$variant takes the display floor for its size',
       );
     }
   });
@@ -231,7 +231,7 @@ void main() {
     expect(art.radius, BorderRadius.circular(9));
     var style = tester.widget<Text>(find.text('Ocean')).style!;
     expect(style.fontSize, 17);
-    expect(style.letterSpacing, 17 * WizType.sceneTileTracking);
+    expect(style.letterSpacing, WizType.displayTracking(17));
   });
 
   testWidgets('scene art paints from a scene id', (tester) async {

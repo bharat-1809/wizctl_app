@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 ///
 /// The user's words are set in the grotesque, the machine's words in mono,
 /// the instrument's numbers in the display face. Letter-spacing values in the
-/// CSS are in em; here they are already multiplied out to logical pixels.
+/// CSS are in em; here they are already multiplied out to logical pixels —
+/// except on the display face, which takes the floor in [displayTracking]
+/// wherever it is set.
 @immutable
 class WizType {
   const WizType._();
@@ -34,49 +36,64 @@ class WizType {
   /// `design/reference/_ds_bundle.js:2065`).
   static const double roomTitleTracking = -0.01;
 
-  /// A `LightCard`'s brightness meter reads out the other way: 0.015 em
-  /// (LightCard.jsx, the 18 px display readout's `letterSpacing: '.015em'`,
-  /// `design/reference/_ds_bundle.js:1971`).
-  static const double meterReadoutTracking = 0.015;
-
   // SceneTile.jsx label — the design system's scene *chip*: UI face 13.5/15
   // with letter-spacing -0.005 em.
   static const double sceneLabelTracking = -0.005;
 
-  /// The scene *tile*'s label is the display face and tracks the other way:
-  /// 0.02 em in both variants (`design/reference/WizCtl_Mobile.dc.html:396`
-  /// for the 20 px tab grid, `:562` for the 14 px sheet).
-  static const double sceneTileTracking = 0.02;
+  /// The display face never tracks tighter than [displayTrackingPad] logical
+  /// pixels plus [displayTrackingEm] of its size.
+  ///
+  /// Impeller — the only renderer Flutter 3.47 has on iOS and macOS — draws
+  /// Neumatic Compressed with rectangular cut-outs wherever the boxes of two
+  /// neighbouring glyphs overlap; Skia and CoreText draw the same font
+  /// cleanly. The face's sidebearings are close to zero, so at the design's
+  /// tracking (−0.005 em on hero up to 0.025 em on heading; .01 em on the
+  /// dial readout, .015 em on the light card's meter, .02 em on scene tiles
+  /// and the wordmark) every run of it overlaps. A probe on macOS at 2× on
+  /// 2026-09-12 found the cut-outs gone from about 1 px at 13–34 px and 2 px
+  /// at 64 px: a fixed margin the renderer pads each glyph with, plus an
+  /// overshoot that grows with the size. This floor is roughly twice that,
+  /// so a 1× screen and the largest readouts stay clear. Every design value
+  /// above sits under it, so every display style takes the floor outright.
+  static const double displayTrackingPad = 1;
+  static const double displayTrackingEm = 0.03;
 
-  // WIZCTL wordmark (Sidebar brand): display face, weight 900, 0.02 em.
-  static const double wordmarkTracking = 0.02;
+  /// Tracking for the display face at [size]: the floor above. A caller that
+  /// resizes a display style passes the new size here rather than keeping
+  /// the spacing the style was built with.
+  static double displayTracking(double size) =>
+      size * displayTrackingEm + displayTrackingPad;
 
+  // Design: −0.005 em, under the display floor.
   final TextStyle hero = const TextStyle(
     fontFamily: familyDisplay,
     fontSize: 64,
     height: 0.92,
-    letterSpacing: 64 * -0.005,
+    letterSpacing: 64 * displayTrackingEm + displayTrackingPad,
     fontWeight: FontWeight.w800,
   );
+  // Design: 0.005 em, under the display floor.
   final TextStyle display = const TextStyle(
     fontFamily: familyDisplay,
     fontSize: 44,
     height: 0.98,
-    letterSpacing: 44 * 0.005,
+    letterSpacing: 44 * displayTrackingEm + displayTrackingPad,
     fontWeight: FontWeight.w700,
   );
+  // Design: 0.015 em, under the display floor.
   final TextStyle title = const TextStyle(
     fontFamily: familyDisplay,
     fontSize: 30,
     height: 1.06,
-    letterSpacing: 30 * 0.015,
+    letterSpacing: 30 * displayTrackingEm + displayTrackingPad,
     fontWeight: FontWeight.w700,
   );
+  // Design: 0.025 em, under the display floor.
   final TextStyle heading = const TextStyle(
     fontFamily: familyDisplay,
     fontSize: 23,
     height: 1.16,
-    letterSpacing: 23 * 0.025,
+    letterSpacing: 23 * displayTrackingEm + displayTrackingPad,
     fontWeight: FontWeight.w600,
   );
   final TextStyle bodyLg = const TextStyle(
@@ -113,17 +130,21 @@ class WizType {
     letterSpacing: 11 * labelTracking,
     fontWeight: FontWeight.w600,
   );
+  // Design: no tracking; the display floor applies.
   final TextStyle readout = const TextStyle(
     fontFamily: familyDisplay,
     fontSize: 34,
     height: 1,
+    letterSpacing: 34 * displayTrackingEm + displayTrackingPad,
     fontWeight: FontWeight.w700,
     fontFeatures: _tabular,
   );
+  // Design: no tracking; the display floor applies.
   final TextStyle readoutSm = const TextStyle(
     fontFamily: familyDisplay,
     fontSize: 18,
     height: 1,
+    letterSpacing: 18 * displayTrackingEm + displayTrackingPad,
     fontWeight: FontWeight.w700,
     fontFeatures: _tabular,
   );

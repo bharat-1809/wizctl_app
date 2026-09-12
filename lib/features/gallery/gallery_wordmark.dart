@@ -30,9 +30,10 @@ class GalleryWordmark extends StatelessWidget {
           wordmark,
           style: title.copyWith(
             // `fontWeight: 900, letterSpacing: '.02em', lineHeight: 1` on the
-            // 30 the title token already carries.
+            // 30 the title token already carries; the display floor is wider
+            // than the `.02em`.
             fontWeight: FontWeight.w900,
-            letterSpacing: title.fontSize! * WizType.wordmarkTracking,
+            letterSpacing: WizType.displayTracking(title.fontSize!),
             height: 1,
             color: c.textPrimary,
           ),

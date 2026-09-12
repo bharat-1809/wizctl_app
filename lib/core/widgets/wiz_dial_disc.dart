@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/wiz_textures.dart';
 import '../theme/wiz_theme.dart';
+import '../theme/wiz_type.dart';
 import 'wiz_dial_painter.dart';
 import 'wiz_numeral.dart';
 import 'wiz_surface.dart';
@@ -46,9 +47,6 @@ class WizDialDisc extends StatelessWidget {
   static const double _markRadius = 2;
   static const double _markGlowAlpha = .9;
   static const double _markGlowBlur = 10;
-
-  /// Dial.jsx readout: `letterSpacing: '.01em'`.
-  static const double _readoutTracking = 0.01;
 
   @override
   Widget build(BuildContext context) {
@@ -180,20 +178,24 @@ class WizDialDisc extends StatelessWidget {
   /// the compressed display face always fits the well, and a fallback face
   /// that does not shrinks rather than spilling over the knob.
   Widget _readout(WizTheme wiz, double d) {
+    // Dial.jsx tracks the readout at `.01em`; the display floor
+    // (`WizType.displayTracking`) is wider than that at every knob size.
+    var valueSize = d * WizDialGeometry.valueFont;
     var valueStyle = wiz.typography.readout.copyWith(
-      fontSize: d * WizDialGeometry.valueFont,
+      fontSize: valueSize,
       fontWeight: FontWeight.w800,
-      letterSpacing: d * WizDialGeometry.valueFont * _readoutTracking,
+      letterSpacing: WizType.displayTracking(valueSize),
       color: wiz.colors.textPrimary,
     );
     // Dial.jsx's unit span overrides only size and colour. CSS
     // `letter-spacing` inherits as a computed length, so in the reference
-    // the unit keeps the value's `0.24 * size * .01`; scaling it to the
-    // unit's own smaller size instead keeps the tracking in proportion to
-    // the glyphs it is set on, which is what the em value was chosen for.
+    // the unit keeps the value's spacing; taking the floor for the unit's
+    // own smaller size instead keeps the tracking in proportion to the
+    // glyphs it is set on.
+    var unitSize = d * WizDialGeometry.unitFont;
     var unitStyle = valueStyle.copyWith(
-      fontSize: d * WizDialGeometry.unitFont,
-      letterSpacing: d * WizDialGeometry.unitFont * _readoutTracking,
+      fontSize: unitSize,
+      letterSpacing: WizType.displayTracking(unitSize),
       color: wiz.colors.textTertiary,
     );
     return FittedBox(

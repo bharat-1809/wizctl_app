@@ -146,11 +146,12 @@ class WizSceneTile extends StatelessWidget {
     };
     var size = labelSize ?? spec.labelSize;
     // The reference sets no line-height on either label
-    // (`:396`, `:562`), so the display face's own 1.16 stands.
+    // (`:396`, `:562`), so the display face's own 1.16 stands. It tracks
+    // both at `.02em`; the display floor is wider at either size.
     var label = wiz.typography.heading.copyWith(
       fontSize: size,
       fontWeight: spec.labelWeight,
-      letterSpacing: size * WizType.sceneTileTracking,
+      letterSpacing: WizType.displayTracking(size),
       color: c.ink1000,
     );
     var tile = Stack(

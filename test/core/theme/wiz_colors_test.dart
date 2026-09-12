@@ -51,6 +51,31 @@ void main() {
     expect(WizType.labelTracking, 0.10);
     expect(WizType.segmentTracking, 0.08);
     expect(WizType.sceneLabelTracking, -0.005);
-    expect(WizType.wordmarkTracking, 0.02);
+  });
+
+  test('every display style tracks at the floor Impeller needs', () {
+    const t = WizType.standard;
+    for (var style in [
+      t.hero,
+      t.display,
+      t.title,
+      t.heading,
+      t.readout,
+      t.readoutSm,
+    ]) {
+      expect(style.fontFamily, WizType.familyDisplay);
+      expect(
+        style.letterSpacing,
+        closeTo(WizType.displayTracking(style.fontSize!), 0.001),
+        reason: 'at ${style.fontSize}',
+      );
+    }
+    // The floor is a pad plus a share of the size: what clears a 13 px
+    // readout is not enough for a 64 px hero.
+    expect(WizType.displayTracking(0), WizType.displayTrackingPad);
+    expect(
+      WizType.displayTracking(64),
+      greaterThan(WizType.displayTracking(13)),
+    );
   });
 }
