@@ -80,7 +80,7 @@ const Duration _settled = Duration(milliseconds: 1500);
 /// How many `.dart` files `lib/core/widgets` holds. The coverage map below
 /// is a literal and cannot notice a new widget on its own; this count can,
 /// and failing it is the prompt to go and add the demo.
-const int _kitWidgetFiles = 55;
+const int _kitWidgetFiles = 56;
 
 /// `byType` compares runtime types exactly, so a generic widget built as
 /// `WizTabBar<SomeEnum>` never matches the bare `WizTabBar` type literal.
@@ -163,6 +163,12 @@ void main() {
     // `WizSheet` is not here: it is a route, so its coverage is the
     // ModeRow-tap test further down. `wizFadePage` has no demo at all until
     // Plan 4 lands the router (see `GalleryScreen`'s doc).
+    //
+    // `WizPullToRefresh` is not here either, and cannot be: every entry
+    // below is asserted against the pumped gallery, and the gallery's own
+    // list is not a `ScreenScroll`. It is covered by
+    // `test/core/widgets/wiz_pull_to_refresh_test.dart` and, in place, by
+    // the Home screen's tests.
     var kit = <String, Finder>{
       'WizButton': _inSection<GalleryKeys>(find.byType(WizButton)),
       'WizChip': _inSection<GalleryKeys>(find.byType(WizChip)),

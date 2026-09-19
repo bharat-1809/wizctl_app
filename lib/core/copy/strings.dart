@@ -1,5 +1,7 @@
 import 'package:wizctl/wizctl.dart' show wizPort;
 
+import '../util/plural.dart';
+
 /// Every line the user reads. Second person, sentence case, no "we", no
 /// emoji, no exclamation marks. Control labels are uppercased by widgets.
 class Strings {
@@ -55,6 +57,21 @@ class Strings {
   // Wrong network (spec §15).
   static const notOnHomeNetworkTitle = 'Not on the home network';
   static const joinHomeNetwork = 'Join the home network, then scan again.';
+
+  // Home (spec §10.2).
+  static const allLights = 'All lights';
+  static const allOn = 'All on';
+  static const allOff = 'All off';
+  static const homes = 'Homes';
+  static const newHome = 'New home';
+  static const newHomePlaceholder = 'Studio';
+  static const addHome = 'Add home';
+  static const discoverOnNetwork = 'Discover the lights on this network';
+  static String someOn(int on, int total) => '$on of $total on';
+  static String notAnswering(int n) => '${plural(n, 'light')} not answering';
+  static String roomsAndLights(int rooms, int lights) =>
+      '${plural(rooms, 'room')} · ${plural(lights, 'light')}';
+  static String homeCreated(String name) => '$name created';
 
   // Semantics.
   static const blinkLight = 'Blink this light';
@@ -116,6 +133,14 @@ class Strings {
     noLocalNetwork,
     notOnHomeNetworkTitle,
     joinHomeNetwork,
+    allLights,
+    allOn,
+    allOff,
+    homes,
+    newHome,
+    newHomePlaceholder,
+    addHome,
+    discoverOnNetwork,
     blinkLight,
   ];
 }
