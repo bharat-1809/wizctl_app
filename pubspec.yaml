@@ -19,6 +19,11 @@ dependencies:
   package_info_plus: ^10.2.1
   path: ^1.9.1
   path_drawing: ^1.0.1
+  # Already in the tree under flutter_bloc, declared because the app uses
+  # it directly: `RepositoryProvider` is a `Provider`, which asserts
+  # against Listenable values, so a `ChangeNotifier` such as
+  # `ToastController` has to travel in a `ChangeNotifierProvider`.
+  provider: ^6.1.5
   uuid: ^4.6.0
   wizctl:
     path: ../wizctl

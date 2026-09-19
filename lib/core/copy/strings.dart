@@ -52,6 +52,13 @@ class Strings {
       'Check the wall switch, then rescan the subnet.';
   static const noLocalNetwork = 'This device has no local network.';
 
+  // Wrong network (spec §15).
+  static const notOnHomeNetworkTitle = 'Not on the home network';
+  static const joinHomeNetwork = 'Join the home network, then scan again.';
+
+  // Semantics.
+  static const blinkLight = 'Blink this light';
+
   /// `<ip>:38899`, the address every device fact and toast body shows.
   static String udpAddress(String ip) => '$ip:$wizPort';
   static String didNotAnswer(String ip) =>
@@ -69,6 +76,12 @@ class Strings {
   static String retryingLights(int n) => 'Retrying $n lights';
   static String notOnHomeNetwork(String subnet) =>
       'This device is not on $subnet.0/24.';
+
+  /// The wrong-network banner's body, and the title of the toast a Retry
+  /// that changed nothing puts up (spec §15).
+  static String deviceOn(String current, String home) =>
+      'This device is on $current.0/24. Lights answer only on $home.0/24.';
+  static String stillOn(String current) => 'Still on $current.0/24';
 
   static const List<String> all = [
     privacy,
@@ -101,5 +114,8 @@ class Strings {
     stillNoReply,
     checkWallSwitch,
     noLocalNetwork,
+    notOnHomeNetworkTitle,
+    joinHomeNetwork,
+    blinkLight,
   ];
 }
