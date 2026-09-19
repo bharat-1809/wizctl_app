@@ -67,12 +67,23 @@ class ModeSummarizer {
     );
   }
 
-  static bool sceneSelected(List<LiveLight> lights, int sceneId) =>
-      lights.isNotEmpty &&
-      lights.every(
-        (l) =>
-            l.state.active == ActiveChannel.scene && l.state.sceneId == sceneId,
-      );
+  /// The lights a scene can actually reach — the same rule `ApplyScene`
+  /// dispatches on. A plug is never written to, so it can never agree with a
+  /// scene, and asking it to would stop any room that has one from ever
+  /// showing a selected scene at all. Every scene and speed reading filters
+  /// through here, so they cannot disagree about which lights count.
+  static List<LiveLight> sceneable(List<LiveLight> lights) =>
+      lights.where((l) => CapabilityRules.scenes(l.light.bulbClass)).toList();
+
+  static bool sceneSelected(List<LiveLight> lights, int sceneId) {
+    var reachable = sceneable(lights);
+    return reachable.isNotEmpty &&
+        reachable.every(
+          (l) =>
+              l.state.active == ActiveChannel.scene &&
+              l.state.sceneId == sceneId,
+        );
+  }
 
   static bool colourSelected(List<LiveLight> lights, Rgb rgb) =>
       lights.isNotEmpty &&
@@ -88,9 +99,12 @@ class ModeSummarizer {
       );
 
   static bool allOnOneDynamicScene(List<LiveLight> lights) {
-    if (lights.isEmpty) return false;
-    var id = lights.first.state.sceneId;
-    return CapabilityRules.isDynamicScene(id) && sceneSelected(lights, id);
+    // Filtered before reading `first`, or a plug that happens to sort first
+    // would decide the scene for the whole target.
+    var reachable = sceneable(lights);
+    if (reachable.isEmpty) return false;
+    var id = reachable.first.state.sceneId;
+    return CapabilityRules.isDynamicScene(id) && sceneSelected(reachable, id);
   }
 
   /// The kelvin ramp (spec §5.5) in the domain's integer form.

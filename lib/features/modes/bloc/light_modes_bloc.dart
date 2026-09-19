@@ -24,10 +24,17 @@ class LightModesBloc extends Bloc<LightModesEvent, LightModesState> {
   final ApplyScene _applyScene;
   final SetSpeed _setSpeed;
 
-  /// Every target after the one the bloc was built with. Single-subscription
-  /// on purpose: it buffers, so a [ModesTargetChanged] that arrives before
-  /// [ModesSubscribed] has subscribed is still delivered.
+  /// Every target the bloc is switched to. Single-subscription: the projection
+  /// is its one listener. A [ModesTargetChanged] that lands before
+  /// [ModesSubscribed] needs nothing from this controller — its handler has
+  /// already put the target in `state.target`, which [_targetStream] yields
+  /// first.
   final StreamController<ModeTarget> _targets = StreamController();
+
+  /// [ModesSubscribed] is idempotent: a view that re-adds it on rebuild must
+  /// not start a second projection, which would re-listen the
+  /// single-subscription [_targets] and throw through `emit.forEach`.
+  bool _subscribed = false;
 
   LightModesBloc({
     required ModeTarget target,
@@ -56,7 +63,16 @@ class LightModesBloc extends Bloc<LightModesEvent, LightModesState> {
        ) {
     on<ModesSubscribed>(_onSubscribed);
     on<ModesTargetChanged>((event, emit) {
-      emit(state.copyWith(target: event.target, status: ModesStatus.loading));
+      // The old target's name and lights go with it: until the new projection
+      // lands, a view must not read the previous room's name under this one.
+      emit(
+        state.copyWith(
+          target: event.target,
+          status: ModesStatus.loading,
+          clearTargetName: true,
+          lights: const [],
+        ),
+      );
       _targets.add(event.target);
     });
     on<ModesTabChanged>((event, emit) => emit(state.copyWith(tab: event.tab)));
@@ -79,6 +95,8 @@ class LightModesBloc extends Bloc<LightModesEvent, LightModesState> {
     ModesSubscribed event,
     Emitter<LightModesState> emit,
   ) async {
+    if (_subscribed) return;
+    _subscribed = true;
     await emit.forEach(
       // `switchLatest`, not `asyncExpand`: a repository watch never ends, so
       // an `asyncExpand` would pause on the first target and never read the

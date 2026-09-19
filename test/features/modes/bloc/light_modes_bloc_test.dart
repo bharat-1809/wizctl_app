@@ -82,6 +82,8 @@ void main() {
       expect(s.targetName, 'Living Room');
       expect(s.lights.map((l) => l.light.id), ['dome', 'floor', 'strip']);
       expect(s.hasWheel, isTrue);
+      expect(s.hasWhite, isTrue, reason: 'the strip is tunable');
+      expect(s.hasScenes, isTrue, reason: 'no plug in the living room');
       expect(s.wheelRgb, Rgb.amber, reason: 'the dome is the first RGB light');
       expect(s.tab, ModesTab.colour);
       expect(s.speedVisible, isFalse, reason: 'not all on one dynamic scene');
@@ -101,6 +103,19 @@ void main() {
   );
 
   blocTest<LightModesBloc, LightModesState>(
+    'the white and scene gates follow the bulb class',
+    build: () => build(const LightTarget('hall')),
+    act: (bloc) => bloc.add(const ModesSubscribed()),
+    wait: wait,
+    verify: (bloc) {
+      var s = bloc.state;
+      expect(s.hasWheel, isFalse, reason: 'a dimmable white has no colour');
+      expect(s.hasWhite, isFalse, reason: 'nor a temperature to tune');
+      expect(s.hasScenes, isTrue, reason: 'scenes reach everything but plugs');
+    },
+  );
+
+  blocTest<LightModesBloc, LightModesState>(
     'changing the target re-subscribes',
     build: () => build(const RoomTarget('living')),
     act: (bloc) async {
@@ -113,6 +128,53 @@ void main() {
       expect(bloc.state.target, const WholeHomeTarget('h1'));
       expect(bloc.state.targetName, isNull);
       expect(bloc.state.lights, hasLength(6));
+    },
+  );
+
+  test('the loading state drops the old target\'s name and lights', () async {
+    var bloc = build(const RoomTarget('living'));
+    addTearDown(bloc.close);
+    var seen = <LightModesState>[];
+    bloc.stream.listen(seen.add);
+    bloc.add(const ModesSubscribed());
+    await Future<void>.delayed(wait);
+    bloc.add(const ModesTargetChanged(WholeHomeTarget('h1')));
+    await Future<void>.delayed(wait);
+    // The whole sequence, not one timed peek: no state ever shows the living
+    // room under the home, however the emissions interleave.
+    for (var s in seen.where((s) => s.target is WholeHomeTarget)) {
+      expect(s.targetName, isNot('Living Room'));
+      expect(
+        s.lights.map((l) => l.light.id),
+        isNot(['dome', 'floor', 'strip']),
+      );
+    }
+    expect(
+      seen.any(
+        (s) =>
+            s.target is WholeHomeTarget &&
+            s.status == ModesStatus.loading &&
+            s.targetName == null &&
+            s.lights.isEmpty,
+      ),
+      isTrue,
+      reason: 'the switch emits an empty loading state of its own',
+    );
+  });
+
+  blocTest<LightModesBloc, LightModesState>(
+    'subscribing twice is a no-op, not a crash',
+    build: () => build(const RoomTarget('living')),
+    act: (bloc) async {
+      bloc.add(const ModesSubscribed());
+      await Future<void>.delayed(wait);
+      bloc.add(const ModesSubscribed());
+    },
+    wait: wait,
+    errors: () => isEmpty,
+    verify: (bloc) {
+      expect(bloc.state.status, ModesStatus.ready);
+      expect(bloc.state.lights, hasLength(3), reason: 'still projecting');
     },
   );
 
@@ -206,6 +268,43 @@ void main() {
   );
 
   blocTest<LightModesBloc, LightModesState>(
+    'a plug in the room never speaks for the scene or the speed',
+    build: () {
+      seed.lights.seed([
+        Light(
+          id: 'plug',
+          homeId: 'h1',
+          roomId: 'living',
+          name: 'Plug by the TV',
+          ip: '192.168.1.140',
+          mac: 'plug',
+          bulbClass: BulbClass.socket,
+          fixture: Fixture.socket,
+          // Sorts ahead of every bulb, so it is `lights.first`.
+          sortIndex: -1,
+          addedAt: DateTime(2026),
+        ),
+      ]);
+      return build(const RoomTarget('living'));
+    },
+    act: (bloc) async {
+      bloc.add(const ModesSubscribed());
+      await Future<void>.delayed(wait);
+      bloc.add(const ScenePicked(1));
+      await Future<void>.delayed(wait);
+      bloc.add(const SpeedChanged(180));
+    },
+    wait: wait,
+    verify: (bloc) {
+      var s = bloc.state;
+      expect(s.lights.first.light.id, 'plug', reason: 'the plug sorts first');
+      expect(s.currentScene, 1, reason: 'the bulbs decide the scene, not it');
+      expect(s.speedVisible, isTrue);
+      expect(s.speed, 180, reason: 'a plug has no speed to report');
+    },
+  );
+
+  blocTest<LightModesBloc, LightModesState>(
     'a plug alone has no scene channel',
     build: () {
       seed.lights.seed([
@@ -228,7 +327,10 @@ void main() {
       ..add(const ModesSubscribed())
       ..add(const ScenePicked(6)),
     wait: wait,
-    verify: (bloc) => expect(bloc.state.notice, const NoSceneNotice()),
+    verify: (bloc) {
+      expect(bloc.state.notice, const NoSceneNotice());
+      expect(bloc.state.hasScenes, isFalse, reason: 'a plug has no scenes');
+    },
   );
 
   test('closing a bloc that was never subscribed returns', () async {

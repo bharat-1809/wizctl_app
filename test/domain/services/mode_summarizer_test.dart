@@ -131,6 +131,39 @@ void main() {
     );
   });
 
+  test('a plug never holds a scene selection back', () {
+    var socket = ll(
+      'p',
+      BulbClass.socket,
+      LiveState.initial.copyWith(isOn: true),
+    );
+    expect(
+      ModeSummarizer.sceneSelected([
+        ll('a', BulbClass.rgb, scene),
+        ll('b', BulbClass.tw, scene),
+        socket,
+      ], 6),
+      isTrue,
+      reason: 'ApplyScene never writes to a plug, so it can never agree',
+    );
+    expect(
+      ModeSummarizer.allOnOneDynamicScene([
+        socket,
+        ll('a', BulbClass.rgb, dyn),
+      ]),
+      isTrue,
+      reason:
+          "the speed rail is the room's, plug or no plug, and whatever "
+          'order the plug sorts in',
+    );
+    expect(
+      ModeSummarizer.sceneSelected([socket], 6),
+      isFalse,
+      reason: 'plugs only: there is no scene channel to be selected',
+    );
+    expect(ModeSummarizer.allOnOneDynamicScene([socket]), isFalse);
+  });
+
   test('the kelvin ramp hits its stops and interpolates between them', () {
     expect(ModeSummarizer.kelvinRgb(2200), const Rgb(255, 178, 92));
     expect(ModeSummarizer.kelvinRgb(6500), const Rgb(220, 233, 255));

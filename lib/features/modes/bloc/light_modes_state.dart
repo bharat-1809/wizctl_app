@@ -17,6 +17,10 @@ sealed class ModesNotice extends Equatable {
 }
 
 /// "`<Scene>` applied" / "to the whole home" · "to `<room>`" · "to `<light>`".
+///
+/// A view names the whole home by switching on [target] being a
+/// `WholeHomeTarget`, not on a null [targetName]: a room or light deleted
+/// under the sheet yields a null name too.
 final class SceneAppliedNotice extends ModesNotice {
   final String sceneName;
   final ModeTarget target;
@@ -62,6 +66,14 @@ class LightModesState extends Equatable {
   bool get hasWheel =>
       lights.any((l) => CapabilityRules.colour(l.light.bulbClass));
 
+  /// The white tab shows only when some target light has a tunable white.
+  bool get hasWhite =>
+      lights.any((l) => CapabilityRules.kelvin(l.light.bulbClass));
+
+  /// The scene tabs show only when some target light takes scenes (not a plug).
+  bool get hasScenes =>
+      lights.any((l) => CapabilityRules.scenes(l.light.bulbClass));
+
   /// Where the puck sits: the first colour bulb's last colour.
   Rgb get wheelRgb {
     for (var l in lights) {
@@ -75,15 +87,23 @@ class LightModesState extends Equatable {
   bool get speedVisible => ModeSummarizer.allOnOneDynamicScene(lights);
 
   /// Before any light is known the rail reads the library's own default,
-  /// which is what a bulb that has never been told a speed is running at.
-  int get speed => lights.isEmpty ? defaultSpeed : lights.first.state.speed;
+  /// which is what a bulb that has never been told a speed is running at. A
+  /// plug is skipped: `SetSpeed` never writes to one, so the speed it happens
+  /// to hold would be a value no bulb in the target is actually running at.
+  int get speed {
+    var reachable = ModeSummarizer.sceneable(lights);
+    return reachable.isEmpty ? defaultSpeed : reachable.first.state.speed;
+  }
 
-  /// The scene every target light is on, or null.
+  /// The scene every scene-capable target light is on, or null. A plug is
+  /// skipped for the reason [speedVisible] skips it: `ApplyScene` never writes
+  /// to one, so it would veto the selection of every room that has one.
   int? get currentScene {
-    if (lights.isEmpty) return null;
-    var first = lights.first.state;
+    var reachable = ModeSummarizer.sceneable(lights);
+    if (reachable.isEmpty) return null;
+    var first = reachable.first.state;
     if (first.active != ActiveChannel.scene) return null;
-    return ModeSummarizer.sceneSelected(lights, first.sceneId)
+    return ModeSummarizer.sceneSelected(reachable, first.sceneId)
         ? first.sceneId
         : null;
   }
