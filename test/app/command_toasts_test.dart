@@ -290,6 +290,39 @@ void main() {
     });
   });
 
+  test('a light that no longer exists arms no toast, but still reports', () {
+    fakeAsync((async) {
+      var rig = _Rig();
+      var a = _light('a', '192.168.1.115');
+      rig.lights.seed([a]);
+      rig.gateway.sendLatency = const Duration(seconds: 2);
+      rig.gateway.failing[a.ip] = const TimeoutFailure('192.168.1.115', 3);
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      // Deleted between the send and the listener's read of it: the loading
+      // toast has no name and no address left to show.
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a)])));
+      unawaited(rig.lights.delete(a.id));
+      async.elapse(_delay * 2);
+      expect(
+        rig.toasts.toasts,
+        isEmpty,
+        reason: 'nothing honest to put in a loading toast',
+      );
+
+      // The failure still reports: it carries its own name and address.
+      async.elapse(const Duration(seconds: 2));
+      var toast = rig.toasts.toasts.single;
+      expect(toast.tone, WizToastTone.error);
+      expect(toast.title, Strings.noResponseAfterTries);
+      expect(toast.body, '192.168.1.115 did not answer on port 38899');
+      expect(toast.actionLabel, Strings.retry);
+      rig.dispose();
+    });
+  });
+
   test('a success that beats the pending read never arms a toast', () {
     fakeAsync((async) {
       var slow = _SlowLights()..latency = const Duration(seconds: 1);

@@ -80,31 +80,31 @@ class CommandToastListener {
   }
 
   Future<void> _pending(CommandPending report) async {
-    String? body;
-    String? name;
-    if (report.lightIds.length == 1) {
-      var light = await lights.get(report.lightIds.single);
-      if (light != null) {
-        name = light.name;
-        body = Strings.udpAddress(light.ip);
-      }
-    }
+    var single = report.lightIds.length == 1;
+    Light? light;
+    if (single) light = await lights.get(report.lightIds.single);
     // The read above is a suspension point: the batch may have resolved while
     // it was in flight, and arming a toast for a batch that has already
     // reported would surface it with nothing left to say.
     if (_settled.remove(report.id)) return;
     var batch = _batches[report.id];
     if (batch != null && batch.errors.isNotEmpty) return;
+    if (single && light == null) {
+      // Gone from the repository between the send and this read: no name and
+      // no address, and a count of one light would read as a lie. The entry is
+      // still recorded, so a failure for this batch still pushes its error
+      // toast — the failure path does not need a loading toast — and its
+      // success is not mistaken for one that beat this read.
+      _batches.putIfAbsent(report.id, _Batch.new);
+      return;
+    }
     (_batches[report.id] ??= _Batch()).loading = toasts.pushAfter(
       delay,
       tone: WizToastTone.loading,
-      // `name` is null only when the single light has gone from the
-      // repository mid-send, which leaves the count as the one honest thing
-      // left to say about it.
-      title: name != null
-          ? Strings.sendingTo(name)
+      title: light != null
+          ? Strings.sendingTo(light.name)
           : Strings.sendingToLights(report.lightIds.length),
-      body: body,
+      body: light != null ? Strings.udpAddress(light.ip) : null,
     );
   }
 
@@ -222,19 +222,22 @@ class CommandToastListener {
   /// auto-dismisses, so most failures are never retried; [keep] is the id
   /// whose failure is arriving right now, whose toast does not exist yet.
   ///
-  /// Only entries whose loading toast is gone are candidates, and that is
-  /// complete: an entry holding one is always cleared by the batch's own
-  /// terminal report — a pending batch by its success (removed) or by its
-  /// first failure (which consumes the loading toast into [_Batch.errors]), a
-  /// retried one by its success or its first retry failure (both removed). A
-  /// `pushAfter` toast that has not surfaced yet is legitimately absent from
-  /// [ToastController.toasts], so its id could not be checked here anyway.
+  /// Only entries that had an error toast and have none left are candidates,
+  /// and that is complete. An entry holding a loading toast is always cleared
+  /// by the batch's own terminal report — a pending batch by its success
+  /// (removed) or by its first failure (which consumes the loading toast into
+  /// [_Batch.errors]), a retried one by its success or its first retry failure
+  /// (both removed) — and a `pushAfter` toast that has not surfaced yet is
+  /// legitimately absent from [ToastController.toasts] anyway. An entry with
+  /// neither is a pending that declined to arm one, and its terminal report
+  /// clears it the same way.
   void _prune(String keep) {
     var live = toasts.toasts.map((t) => t.id).toSet();
     _batches.removeWhere(
       (id, batch) =>
           id != keep &&
           batch.loading == null &&
+          batch.errors.isNotEmpty &&
           !batch.errors.any(live.contains),
     );
   }
