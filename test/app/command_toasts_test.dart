@@ -33,19 +33,32 @@ CommandItem _item(Light light) => CommandItem(
   patch: (s) => s.copyWith(isOn: true),
 );
 
+/// A repository whose [get] takes [latency], so a batch can finish while the
+/// listener is still reading the light it would name in its loading toast.
+class _SlowLights extends FakeLightRepository {
+  Duration latency = Duration.zero;
+
+  @override
+  Future<Light?> get(String id) async {
+    await Future<void>.delayed(latency);
+    return super.get(id);
+  }
+}
+
 /// A whole pipeline over the fakes, so the listener is tested against the
 /// reports the real one emits rather than a hand-written sequence.
 class _Rig {
   final gateway = FakeGateway();
   final store = LiveStateStore();
-  final lights = FakeLightRepository();
   final toasts = ToastController();
+  late final FakeLightRepository lights;
   late final NetworkMonitor network;
   late final DeviceCommandPipeline pipeline;
   late final CommandToastListener listener;
   String? homeSubnet = '192.168.1';
 
-  _Rig({String? current = '192.168.1'}) {
+  _Rig({String? current = '192.168.1', FakeLightRepository? lights}) {
+    this.lights = lights ?? FakeLightRepository();
     network = NetworkMonitor(FakeNetworkInfo(current));
     pipeline = DeviceCommandPipeline(
       gateway: gateway,
@@ -58,7 +71,7 @@ class _Rig {
     listener = CommandToastListener(
       toasts: toasts,
       pipeline: pipeline,
-      lights: lights,
+      lights: this.lights,
       delay: _delay,
     );
   }
@@ -207,6 +220,127 @@ void main() {
     });
   });
 
+  test('Retry on any error toast of a batch retries the whole batch once', () {
+    fakeAsync((async) {
+      var rig = _Rig();
+      var a = _light('a', '192.168.1.115');
+      var b = _light('b', '192.168.1.118');
+      rig.lights.seed([a, b]);
+      rig.gateway.failing[a.ip] = const TimeoutFailure('192.168.1.115', 3);
+      rig.gateway.failing[b.ip] = const UnreachableFailure(
+        '192.168.1.118',
+        'x',
+      );
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a), _item(b)])));
+      async.flushMicrotasks();
+      expect(rig.toasts.toasts.map((t) => t.actionLabel), [
+        Strings.retry,
+        Strings.retry,
+      ]);
+
+      // The second toast's Retry stands for the whole batch: both errors go,
+      // and the one loading toast that replaces them counts the lights the
+      // pipeline is resending.
+      rig.gateway.failing.clear();
+      rig.toasts.toasts.last.onAction!();
+      var loading = rig.toasts.toasts.single;
+      expect(loading.tone, WizToastTone.loading);
+      expect(loading.title, 'Retrying 2 lights');
+      expect(loading.actionLabel, isNull);
+
+      async.flushMicrotasks();
+      async.flushMicrotasks();
+      expect(rig.toasts.toasts, isEmpty, reason: 'both resends succeeded');
+      async.elapse(_delay * 2);
+      expect(rig.toasts.toasts, isEmpty, reason: 'nothing was left armed');
+      rig.dispose();
+    });
+  });
+
+  test('a batch retry that fails again is one Still no reply', () {
+    fakeAsync((async) {
+      var rig = _Rig();
+      var a = _light('a', '192.168.1.115');
+      var b = _light('b', '192.168.1.118');
+      rig.lights.seed([a, b]);
+      rig.gateway.failing[a.ip] = const TimeoutFailure('192.168.1.115', 3);
+      rig.gateway.failing[b.ip] = const UnreachableFailure(
+        '192.168.1.118',
+        'x',
+      );
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a), _item(b)])));
+      async.flushMicrotasks();
+      rig.toasts.toasts.last.onAction!();
+      async.flushMicrotasks();
+      async.flushMicrotasks();
+      var toast = rig.toasts.toasts.single;
+      expect(toast.tone, WizToastTone.error);
+      expect(toast.title, Strings.stillNoReply);
+      expect(toast.body, Strings.checkWallSwitch);
+      expect(toast.actionLabel, isNull);
+      rig.dispose();
+    });
+  });
+
+  test('a success that beats the pending read never arms a toast', () {
+    fakeAsync((async) {
+      var slow = _SlowLights()..latency = const Duration(seconds: 1);
+      var rig = _Rig(lights: slow);
+      var a = _light('a', '192.168.1.115');
+      rig.lights.seed([a]);
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      // The send finishes while the listener is still reading the address it
+      // would put in the toast.
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a)])));
+      async.flushMicrotasks();
+      expect(rig.toasts.toasts, isEmpty);
+      async.elapse(const Duration(seconds: 1) + _delay * 2);
+      expect(
+        rig.toasts.toasts,
+        isEmpty,
+        reason: 'the read came back to a batch that had already succeeded',
+      );
+      rig.dispose();
+    });
+  });
+
+  test('a failure that beats the pending read never arms a toast either', () {
+    fakeAsync((async) {
+      var slow = _SlowLights()..latency = const Duration(seconds: 1);
+      var rig = _Rig(lights: slow);
+      var a = _light('a', '192.168.1.115');
+      rig.lights.seed([a]);
+      rig.gateway.failing[a.ip] = const TimeoutFailure('192.168.1.115', 3);
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a)])));
+      async.flushMicrotasks();
+      expect(rig.toasts.toasts.single.title, Strings.noResponseAfterTries);
+      // The read comes back at 1 s to a batch that already has an error toast,
+      // and the delayed loading toast would have surfaced 600 ms after that.
+      async.elapse(const Duration(seconds: 1) + _delay);
+      expect(
+        rig.toasts.toasts.single.title,
+        Strings.noResponseAfterTries,
+        reason: 'no loading toast joined the error it already reported',
+      );
+      rig.dispose();
+    });
+  });
+
   test('off network is one error toast with no retry', () {
     fakeAsync((async) {
       var rig = _Rig(current: '10.0.0');
@@ -222,6 +356,28 @@ void main() {
       expect(toast.tone, WizToastTone.error);
       expect(toast.title, Strings.noRoute);
       expect(toast.body, 'This device is not on 192.168.1.0/24.');
+      expect(toast.actionLabel, isNull);
+      rig.dispose();
+    });
+  });
+
+  test('no IPv4 address at all says so rather than naming the home', () {
+    fakeAsync((async) {
+      // No current subnet: off network because the home has one and this
+      // device is on nothing, which is the real "no local network".
+      var rig = _Rig(current: null);
+      var a = _light('a', '192.168.1.115');
+      rig.lights.seed([a]);
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a)])));
+      async.flushMicrotasks();
+      var toast = rig.toasts.toasts.single;
+      expect(toast.tone, WizToastTone.error);
+      expect(toast.title, Strings.noRoute);
+      expect(toast.body, 'This device has no local network.');
       expect(toast.actionLabel, isNull);
       rig.dispose();
     });

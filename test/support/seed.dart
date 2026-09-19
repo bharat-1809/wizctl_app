@@ -243,6 +243,14 @@ class SeedHome {
     addedAt: added,
   );
 
+  /// One tear-down for a test that built this fixture: `addTearDown(
+  /// seed.dispose)`. [store] is the only piece with anything to close — the
+  /// fake repositories expose no close hook — and async so this stays one
+  /// call whatever it grows to close later.
+  Future<void> dispose() async {
+    store.dispose();
+  }
+
   /// A home with nothing in it, for the first run.
   static SeedHome empty() {
     var seed = SeedHome(active: false);

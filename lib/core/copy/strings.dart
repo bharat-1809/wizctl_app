@@ -56,7 +56,17 @@ class Strings {
   static String udpAddress(String ip) => '$ip:$wizPort';
   static String didNotAnswer(String ip) =>
       '$ip did not answer on port $wizPort';
+
+  /// The loading toast for a write to one light, and for a batch of several.
+  /// The toast layer composes its title from these rather than showing
+  /// `CommandPending.description`: every line the user reads lives here.
+  static String sendingTo(String name) => 'Sending to $name';
+  static String sendingToLights(int n) => 'Sending to $n lights';
+
+  /// The loading toast a Retry puts up, for one light and for a batch — a
+  /// retry resends every light that failed under one report at once.
   static String retrying(String name) => 'Retrying $name';
+  static String retryingLights(int n) => 'Retrying $n lights';
   static String notOnHomeNetwork(String subnet) =>
       'This device is not on $subnet.0/24.';
 

@@ -66,7 +66,10 @@ void main() {
       Strings.didNotAnswer('192.168.1.115'),
       '192.168.1.115 did not answer on port 38899',
     );
+    expect(Strings.sendingTo('Hallway'), 'Sending to Hallway');
+    expect(Strings.sendingToLights(3), 'Sending to 3 lights');
     expect(Strings.retrying('Hallway'), 'Retrying Hallway');
+    expect(Strings.retryingLights(2), 'Retrying 2 lights');
     expect(
       Strings.notOnHomeNetwork('192.168.1'),
       'This device is not on 192.168.1.0/24.',
