@@ -109,10 +109,10 @@ class FakeRoomRepository implements RoomRepository {
         return bySortIndex != 0 ? bySortIndex : a.id.compareTo(b.id);
       });
   @override
-  Stream<List<Room>> watchByHome(String homeId) async* {
-    yield _byHome(homeId);
-    yield* _changes.stream.map((_) => _byHome(homeId));
-  }
+  Stream<List<Room>> watchByHome(String homeId) => _replaying(
+    () => _byHome(homeId),
+    _changes.stream.map((_) => _byHome(homeId)),
+  );
 
   @override
   Future<List<Room>> getByHome(String homeId) async => _byHome(homeId);
@@ -155,16 +155,16 @@ class FakeLightRepository implements LightRepository {
   List<Light> byRoom(String roomId) =>
       _sorted(_lights.values.where((l) => l.roomId == roomId));
   @override
-  Stream<List<Light>> watchByHome(String homeId) async* {
-    yield byHome(homeId);
-    yield* _changes.stream.map((_) => byHome(homeId));
-  }
+  Stream<List<Light>> watchByHome(String homeId) => _replaying(
+    () => byHome(homeId),
+    _changes.stream.map((_) => byHome(homeId)),
+  );
 
   @override
-  Stream<List<Light>> watchByRoom(String roomId) async* {
-    yield byRoom(roomId);
-    yield* _changes.stream.map((_) => byRoom(roomId));
-  }
+  Stream<List<Light>> watchByRoom(String roomId) => _replaying(
+    () => byRoom(roomId),
+    _changes.stream.map((_) => byRoom(roomId)),
+  );
 
   @override
   Stream<Light?> watch(String id) =>
