@@ -98,6 +98,11 @@ class LightBloc extends Bloc<LightEvent, LightState> {
         tuple,
       ) async {
         var (light, live) = tuple;
+        // A room that cannot be found leaves `room` null, so the lookup runs
+        // again on the next projection; and since `copyWith` cannot clear it,
+        // a room deleted under the screen keeps the name it had. Both are the
+        // cost of looking the room up rather than watching it, and neither
+        // costs the user anything: the light is about to move or follow.
         if (light != null && room?.id != light.roomId) {
           room = await _rooms.get(light.roomId);
         }
@@ -137,11 +142,17 @@ class LightBloc extends Bloc<LightEvent, LightState> {
   /// so the notice can name it. The projection's own `gone` is suppressed
   /// while this runs, and the one that arrives after it is equal to what is
   /// emitted here, so the view is told exactly once.
+  ///
+  /// A forget that fails says so instead, and the light stays as it was: the
+  /// suppression is lifted either way, so a light that really does disappear
+  /// afterwards is still reported gone.
   Future<void> _onForgotten(
     LightForgotten event,
     Emitter<LightState> emit,
   ) async {
     var name = state.light?.name;
+    // Nothing is loaded yet, so there is nothing to forget and nothing to
+    // name in a notice. The view keeps Forget out of reach until `ready`.
     if (name == null) return;
     _forgetting = true;
     try {
@@ -154,6 +165,8 @@ class LightBloc extends Bloc<LightEvent, LightState> {
           notice: LightForgottenNotice(name),
         ),
       );
+    } on DomainException catch (e) {
+      emit(state.copyWith(notice: LightError(e.message)));
     } finally {
       _forgetting = false;
     }

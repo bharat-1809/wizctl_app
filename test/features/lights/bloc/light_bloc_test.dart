@@ -170,7 +170,9 @@ void main() {
           addedAt: DateTime(2026),
         ),
       ]);
-      gateway.states['192.168.1.140'] = const wiz.LightState(isOn: false);
+      // Scripted like every other bulb; the plug has no seeded live state, so
+      // what it answers with is the store's default for a light never read.
+      gateway.states['192.168.1.140'] = reported(seed.store.of('plug'));
       return build('hall');
     },
     act: (bloc) => bloc.add(const LightSubscribed()),
@@ -221,12 +223,34 @@ void main() {
       expect(
         sends,
         hasLength(4),
-        reason: 'the first speed went nowhere: Cozy is static',
+        reason:
+            'the first speed went nowhere: the kelvin write above had '
+            'moved the dome to white, and the rail only reaches a scene',
       );
       expect(sends[3].speed, 160);
       expect(bloc.state.speedVisible, isTrue);
       expect(bloc.state.sceneName, 'Ocean');
       expect(bloc.state.isStaticScene, isFalse);
+    },
+  );
+
+  blocTest<LightBloc, LightState>(
+    'a speed on a static scene writes nothing',
+    build: () => build('dome'),
+    act: (bloc) async {
+      bloc.add(const LightSubscribed());
+      await Future<void>.delayed(wait);
+      bloc.add(const LightSpeedChanged(150));
+    },
+    wait: wait,
+    verify: (bloc) {
+      expect(bloc.state.sceneName, 'Cozy', reason: 'still on the seeded scene');
+      expect(bloc.state.speedVisible, isFalse);
+      expect(
+        gateway.sends,
+        isEmpty,
+        reason: 'a static scene has no speed to set',
+      );
     },
   );
 
@@ -249,20 +273,33 @@ void main() {
   );
 
   blocTest<LightBloc, LightState>(
-    'an empty alias is an error notice, which clears on request',
+    'an empty alias is an error notice',
     build: () => build('dome'),
     act: (bloc) async {
       bloc.add(const LightSubscribed());
       await Future<void>.delayed(wait);
       bloc.add(const LightRenamed('  '));
-      await Future<void>.delayed(wait);
-      expect(bloc.state.notice, const LightError('A name is required.'));
-      expect(bloc.state.light?.name, 'Ceiling dome light', reason: 'unchanged');
-      bloc.add(const LightNoticeCleared());
     },
     wait: wait,
-    verify: (bloc) => expect(bloc.state.notice, isNull),
+    verify: (bloc) {
+      expect(bloc.state.notice, const LightError('A name is required.'));
+      expect(bloc.state.light?.name, 'Ceiling dome light', reason: 'unchanged');
+      expect(bloc.state.status, LightStatus.ready);
+    },
   );
+
+  test('the error notice clears on request', () async {
+    var bloc = build('dome')..add(const LightSubscribed());
+    addTearDown(bloc.close);
+    await Future<void>.delayed(wait);
+    bloc.add(const LightRenamed('  '));
+    await Future<void>.delayed(wait);
+    expect(bloc.state.notice, const LightError('A name is required.'));
+    bloc.add(const LightNoticeCleared());
+    await Future<void>.delayed(wait);
+    expect(bloc.state.notice, isNull);
+    expect(bloc.state.status, LightStatus.ready, reason: 'the light stays');
+  });
 
   blocTest<LightBloc, LightState>(
     'forgetting raises the notice, then the light is gone',
@@ -312,6 +349,38 @@ void main() {
       );
     },
   );
+
+  test('a forget that fails says so, and the light stays', () async {
+    // Which failure it is hardly matters — `DomainException` is sealed, so a
+    // test cannot invent one — and all the bloc owes it is its message.
+    const failure = EmptyNameException();
+    seed.lights.deleteError = failure;
+    var bloc = build('strip')..add(const LightSubscribed());
+    addTearDown(bloc.close);
+    await Future<void>.delayed(wait);
+    bloc.add(const LightForgotten());
+    await Future<void>.delayed(wait);
+    expect(bloc.state.status, LightStatus.ready, reason: 'it is still here');
+    expect(bloc.state.notice, LightError(failure.message));
+    expect(await seed.lights.get('strip'), isNotNull);
+    // Removed elsewhere rather than by a second tap: a second `LightForgotten`
+    // would emit `gone` from the handler whether or not the guard was
+    // released, so only a deletion the projection has to report can show that
+    // the failed forget left nothing suppressing it.
+    seed.lights.deleteError = null;
+    await seed.lights.delete('strip');
+    await Future<void>.delayed(wait);
+    expect(
+      bloc.state.status,
+      LightStatus.gone,
+      reason: 'the failed forget left nothing suppressing gone',
+    );
+    expect(
+      bloc.state.notice,
+      LightError(failure.message),
+      reason: 'and no forgotten notice: this bloc did not forget it',
+    );
+  });
 
   test(
     'clearing the forgotten notice leaves only a bare gone behind',

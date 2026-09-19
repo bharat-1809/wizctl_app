@@ -9,6 +9,7 @@ import 'package:wizctl_app/domain/repositories/settings_repository.dart';
 import 'package:wizctl_app/domain/services/clock.dart';
 import 'package:wizctl_app/domain/services/id_generator.dart';
 import 'package:wizctl_app/domain/services/network_monitor.dart';
+import 'package:wizctl_app/domain/usecases/usecase_exceptions.dart';
 
 export 'fake_gateway.dart';
 
@@ -151,6 +152,11 @@ class FakeLightRepository implements LightRepository {
   /// window rather than leaving it to microtask luck.
   Duration deleteLatency = Duration.zero;
 
+  /// What [delete] throws instead of removing the light. Null by default, so
+  /// a delete succeeds; set it to make one fail the way a screen has to cope
+  /// with — the light stays, and no watcher is told it has gone.
+  DomainException? deleteError;
+
   void seed(List<Light> lights) {
     for (var l in lights) {
       _lights[l.id] = l;
@@ -205,6 +211,8 @@ class FakeLightRepository implements LightRepository {
   Future<void> update(Light light) => insert(light);
   @override
   Future<void> delete(String id) async {
+    var error = deleteError;
+    if (error != null) throw error;
     _lights.remove(id);
     _changes.add(null);
     if (deleteLatency > Duration.zero) {
