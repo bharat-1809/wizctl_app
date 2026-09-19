@@ -43,23 +43,17 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   void _onFlags() => emit(state.copyWith(debugFlags: _flags.value));
 
-  /// Both setters write their own result into the state once the save is
-  /// through, rather than waiting for [subscribe]'s stream to echo it back:
-  /// the switch under the thumb must not lag a repository round-trip behind
-  /// it.
   Future<void> setFeedback(bool value) async {
     await _feedback.setEnabled(value);
     await _settings.save(
       (await _settings.get()).copyWith(feedbackEnabled: value),
     );
-    emit(state.copyWith(feedbackEnabled: value));
   }
 
   Future<void> setRescanOnLaunch(bool value) async {
     await _settings.save(
       (await _settings.get()).copyWith(rescanOnLaunch: value),
     );
-    emit(state.copyWith(rescanOnLaunch: value));
   }
 
   void setOffNetwork(bool value) =>

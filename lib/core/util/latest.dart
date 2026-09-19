@@ -24,6 +24,60 @@ Stream<(A, B, C, D)> combineLatest4<A, B, C, D>(
     _combine([a, b, c, d])
         .map((v) => (v[0] as A, v[1] as B, v[2] as C, v[3] as D));
 
+/// Each value of [source] replaces the stream [mapper] built from the one
+/// before it — the `switchMap` every stream library has.
+///
+/// `asyncExpand` is not this. It *pauses* [source] until the stream it just
+/// built is done, so with an endless inner stream — any repository watch —
+/// the second value of [source] is never read at all and the first inner
+/// stream keeps emitting under it.
+///
+/// Single-subscription. A new value of [source] cancels the previous inner
+/// subscription before subscribing to the next; errors from [source] and from
+/// an inner stream are forwarded; the result closes once [source] is done and
+/// the last inner stream is done; cancelling the result cancels both.
+Stream<T> switchLatest<S, T>(Stream<S> source, Stream<T> Function(S) mapper) {
+  late StreamController<T> controller;
+  StreamSubscription<S>? outer;
+  StreamSubscription<T>? inner;
+  var sourceDone = false;
+  void closeIfDone() {
+    if (sourceDone && inner == null) controller.close();
+  }
+
+  controller = StreamController<T>(
+    onListen: () {
+      outer = source.listen(
+        (value) {
+          // Cancelling stops delivery at once — the `onDone` below included,
+          // so a stream being replaced can never close the result. Its future
+          // is cleanup only, and awaiting it here would let the next value of
+          // [source] interleave with the swap.
+          unawaited(inner?.cancel());
+          inner = mapper(value).listen(
+            controller.add,
+            onError: controller.addError,
+            onDone: () {
+              inner = null;
+              closeIfDone();
+            },
+          );
+        },
+        onError: controller.addError,
+        onDone: () {
+          sourceDone = true;
+          closeIfDone();
+        },
+      );
+    },
+    onCancel: () async {
+      await outer?.cancel();
+      await inner?.cancel();
+    },
+  );
+  return controller.stream;
+}
+
 Stream<List<Object?>> _combine(List<Stream<Object?>> sources) {
   late StreamController<List<Object?>> controller;
   var subscriptions = <StreamSubscription<Object?>>[];

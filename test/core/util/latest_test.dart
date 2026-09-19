@@ -84,4 +84,127 @@ void main() {
     await pumpEventQueue();
     expect(done, isTrue);
   });
+
+  group('switchLatest', () {
+    test('a new source value cancels the stream before it', () async {
+      var inners = <String, StreamController<String>>{};
+      var cancelled = <String>[];
+      Stream<String> inner(String tag) {
+        var controller = StreamController<String>(
+          onCancel: () => cancelled.add(tag),
+        );
+        inners[tag] = controller;
+        return controller.stream;
+      }
+
+      var source = StreamController<String>();
+      var seen = <String>[];
+      var sub = switchLatest(source.stream, inner).listen(seen.add);
+
+      source.add('a');
+      await pumpEventQueue();
+      inners['a']!.add('a1');
+      await pumpEventQueue();
+
+      source.add('b');
+      await pumpEventQueue();
+      expect(cancelled, ['a'], reason: "a's stream goes when b arrives");
+      // The replaced stream is no longer listened to, so what it emits next
+      // never reaches the result.
+      inners['a']!.add('a2');
+      inners['b']!.add('b1');
+      await pumpEventQueue();
+      expect(seen, ['a1', 'b1']);
+
+      await sub.cancel();
+      expect(cancelled, ['a', 'b']);
+      await source.close();
+    });
+
+    test(
+      'the last inner stream keeps going after the source is done',
+      () async {
+        var inner = StreamController<int>();
+        var source = StreamController<int>();
+        var seen = <int>[];
+        var done = false;
+        switchLatest(
+          source.stream,
+          (_) => inner.stream,
+        ).listen(seen.add, onDone: () => done = true);
+
+        source.add(1);
+        await source.close();
+        inner.add(10);
+        await pumpEventQueue();
+        expect(seen, [
+          10,
+        ], reason: 'a closed source must not cut the inner off');
+        expect(done, isFalse);
+
+        await inner.close();
+        await pumpEventQueue();
+        expect(done, isTrue, reason: 'both are done now');
+      },
+    );
+
+    test(
+      'a source that ends with nothing in flight closes the result',
+      () async {
+        var done = false;
+        switchLatest(
+          const Stream<int>.empty(),
+          (_) => const Stream<int>.empty(),
+        ).listen((_) {}, onDone: () => done = true);
+        await pumpEventQueue();
+        expect(done, isTrue);
+      },
+    );
+
+    test(
+      'errors from the source and from an inner stream pass through',
+      () async {
+        var source = StreamController<int>();
+        var inner = StreamController<int>();
+        var errors = <Object>[];
+        var sub = switchLatest(
+          source.stream,
+          (_) => inner.stream,
+        ).listen((_) {}, onError: errors.add);
+
+        source.add(1);
+        await pumpEventQueue();
+        inner.addError(StateError('inner'));
+        source.addError(ArgumentError('outer'));
+        await pumpEventQueue();
+        expect(errors, [isA<StateError>(), isA<ArgumentError>()]);
+
+        await sub.cancel();
+        await source.close();
+        await inner.close();
+      },
+    );
+
+    test(
+      'cancelling the result cancels the source and the inner stream',
+      () async {
+        var cancelled = <String>[];
+        var source = StreamController<int>(
+          onCancel: () => cancelled.add('source'),
+        );
+        var inner = StreamController<int>(
+          onCancel: () => cancelled.add('inner'),
+        );
+        var sub = switchLatest(
+          source.stream,
+          (_) => inner.stream,
+        ).listen((_) {});
+
+        source.add(1);
+        await pumpEventQueue();
+        await sub.cancel();
+        expect(cancelled, ['source', 'inner']);
+      },
+    );
+  });
 }

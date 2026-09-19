@@ -12,15 +12,38 @@ import 'package:wizctl_app/domain/services/network_monitor.dart';
 
 export 'fake_gateway.dart';
 
+/// A stream that replays [latest] to a new listener and then forwards
+/// [updates].
+///
+/// The subscription to [updates] is taken **synchronously** in `onListen`, so
+/// a change written in the same microtask turn as the `listen` call still
+/// arrives. An `async*` body cannot do this: it only reaches its
+/// `yield* updates` after its first `yield` has been delivered, and a
+/// broadcast source drops everything written in that window — which made a
+/// fake silently lose a write that real code would have seen.
+Stream<T> _replaying<T>(T Function() latest, Stream<T> updates) {
+  late StreamController<T> out;
+  StreamSubscription<T>? subscription;
+  out = StreamController<T>(
+    onListen: () {
+      out.add(latest());
+      subscription = updates.listen(
+        out.add,
+        onError: out.addError,
+        onDone: out.close,
+      );
+    },
+    onCancel: () => subscription?.cancel(),
+  );
+  return out.stream;
+}
+
 /// A broadcast stream that replays its latest value to new listeners.
 class _Replay<T> {
   T value;
   final _controller = StreamController<T>.broadcast();
   _Replay(this.value);
-  Stream<T> get stream async* {
-    yield value;
-    yield* _controller.stream;
-  }
+  Stream<T> get stream => _replaying(() => value, _controller.stream);
 
   void set(T next) {
     value = next;
@@ -144,10 +167,8 @@ class FakeLightRepository implements LightRepository {
   }
 
   @override
-  Stream<Light?> watch(String id) async* {
-    yield _lights[id];
-    yield* _changes.stream.map((_) => _lights[id]);
-  }
+  Stream<Light?> watch(String id) =>
+      _replaying(() => _lights[id], _changes.stream.map((_) => _lights[id]));
 
   @override
   Future<List<Light>> getByHome(String homeId) async => byHome(homeId);

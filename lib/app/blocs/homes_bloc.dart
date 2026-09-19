@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 
 import '../../core/util/latest.dart';
@@ -69,7 +67,7 @@ class HomesBloc extends Bloc<HomesEvent, HomesState> {
     Emitter<HomesState> emit,
   ) async {
     await emit.forEach(
-      _switchLatest(activeHomeIds(_settings), _forActive),
+      switchLatest(activeHomeIds(_settings), _forActive),
       onData: (next) => state.copyWith(
         status: HomesStatus.ready,
         homes: next.homes,
@@ -145,53 +143,4 @@ class HomesBloc extends Bloc<HomesEvent, HomesState> {
       emit(state.copyWith(notice: HomesError(e.message)));
     }
   }
-}
-
-/// `switchMap`: every value of [outer] replaces the stream [inner] built from
-/// the one before it, and the one before it is cancelled.
-///
-/// `asyncExpand` cannot do this job. It *pauses* [outer] until the stream it
-/// made is done, and a repository watch is never done — so a second active
-/// home would never be read at all, and the first home's stream would keep
-/// emitting under the old id.
-Stream<T> _switchLatest<S, T>(Stream<S> outer, Stream<T> Function(S) inner) {
-  late StreamController<T> controller;
-  StreamSubscription<S>? source;
-  StreamSubscription<T>? current;
-  var outerDone = false;
-  void closeIfDone() {
-    if (outerDone && current == null) controller.close();
-  }
-
-  controller = StreamController<T>(
-    onListen: () {
-      source = outer.listen(
-        (value) {
-          // Cancelling stops delivery at once; its future is cleanup only,
-          // and awaiting it here would let a second value interleave with
-          // the swap.
-          var previous = current;
-          current = inner(value).listen(
-            controller.add,
-            onError: controller.addError,
-            onDone: () {
-              current = null;
-              closeIfDone();
-            },
-          );
-          unawaited(previous?.cancel());
-        },
-        onError: controller.addError,
-        onDone: () {
-          outerDone = true;
-          closeIfDone();
-        },
-      );
-    },
-    onCancel: () async {
-      await source?.cancel();
-      await current?.cancel();
-    },
-  );
-  return controller.stream;
 }
