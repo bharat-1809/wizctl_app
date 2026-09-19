@@ -28,7 +28,7 @@ void main() {
       network: monitor,
       settings: seed.settings,
       homes: seed.homes,
-    )..subscribe();
+    );
     toasts = ToastController();
   });
 
@@ -51,16 +51,15 @@ void main() {
     ),
   );
 
-  /// Lets the subnet the monitor just read reach the cubit, then pumps.
+  /// Subscribes the cubit and pumps the banner.
   ///
-  /// The subscription is taken in `setUp`, outside the tester's fake-async
-  /// zone, so its events are delivered as real microtasks, which `pump` does
-  /// not flush — [WidgetTester.runAsync] turns the real loop once, which
-  /// drains them. It has to be that way round: `watchSubnet` is an `async*`
-  /// stream, and cancelling one *inside* the fake zone never completes, so a
-  /// cubit subscribed from the test body would hang this file's tear-down.
+  /// [NetworkCubit.subscribe] is called here, inside the tester's zone, so
+  /// the monitor's subnet reaches the cubit as a fake microtask that `pump`
+  /// flushes — and, since the monitor has already read the interfaces by
+  /// then, `watchSubnet` replays it at once, as it does in the running app
+  /// where the monitor is started before any screen is built.
   Future<void> pumpBanner(WidgetTester tester) async {
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    cubit.subscribe();
     await tester.pumpWidget(wizTestApp(subject()));
     await tester.pump();
   }

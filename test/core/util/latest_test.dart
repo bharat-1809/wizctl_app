@@ -207,4 +207,35 @@ void main() {
       },
     );
   });
+
+  // Both combiners cancel their sources without awaiting the futures those
+  // cancels return, and this is the property that needs it: a subscription's
+  // `cancel()` hands back the SDK's shared null future, which belongs to the
+  // root zone, and awaiting one of those inside the tester's fake-async zone
+  // never resumes — `pump` turns the fake loop, and only the real loop can
+  // complete it. A bloc closed from a widget test hung here for ever,
+  // silently, with no output and no test timeout. The real-zone tests above
+  // cannot catch it: they passed while the code still awaited.
+  testWidgets('a cancel inside the tester zone completes there', (
+    tester,
+  ) async {
+    var cancelled = <String>[];
+    var a = StreamController<int>(onCancel: () => cancelled.add('a'));
+    var b = StreamController<int>(onCancel: () => cancelled.add('b'));
+    var inner = StreamController<int>(onCancel: () => cancelled.add('inner'));
+
+    var combined = combineLatest2(a.stream, b.stream).listen((_) {});
+    var switched = switchLatest(
+      Stream<int>.value(1),
+      (_) => inner.stream,
+    ).listen((_) {});
+    a.add(1);
+    b.add(2);
+    await tester.pump();
+
+    // Reaching the line after each await is the assertion.
+    await combined.cancel();
+    await switched.cancel();
+    expect(cancelled, containsAll(['a', 'b', 'inner']));
+  });
 }

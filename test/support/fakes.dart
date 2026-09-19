@@ -33,7 +33,14 @@ Stream<T> _replaying<T>(T Function() latest, Stream<T> updates) {
         onDone: out.close,
       );
     },
-    onCancel: () => subscription?.cancel(),
+    // The source's cancel is not awaited: its future can be the SDK's shared
+    // null future, which belongs to the root zone, and awaiting one of those
+    // inside a `testWidgets` body never resumes. This closure's own future is
+    // created in the canceller's zone, so `await subscription.cancel()` —
+    // `Cubit.close()`, in practice — completes there.
+    onCancel: () async {
+      subscription?.cancel();
+    },
   );
   return out.stream;
 }

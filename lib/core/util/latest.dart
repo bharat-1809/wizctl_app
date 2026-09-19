@@ -4,8 +4,14 @@ import 'dart:async';
 /// starting once every source has produced one — the `combineLatest` every
 /// stream library has. The app takes no such library for three arities.
 ///
-/// Single-subscription. Cancelling cancels every source; an error from any
-/// source is forwarded; the result closes when every source has closed.
+/// Single-subscription. An error from any source is forwarded; the result
+/// closes when every source has closed.
+///
+/// Cancelling detaches every source's listener synchronously. The future it
+/// returns says only that: it does **not** mean the sources have finished
+/// their own tear-down, and it deliberately does not wait for them — awaiting
+/// a source's cancel future deadlocks under `flutter_test`'s fake async
+/// (`_combine`'s `onCancel` says why).
 Stream<(A, B)> combineLatest2<A, B>(Stream<A> a, Stream<B> b) =>
     _combine([a, b]).map((v) => (v[0] as A, v[1] as B));
 
@@ -35,7 +41,11 @@ Stream<(A, B, C, D)> combineLatest4<A, B, C, D>(
 /// Single-subscription. A new value of [source] cancels the previous inner
 /// subscription before subscribing to the next; errors from [source] and from
 /// an inner stream are forwarded; the result closes once [source] is done and
-/// the last inner stream is done; cancelling the result cancels both.
+/// the last inner stream is done.
+///
+/// Cancelling the result detaches both listeners synchronously, and, as with
+/// [combineLatest2], the future it returns does not mean either one has
+/// finished its own tear-down.
 Stream<T> switchLatest<S, T>(Stream<S> source, Stream<T> Function(S) mapper) {
   late StreamController<T> controller;
   StreamSubscription<S>? outer;
@@ -70,9 +80,12 @@ Stream<T> switchLatest<S, T>(Stream<S> source, Stream<T> Function(S) mapper) {
         },
       );
     },
+    // Neither cancel is awaited, for the reason `_combine`'s is not: both
+    // detach their listener synchronously, and waiting on the future either
+    // hands back deadlocks under `flutter_test`'s fake async.
     onCancel: () async {
-      await outer?.cancel();
-      await inner?.cancel();
+      outer?.cancel();
+      inner?.cancel();
     },
   );
   return controller.stream;
@@ -112,7 +125,18 @@ Stream<List<Object?>> _combine(List<Stream<Object?>> sources) {
         s.resume();
       }
     },
-    onCancel: () => Future.wait(subscriptions.map((s) => s.cancel())),
+    // Every source is cancelled, and none of the cancels is awaited. A
+    // subscription detaches its listener synchronously; the future it returns
+    // is often the SDK's shared null future, which belongs to the root zone,
+    // and awaiting one of those inside `flutter_test`'s fake-async zone never
+    // resumes — a widget test that closed a bloc subscribed here hung for
+    // ever, silently. Nothing here needs to know when a source has finished
+    // its own tear-down.
+    onCancel: () async {
+      for (var s in subscriptions) {
+        s.cancel();
+      }
+    },
   );
   return controller.stream;
 }

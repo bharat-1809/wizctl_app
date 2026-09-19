@@ -93,6 +93,24 @@ void main() {
     },
   );
 
+  // The hazard P55 removed. `watchSubnet` used to be an `async*` generator,
+  // and cancelling one suspended in `yield*` never completes inside the
+  // tester's fake-async zone: this body hung for ever, with no output and no
+  // test timeout, and so did every widget test whose tear-down closed a cubit
+  // subscribed here. No `runAsync` flush anywhere — reaching the end is the
+  // assertion.
+  testWidgets('a subscription taken inside the tester zone cancels', (
+    tester,
+  ) async {
+    var raw = monitor.watchSubnet().listen((_) {});
+    var cubit = build()..subscribe();
+    await monitor.refresh();
+    await tester.pump();
+    expect(cubit.state.currentSubnet, '192.168.1');
+    await raw.cancel();
+    await cubit.close();
+  });
+
   blocTest<NetworkCubit, NetworkState>(
     'switching home re-reads the subnet it compares against',
     build: build,
