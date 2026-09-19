@@ -313,6 +313,28 @@ void main() {
     },
   );
 
+  test(
+    'clearing the forgotten notice leaves only a bare gone behind',
+    () async {
+      var bloc = build('strip')..add(const LightSubscribed());
+      addTearDown(bloc.close);
+      await Future<void>.delayed(wait);
+      bloc.add(const LightForgotten());
+      await Future<void>.delayed(wait);
+      bloc.add(const LightNoticeCleared());
+      await Future<void>.delayed(wait);
+      expect(bloc.state.status, LightStatus.gone);
+      expect(
+        bloc.state.notice,
+        isNull,
+        reason:
+            'so this state no longer says which kind of gone it is: a view '
+            'that leaves on a bare gone must not clear a forgotten notice, or '
+            'must remember that it has already left',
+      );
+    },
+  );
+
   blocTest<LightBloc, LightState>(
     'retry reads the bulb again',
     build: () => build('hall'),
