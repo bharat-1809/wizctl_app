@@ -24,6 +24,8 @@ import 'package:wizctl_app/domain/services/network_monitor.dart';
 import 'package:wizctl_app/domain/services/sync_coordinator.dart';
 import 'package:wizctl_app/domain/services/target_resolver.dart';
 import 'package:wizctl_app/domain/usecases/usecases.dart';
+import 'package:wizctl_app/features/modes/bloc/light_modes_bloc.dart';
+import 'package:wizctl_app/features/modes/modes_bloc_factory.dart';
 
 import 'fakes.dart';
 import 'seed.dart';
@@ -140,6 +142,19 @@ class AppScope {
   ApplyScene get applyScene =>
       ApplyScene(resolver: resolver, store: seed.store, pipeline: pipeline);
 
+  /// The `ModesBlocFactory` the shell provides (Task 19), so a screen that
+  /// opens the modes sheet finds one here too.
+  LightModesBloc modesBlocFor(ModeTarget target) => LightModesBloc(
+    target: target,
+    rooms: seed.rooms,
+    lights: seed.lights,
+    store: seed.store,
+    applyColour: applyColour,
+    applyWhite: applyWhite,
+    applyScene: applyScene,
+    setSpeed: setSpeed,
+  );
+
   /// Subscribes the app-scope blocs and activates the seed's home, as the
   /// lifecycle driver does at start.
   Future<void> start() async {
@@ -172,6 +187,7 @@ class AppScope {
         RepositoryProvider<LightRepository>.value(value: seed.lights),
         RepositoryProvider<SettingsRepository>.value(value: seed.settings),
         RepositoryProvider<LiveStateStore>.value(value: seed.store),
+        RepositoryProvider<ModesBlocFactory>.value(value: modesBlocFor),
       ],
       child: child,
     ),

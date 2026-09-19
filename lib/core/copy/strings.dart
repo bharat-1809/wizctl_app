@@ -92,6 +92,21 @@ class Strings {
   static String roomIsEmpty(String name) =>
       '$name is empty — discover lights for it';
 
+  // Room (spec §10.3).
+  static const brightness = 'Brightness';
+  static const colourTemp = 'Colour temp.';
+  static const wholeRoom = 'Whole room';
+  static const noLightsInRoom = 'No lights in this room';
+  static const discoverThenPlace =
+      'Discover lights on the network, then place them here.';
+  static const discoverThenSave =
+      'Discover lights on the network, then save them into this room.';
+  static const back = 'Back';
+
+  /// The room switch's accessible name: the bar draws the room's name beside
+  /// it, but the switch is its own node and has to say what it switches.
+  static String roomPower(String name) => '$name power';
+
   // Light modes (spec §10.5, §5.12).
   static const lightModes = 'Light modes';
   static const applyScenesTo = 'Apply scenes to';
@@ -235,6 +250,13 @@ class Strings {
     moveLightsFirst,
     newRoom,
     createRoom,
+    brightness,
+    colourTemp,
+    wholeRoom,
+    noLightsInRoom,
+    discoverThenPlace,
+    discoverThenSave,
+    back,
     lightModes,
     applyScenesTo,
     colours,
