@@ -6,6 +6,8 @@ import 'target_command.dart';
 
 /// Colour writes only to RGB bulbs. Returns how many took it; zero means
 /// "No colour bulb here".
+///
+/// Coalesces like a dial drag, so the wheel can write on every move.
 class ApplyColour extends TargetCommand {
   const ApplyColour({
     required super.resolver,
@@ -29,6 +31,7 @@ class ApplyColour extends TargetCommand {
           ControlSignal(state: true, r: safe.r, g: safe.g, b: safe.b),
       patch: (s) =>
           s.copyWith(rgb: safe, active: ActiveChannel.colour, isOn: true),
+      throttleKey: 'colour:${target.key}',
     );
   }
 }
