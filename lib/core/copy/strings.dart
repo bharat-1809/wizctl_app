@@ -1,3 +1,5 @@
+import 'package:wizctl/wizctl.dart' show wizPort;
+
 /// Every line the user reads. Second person, sentence case, no "we", no
 /// emoji, no exclamation marks. Control labels are uppercased by widgets.
 class Strings {
@@ -43,6 +45,21 @@ class Strings {
   static const noResponse = 'No response on the local network';
   static const noRoute = 'No route to the light';
 
+  // Command reports (spec §15).
+  static const noResponseAfterTries = 'No response after 3 tries';
+  static const stillNoReply = 'Still no reply';
+  static const checkWallSwitch =
+      'Check the wall switch, then rescan the subnet.';
+  static const noLocalNetwork = 'This device has no local network.';
+
+  /// `<ip>:38899`, the address every device fact and toast body shows.
+  static String udpAddress(String ip) => '$ip:$wizPort';
+  static String didNotAnswer(String ip) =>
+      '$ip did not answer on port $wizPort';
+  static String retrying(String name) => 'Retrying $name';
+  static String notOnHomeNetwork(String subnet) =>
+      'This device is not on $subnet.0/24.';
+
   static const List<String> all = [
     privacy,
     roomsStored,
@@ -70,5 +87,9 @@ class Strings {
     powerOff,
     noResponse,
     noRoute,
+    noResponseAfterTries,
+    stillNoReply,
+    checkWallSwitch,
+    noLocalNetwork,
   ];
 }
