@@ -45,7 +45,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
        super(HomeScreenState.initial) {
     on<HomeScreenSubscribed>(_onSubscribed);
     on<AllPowerToggled>(_onAllPower);
-    on<RoomPowerToggled>(_onRoomPower);
+    on<HomeRoomPowerToggled>(_onRoomPower);
     on<HomeRefreshRequested>(_onRefresh);
   }
 
@@ -128,7 +128,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
   }
 
   Future<void> _onRoomPower(
-    RoomPowerToggled event,
+    HomeRoomPowerToggled event,
     Emitter<HomeScreenState> emit,
   ) => _setPower(RoomTarget(event.roomId), event.on);
 

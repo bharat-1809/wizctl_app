@@ -34,18 +34,23 @@ final class RoomPowerToggled extends RoomEvent {
   List<Object?> get props => [on];
 }
 
-final class LightPowerToggled extends RoomEvent {
+/// One light's switch on the room's list. Prefixed `Room…`, as is
+/// [RoomLightBrightnessChanged], because `LightBloc` owns the unprefixed
+/// names: a screen holding both blocs has to be able to import both event
+/// libraries without a prefix.
+final class RoomLightPowerToggled extends RoomEvent {
   final String lightId;
   final bool on;
-  const LightPowerToggled(this.lightId, this.on);
+  const RoomLightPowerToggled(this.lightId, this.on);
   @override
   List<Object?> get props => [lightId, on];
 }
 
-final class LightBrightnessChanged extends RoomEvent {
+/// One light's brightness rail on the room's list.
+final class RoomLightBrightnessChanged extends RoomEvent {
   final String lightId;
   final int value;
-  const LightBrightnessChanged(this.lightId, this.value);
+  const RoomLightBrightnessChanged(this.lightId, this.value);
   @override
   List<Object?> get props => [lightId, value];
 }

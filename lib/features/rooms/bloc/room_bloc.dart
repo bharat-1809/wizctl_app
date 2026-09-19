@@ -49,8 +49,10 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     );
     on<RoomKelvinChanged>((e, _) => _setKelvin(RoomTarget(roomId), e.kelvin));
     on<RoomPowerToggled>((e, _) => _setPower(RoomTarget(roomId), e.on));
-    on<LightPowerToggled>((e, _) => _setPower(LightTarget(e.lightId), e.on));
-    on<LightBrightnessChanged>(
+    on<RoomLightPowerToggled>(
+      (e, _) => _setPower(LightTarget(e.lightId), e.on),
+    );
+    on<RoomLightBrightnessChanged>(
       (e, _) => _setBrightness(LightTarget(e.lightId), e.value),
     );
     on<RoomRefreshRequested>(_onRefresh);

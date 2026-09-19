@@ -163,7 +163,7 @@ void main() {
     act: (bloc) async {
       bloc.add(const HomeScreenSubscribed());
       await Future<void>.delayed(wait);
-      bloc.add(const RoomPowerToggled('bedroom', true));
+      bloc.add(const HomeRoomPowerToggled('bedroom', true));
     },
     wait: wait,
     verify: (bloc) {

@@ -21,10 +21,10 @@ final class AllPowerToggled extends HomeScreenEvent {
 }
 
 /// A room card's switch.
-final class RoomPowerToggled extends HomeScreenEvent {
+final class HomeRoomPowerToggled extends HomeScreenEvent {
   final String roomId;
   final bool on;
-  const RoomPowerToggled(this.roomId, this.on);
+  const HomeRoomPowerToggled(this.roomId, this.on);
   @override
   List<Object?> get props => [roomId, on];
 }

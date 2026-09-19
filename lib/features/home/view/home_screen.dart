@@ -94,7 +94,7 @@ class HomeScreen extends StatelessWidget {
                       onCount: tile.onCount,
                       on: tile.anyOn,
                       onToggle: (on) =>
-                          bloc.add(RoomPowerToggled(tile.room.id, on)),
+                          bloc.add(HomeRoomPowerToggled(tile.room.id, on)),
                       onTap: () => context.go(AppRoutes.room(tile.room.id)),
                     ),
                   ),

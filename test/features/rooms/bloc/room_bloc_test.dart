@@ -173,9 +173,9 @@ void main() {
       await Future<void>.delayed(wait);
       bloc.add(const RoomPowerToggled(false));
       await Future<void>.delayed(wait);
-      bloc.add(const LightPowerToggled('strip', true));
+      bloc.add(const RoomLightPowerToggled('strip', true));
       await Future<void>.delayed(wait);
-      bloc.add(const LightBrightnessChanged('floor', 80));
+      bloc.add(const RoomLightBrightnessChanged('floor', 80));
     },
     wait: wait,
     verify: (bloc) {
