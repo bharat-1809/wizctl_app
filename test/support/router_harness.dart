@@ -58,6 +58,16 @@ Future<GoRouter> pumpRouted(
   return router;
 }
 
-/// Where the router is now.
-String currentLocation(GoRouter router) =>
-    router.routerDelegate.currentConfiguration.uri.toString();
+/// Where the router is now, counting a pushed page as where it is.
+///
+/// A `context.push` appends an [ImperativeRouteMatch] and leaves the match
+/// list's own `uri` on the location that was showing before, so the plain
+/// `uri` reports a push as if nothing had happened. The pushed location is the
+/// uri of the imperative match's own list.
+String currentLocation(GoRouter router) {
+  var list = router.routerDelegate.currentConfiguration;
+  var last = list.matches.lastOrNull;
+  return last is ImperativeRouteMatch
+      ? last.matches.uri.toString()
+      : list.uri.toString();
+}

@@ -145,7 +145,7 @@ void main() {
     tester,
   ) async {
     await withRoom(tester, 'living', (scope, bloc) async {
-      await pumpRouted(
+      var router = await pumpRouted(
         tester,
         screen(scope, bloc),
         targets: [AppRoutes.lightPattern],
@@ -160,18 +160,11 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(scope.gateway.sends.single.$1, '192.168.1.111');
-      expect(
-        find.byType(LightCard),
-        findsNWidgets(3),
-        reason: 'the switch wrote power without leaving the room',
-      );
+      expect(currentLocation(router), '/');
 
       await tester.tap(find.text('Shelf strip'));
       await tester.pumpAndSettle();
-      // `pumpRouted` draws each target as its own location. Asserted on the
-      // screen rather than on `currentLocation`, because a `push` adds an
-      // imperative match that leaves the match list's own uri where it was.
-      expect(find.text(AppRoutes.light('strip')), findsOneWidget);
+      expect(currentLocation(router), AppRoutes.light('strip'));
       expect(
         find.byType(LightCard, skipOffstage: false),
         findsNWidgets(3),
