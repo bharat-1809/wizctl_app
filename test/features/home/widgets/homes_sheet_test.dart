@@ -11,6 +11,12 @@ import 'package:wizctl_app/features/home/widgets/homes_sheet.dart';
 import '../../../support/app_scope.dart';
 import '../../../support/router_harness.dart';
 import '../../../support/seed.dart';
+import '../../../support/wiz_test_app.dart';
+
+/// The sheet is a bottom sheet on a phone and a centred dialog above it
+/// (spec §11.2), so every case runs on a phone surface rather than the
+/// tester's 800×600 default, which `WizLayoutScope` classifies as medium.
+const Size _phone = Size(390, 844);
 
 void main() {
   Widget opener(AppScope scope) => scope.wrap(
@@ -28,7 +34,11 @@ void main() {
 
   /// Builds the fixture, runs [body] and tears it down inside the tester's
   /// zone — `AppScope`'s doc says why neither end can happen in `setUp`.
-  Future<void> withScope(Future<void> Function(AppScope scope) body) async {
+  Future<void> withScope(
+    WidgetTester tester,
+    Future<void> Function(AppScope scope) body,
+  ) async {
+    await setSurface(tester, _phone);
     var scope = AppScope(SeedHome());
     await scope.start();
     try {
@@ -41,7 +51,7 @@ void main() {
   testWidgets('lists every home with its counts, the active one marked', (
     tester,
   ) async {
-    await withScope((scope) async {
+    await withScope(tester, (scope) async {
       await pumpRouted(tester, opener(scope));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
@@ -68,7 +78,7 @@ void main() {
   });
 
   testWidgets('tapping a home switches to it and closes', (tester) async {
-    await withScope((scope) async {
+    await withScope(tester, (scope) async {
       var router = await pumpRouted(
         tester,
         opener(scope),
@@ -89,7 +99,7 @@ void main() {
   testWidgets('adding a home activates it, toasts and goes to discovery', (
     tester,
   ) async {
-    await withScope((scope) async {
+    await withScope(tester, (scope) async {
       var router = await pumpRouted(
         tester,
         opener(scope),

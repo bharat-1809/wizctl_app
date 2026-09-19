@@ -6,13 +6,20 @@ import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/layout/wiz_layout.dart';
 import 'package:wizctl_app/core/theme/wiz_theme.dart';
 
+import 'wiz_test_app.dart';
+
 /// Pumps [home] at `/` inside a `GoRouter` whose other locations are
 /// [targets], each showing its own path as text, and returns the router so
 /// a test can read where a tap went:
 /// `router.routerDelegate.currentConfiguration.uri.toString()`.
 ///
 /// [wrap] installs providers around the whole app (blocs, a toast
-/// controller); [size] pins the MediaQuery like `wizTestApp` does.
+/// controller).
+///
+/// [size] is the *surface*, not only the MediaQuery: a screen reads its width
+/// class off the constraints `WizLayoutScope` measures, so a MediaQuery alone
+/// would lay the phone's screens out at the tester's 800×600 default — which
+/// is a medium width, with the desktop gutter and twice the grid columns.
 Future<GoRouter> pumpRouted(
   WidgetTester tester,
   Widget home, {
@@ -21,6 +28,7 @@ Future<GoRouter> pumpRouted(
   FeedbackService? feedback,
   Widget Function(Widget child)? wrap,
 }) async {
+  await setSurface(tester, size);
   var router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (context, state) => home),

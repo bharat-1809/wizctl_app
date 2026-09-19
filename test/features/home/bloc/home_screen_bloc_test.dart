@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
@@ -202,6 +204,22 @@ void main() {
       );
     },
   );
+
+  test('a refresh completes the done signal it was handed', () async {
+    // Long enough that only the event can be reading, and slow enough that
+    // the signal cannot be mistaken for one completed before the read.
+    sync.dispose();
+    sync = coordinator(const Duration(minutes: 1));
+    gateway.readLatency = const Duration(milliseconds: 20);
+    sync.activateHome('h1');
+    var bloc = build();
+    addTearDown(bloc.close);
+    var done = Completer<void>();
+    bloc.add(HomeRefreshRequested(done: done));
+    // Hangs the test rather than failing it if the signal is never completed.
+    await done.future;
+    expect(gateway.reads, hasLength(6));
+  });
 
   test(
     'the home\'s lights are polled while subscribed and not after',

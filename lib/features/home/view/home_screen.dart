@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -44,7 +46,14 @@ class HomeScreen extends StatelessWidget {
           return const ScreenScroll(children: []);
         }
         return ScreenScroll(
-          onRefresh: () async => bloc.add(const HomeRefreshRequested()),
+          // Awaited, not fired and forgotten: the filament has to stay up for
+          // as long as the read takes, and an event added to a bloc is over
+          // on the next microtask.
+          onRefresh: () {
+            var done = Completer<void>();
+            bloc.add(HomeRefreshRequested(done: done));
+            return done.future;
+          },
           children: [
             WizTopBar(
               title: home.name,

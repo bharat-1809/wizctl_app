@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 
 sealed class HomeScreenEvent extends Equatable {
@@ -29,5 +31,11 @@ final class RoomPowerToggled extends HomeScreenEvent {
 
 /// Pull to refresh.
 final class HomeRefreshRequested extends HomeScreenEvent {
-  const HomeRefreshRequested();
+  /// Completed once the refresh has ended, so a pull can hold its loader for
+  /// exactly as long as the read takes rather than dropping it on the next
+  /// microtask. Deliberately absent from [props]: what the event asks for is
+  /// the same whoever is waiting on it, and a `Completer` has no equality.
+  final Completer<void>? done;
+
+  const HomeRefreshRequested({this.done});
 }

@@ -46,7 +46,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     on<HomeScreenSubscribed>(_onSubscribed);
     on<AllPowerToggled>(_onAllPower);
     on<RoomPowerToggled>(_onRoomPower);
-    on<HomeRefreshRequested>((_, _) => _sync.refreshAll());
+    on<HomeRefreshRequested>(_onRefresh);
   }
 
   Future<void> _onSubscribed(
@@ -131,6 +131,25 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     RoomPowerToggled event,
     Emitter<HomeScreenState> emit,
   ) => _setPower(RoomTarget(event.roomId), event.on);
+
+  /// Reads every light of the home now, and tells the requester when that has
+  /// finished.
+  ///
+  /// `done` completes in a `finally`, so a pull-to-refresh lets its loader go
+  /// whether the read landed or threw — all the view is waiting for is the
+  /// end of it. An error still leaves by the same door it did before, up to
+  /// the bloc's error handler.
+  Future<void> _onRefresh(
+    HomeRefreshRequested event,
+    Emitter<HomeScreenState> emit,
+  ) async {
+    var done = event.done;
+    try {
+      await _sync.refreshAll();
+    } finally {
+      if (done != null && !done.isCompleted) done.complete();
+    }
+  }
 
   @override
   Future<void> close() {

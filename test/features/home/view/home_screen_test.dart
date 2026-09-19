@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/core/widgets/room_card.dart';
+import 'package:wizctl_app/core/widgets/wiz_filament_bar.dart';
 import 'package:wizctl_app/core/widgets/wiz_status_banner.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 import 'package:wizctl_app/features/home/bloc/home_screen_bloc.dart';
@@ -14,6 +15,12 @@ import 'package:wizctl_app/features/home/view/home_screen.dart';
 import '../../../support/app_scope.dart';
 import '../../../support/router_harness.dart';
 import '../../../support/seed.dart';
+import '../../../support/wiz_test_app.dart';
+
+/// The screen this file is about is the phone one (spec §10.2), so every case
+/// runs on a phone surface rather than the tester's 800×600 default, which
+/// `WizLayoutScope` would classify as medium.
+const Size _phone = Size(390, 844);
 
 void main() {
   Widget screen(AppScope scope, HomeScreenBloc bloc) =>
@@ -24,9 +31,11 @@ void main() {
   /// that zone, where `pump` never reaches them, and one closed outside the
   /// body deadlocks — `AppScope`'s doc has both halves.
   Future<void> withHome(
+    WidgetTester tester,
     Future<void> Function(AppScope scope, HomeScreenBloc bloc) body, {
     String? subnet = '192.168.1',
   }) async {
+    await setSurface(tester, _phone);
     var scope = AppScope(SeedHome(), subnet: subnet);
     await scope.start();
     var bloc = HomeScreenBloc(
@@ -49,7 +58,7 @@ void main() {
   testWidgets(
     'shows the home, its summary, its rooms and the unreachable line',
     (tester) async {
-      await withHome((scope, bloc) async {
+      await withHome(tester, (scope, bloc) async {
         await pumpRouted(tester, screen(scope, bloc));
         await tester.pump();
         expect(find.text('Kaverappa House'), findsOneWidget);
@@ -64,7 +73,7 @@ void main() {
   );
 
   testWidgets('taps navigate: a room card, the discover key', (tester) async {
-    await withHome((scope, bloc) async {
+    await withHome(tester, (scope, bloc) async {
       var router = await pumpRouted(
         tester,
         screen(scope, bloc),
@@ -83,7 +92,7 @@ void main() {
   });
 
   testWidgets('the master toggle writes power to every light', (tester) async {
-    await withHome((scope, bloc) async {
+    await withHome(tester, (scope, bloc) async {
       await pumpRouted(tester, screen(scope, bloc));
       await tester.pump();
       await tester.tap(find.bySemanticsLabel('All lights'));
@@ -97,7 +106,7 @@ void main() {
   });
 
   testWidgets('a room card\'s toggle writes that room only', (tester) async {
-    await withHome((scope, bloc) async {
+    await withHome(tester, (scope, bloc) async {
       await pumpRouted(tester, screen(scope, bloc));
       await tester.pump();
       var bedroomToggle = find.descendant(
@@ -114,8 +123,39 @@ void main() {
     });
   });
 
+  testWidgets('a pull holds the filament until the refresh ends', (
+    tester,
+  ) async {
+    await withHome(tester, (scope, bloc) async {
+      // Reads that do not land until this test lets them, so the loader can be
+      // looked at while the refresh it is waiting on is still running.
+      scope.gateway.readLatency = const Duration(milliseconds: 500);
+      await pumpRouted(tester, screen(scope, bloc));
+      await tester.pump();
+      expect(find.byType(WizFilamentBar), findsNothing);
+      await tester.fling(
+        find.text('Kaverappa House'),
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(WizFilamentBar), findsOneWidget);
+      expect(scope.gateway.reads, isEmpty, reason: 'still reading');
+
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      expect(scope.gateway.reads, hasLength(6));
+      expect(
+        find.byType(WizFilamentBar),
+        findsNothing,
+        reason: 'the bar goes when the refresh ends, not a microtask after it',
+      );
+    });
+  });
+
   testWidgets('off network shows the banner above the panel', (tester) async {
-    await withHome(subnet: '10.0.0', (scope, bloc) async {
+    await withHome(tester, subnet: '10.0.0', (scope, bloc) async {
       await pumpRouted(tester, screen(scope, bloc));
       await tester.pump();
       expect(find.byType(WizStatusBanner), findsOneWidget);
