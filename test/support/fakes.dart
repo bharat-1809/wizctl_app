@@ -143,6 +143,14 @@ class FakeRoomRepository implements RoomRepository {
 class FakeLightRepository implements LightRepository {
   final Map<String, Light> _lights = {};
   final _changes = StreamController<void>.broadcast();
+
+  /// How long [delete] takes to finish *after* it has told its watchers the
+  /// light has gone — the window in which a projection can see the deletion
+  /// while the code that asked for it is still awaiting. Zero by default; a
+  /// test that cares what a screen is told, and in what order, opens the
+  /// window rather than leaving it to microtask luck.
+  Duration deleteLatency = Duration.zero;
+
   void seed(List<Light> lights) {
     for (var l in lights) {
       _lights[l.id] = l;
@@ -199,6 +207,9 @@ class FakeLightRepository implements LightRepository {
   Future<void> delete(String id) async {
     _lights.remove(id);
     _changes.add(null);
+    if (deleteLatency > Duration.zero) {
+      await Future<void>.delayed(deleteLatency);
+    }
   }
 }
 
