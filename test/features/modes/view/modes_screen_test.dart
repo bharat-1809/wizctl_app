@@ -73,6 +73,13 @@ void main() {
       );
       expect(find.text('APPLY TO'), findsOneWidget);
       expect(find.text('Whole home'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Apply to Whole home'),
+        findsOneWidget,
+        reason:
+            'a labelled WizPressable is one node: the label carries both '
+            'the caps label and the target, or the target is never spoken',
+      );
     });
   });
 
@@ -96,6 +103,16 @@ void main() {
         find.text('Bedroom'),
         findsOneWidget,
         reason: 'the well key now names it',
+      );
+      expect(
+        find.bySemanticsLabel('Apply to Bedroom'),
+        findsOneWidget,
+        reason: 'and a screen reader hears the new target, not just "Apply to"',
+      );
+      expect(
+        find.bySemanticsLabel('Apply to Whole home'),
+        findsNothing,
+        reason: 'the old target is gone from the label too',
       );
     });
   });

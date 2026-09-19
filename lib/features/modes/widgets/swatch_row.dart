@@ -22,20 +22,22 @@ class SwatchRow extends StatelessWidget {
     required this.onPick,
   });
 
-  /// The design system's names, in `WizColors.hues` order.
+  /// What a screen reader calls each swatch, in `WizColors.hues` order. The
+  /// copy lives in [Strings] with the rest of the semantics labels; this list
+  /// is only the order.
   static const List<String> hueNames = [
-    'Red',
-    'Orange',
-    'Yellow',
-    'Lime',
-    'Green',
-    'Teal',
-    'Cyan',
-    'Blue',
-    'Indigo',
-    'Violet',
-    'Magenta',
-    'Pink',
+    Strings.hueRed,
+    Strings.hueOrange,
+    Strings.hueYellow,
+    Strings.hueLime,
+    Strings.hueGreen,
+    Strings.hueTeal,
+    Strings.hueCyan,
+    Strings.hueBlue,
+    Strings.hueIndigo,
+    Strings.hueViolet,
+    Strings.hueMagenta,
+    Strings.huePink,
   ];
 
   @override

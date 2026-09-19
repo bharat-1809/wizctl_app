@@ -123,6 +123,12 @@ class Strings {
   static String speedFor(String scene) => 'Speed — $scene';
   static String kelvinLabel(int kelvin) => '${kelvin}K';
 
+  /// The apply-to key's whole accessible name. The key draws "APPLY TO" over
+  /// the target on two lines, but a labelled `WizPressable` is one node and
+  /// excludes the copy it draws, so the label has to carry both or the target
+  /// is never spoken. A key with no target name yet falls back to [applyTo].
+  static String applyToTarget(String name) => 'Apply to $name';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -134,6 +140,22 @@ class Strings {
   static const glyphBath = 'Bath';
   static const glyphLamp = 'Lamp';
   static const glyphTrees = 'Trees';
+
+  /// What the screen reader calls each hue swatch (`SwatchRow.hueNames`), in
+  /// `WizColors.hues` order: the colour a sighted user sees, not the token's
+  /// name.
+  static const hueRed = 'Red';
+  static const hueOrange = 'Orange';
+  static const hueYellow = 'Yellow';
+  static const hueLime = 'Lime';
+  static const hueGreen = 'Green';
+  static const hueTeal = 'Teal';
+  static const hueCyan = 'Cyan';
+  static const hueBlue = 'Blue';
+  static const hueIndigo = 'Indigo';
+  static const hueViolet = 'Violet';
+  static const hueMagenta = 'Magenta';
+  static const huePink = 'Pink';
 
   /// `<ip>:38899`, the address every device fact and toast body shows.
   static String udpAddress(String ip) => '$ip:$wizPort';
@@ -237,5 +259,17 @@ class Strings {
     glyphBath,
     glyphLamp,
     glyphTrees,
+    hueRed,
+    hueOrange,
+    hueYellow,
+    hueLime,
+    hueGreen,
+    hueTeal,
+    hueCyan,
+    hueBlue,
+    hueIndigo,
+    hueViolet,
+    hueMagenta,
+    huePink,
   ];
 }

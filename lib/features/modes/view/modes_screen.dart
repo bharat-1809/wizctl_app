@@ -46,9 +46,13 @@ class ModesScreen extends StatelessWidget {
             ),
           ),
           _ApplyToKey(
+            // Only the whole home reads "Whole home". A room or light whose
+            // name has not landed — the loading frame after a re-target, or a
+            // room deleted under the screen — shows no value rather than
+            // claiming the target is the whole home, which it is not.
             name: state.target is WholeHomeTarget
                 ? Strings.wholeHome
-                : state.targetName ?? Strings.wholeHome,
+                : state.targetName,
             onTap: () async {
               var bloc = context.read<LightModesBloc>();
               var picked = await showTargetSheet(
@@ -66,18 +70,26 @@ class ModesScreen extends StatelessWidget {
   }
 }
 
-/// "APPLY TO" over the target's name with a chevron, as a raised key.
+/// "APPLY TO" over the target's name with a chevron, as a raised key. A null
+/// [name] is a target whose name is not known yet: the value line stays
+/// blank, so the key keeps its height and says nothing untrue.
 class _ApplyToKey extends StatelessWidget {
-  final String name;
+  final String? name;
   final VoidCallback onTap;
   const _ApplyToKey({required this.name, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     var wiz = context.wiz;
+    var target = name;
     return WizPressable(
       onTap: onTap,
-      semanticsLabel: Strings.applyTo,
+      // The whole accessible name, because a labelled `WizPressable` is one
+      // node and excludes the copy it draws: labelled "Apply to" alone, the
+      // key would never speak its target.
+      semanticsLabel: target == null
+          ? Strings.applyTo
+          : Strings.applyToTarget(target),
       scale: wiz.motion.keyScale,
       focusRadius: BorderRadius.circular(wiz.space.r3),
       builder: (context, state) => WizSurface(
@@ -100,7 +112,7 @@ class _ApplyToKey extends StatelessWidget {
                   const FieldLabel(Strings.applyTo),
                   SizedBox(height: wiz.space.s1),
                   Text(
-                    name,
+                    target ?? '',
                     style: wiz.typography.heading.copyWith(
                       color: wiz.colors.textPrimary,
                     ),

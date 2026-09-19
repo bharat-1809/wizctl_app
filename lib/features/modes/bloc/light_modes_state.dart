@@ -66,11 +66,16 @@ class LightModesState extends Equatable {
   bool get hasWheel =>
       lights.any((l) => CapabilityRules.colour(l.light.bulbClass));
 
-  /// The white tab shows only when some target light has a tunable white.
+  /// Whether any target light has a tunable white — the capability, for a view
+  /// that chooses to gate on it. The modes body does not: it draws all three
+  /// segments and answers a tap that reaches nothing with [NoWhiteNotice], so
+  /// the tiles never move under the finger (Task 9).
   bool get hasWhite =>
       lights.any((l) => CapabilityRules.kelvin(l.light.bulbClass));
 
-  /// The scene tabs show only when some target light takes scenes (not a plug).
+  /// Whether any target light takes scenes (a plug does not) — the capability,
+  /// read the same way as [hasWhite]: the scene tabs are always there and an
+  /// ineligible tap becomes [NoSceneNotice].
   bool get hasScenes =>
       lights.any((l) => CapabilityRules.scenes(l.light.bulbClass));
 
