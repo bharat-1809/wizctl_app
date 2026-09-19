@@ -73,6 +73,25 @@ class Strings {
       '${plural(rooms, 'room')} · ${plural(lights, 'light')}';
   static String homeCreated(String name) => '$name created';
 
+  // Rooms (spec §10.6).
+  static const rooms = 'Rooms';
+  static const addRoom = 'Add room';
+  static const addARoom = 'Add a room';
+  static const roomName = 'Room name';
+  static const roomNamePlaceholder = 'Study';
+  static const glyph = 'Glyph';
+  static const saveRoom = 'Save room';
+  static const roomSaved = 'Room saved';
+  static const renameRoom = 'Rename room';
+  static const deleteRoom = 'Delete room';
+  static const moveLightsFirst = 'Move its lights first';
+  static const newRoom = 'New room';
+  static const createRoom = 'Create room';
+  static String lightsOn(int lights, int on) =>
+      '${plural(lights, 'light')} · $on on';
+  static String roomIsEmpty(String name) =>
+      '$name is empty — discover lights for it';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -141,6 +160,19 @@ class Strings {
     newHomePlaceholder,
     addHome,
     discoverOnNetwork,
+    rooms,
+    addRoom,
+    addARoom,
+    roomName,
+    roomNamePlaceholder,
+    glyph,
+    saveRoom,
+    roomSaved,
+    renameRoom,
+    deleteRoom,
+    moveLightsFirst,
+    newRoom,
+    createRoom,
     blinkLight,
   ];
 }
