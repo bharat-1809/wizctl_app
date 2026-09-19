@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/app.dart';
 import 'package:wizctl_app/app/bootstrap.dart';
+import 'package:wizctl_app/app/dependencies.dart';
 import 'package:wizctl_app/core/feedback/feedback_kind.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/motion/breathe.dart';
@@ -44,6 +46,8 @@ import 'package:wizctl_app/core/widgets/wiz_toast.dart';
 import 'package:wizctl_app/core/widgets/wiz_toast_layer.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 import 'package:wizctl_app/core/widgets/wiz_top_bar.dart';
+import 'package:wizctl_app/data/db/app_database.dart';
+import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/features/gallery/gallery_dials.dart';
 import 'package:wizctl_app/features/gallery/gallery_feedback.dart';
 import 'package:wizctl_app/features/gallery/gallery_fields.dart';
@@ -56,6 +60,8 @@ import 'package:wizctl_app/features/gallery/gallery_states.dart';
 import 'package:wizctl_app/features/gallery/gallery_switches.dart';
 import 'package:wizctl_app/features/gallery/gallery_wheel.dart';
 import 'package:wizctl_app/features/gallery/gallery_wordmark.dart';
+
+import '../../support/fakes.dart';
 
 /// A phone-wide surface tall enough that the gallery's `ListView.builder`
 /// builds every section: a lazy list only builds what is near the viewport,
@@ -107,9 +113,29 @@ Future<ToastController> _pumpGallery(
   var toasts = ToastController();
   addTearDown(toasts.dispose);
 
+  // An in-memory graph: the gallery never touches a database file, a real
+  // network gateway or the CLI exporter.
+  var deps = (await tester.runAsync(
+    () => AppDependencies.build(
+      database: AppDatabase.inMemory(),
+      gateway: FakeGateway(),
+      networkInfo: FakeNetworkInfo('192.168.1'),
+      exportCli: false,
+      clock: FakeClock(),
+      ids: SequenceIds(),
+    ),
+  ))!;
+  addTearDown(deps.dispose);
+
   await tester.pumpWidget(
     WizCtlApp(
-      services: AppServices(feedback: NoopFeedbackService(), toasts: toasts),
+      services: AppServices(
+        feedback: NoopFeedbackService(),
+        toasts: toasts,
+        deps: deps,
+        homes: const [],
+        settings: const AppSettings(),
+      ),
     ),
   );
   // The gallery loops for ever (badge dot, skeleton sheen, spinner, the lit
@@ -120,6 +146,8 @@ Future<ToastController> _pumpGallery(
 }
 
 void main() {
+  setUpAll(() => driftRuntimeOptions.dontWarnAboutMultipleDatabases = true);
+
   testWidgets('the gallery shows one of every kit widget', (tester) async {
     await _pumpGallery(tester);
 
