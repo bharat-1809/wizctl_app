@@ -92,6 +92,37 @@ class Strings {
   static String roomIsEmpty(String name) =>
       '$name is empty — discover lights for it';
 
+  // Light modes (spec §10.5, §5.12).
+  static const lightModes = 'Light modes';
+  static const applyScenesTo = 'Apply scenes to';
+  static const colours = 'Colours';
+  static const whites = 'Whites';
+  static const staticTab = 'Static';
+  static const dynamicTab = 'Dynamic';
+  static const dynamicNote = 'Dynamic scenes cycle. Speed runs from 10 to 200.';
+  static const staticNote =
+      'Static scenes hold one look. The bulb ignores speed.';
+  static const noColourBulb = 'No colour bulb here';
+  static const colourNeedsRgb = 'Colour needs an RGB bulb.';
+  static const noWhiteChannel = 'No white channel here';
+  static const bulbsOnlyDim = 'These bulbs only dim.';
+  static const noSceneChannel = 'No scene channel here';
+  static const plugOnlySwitches = 'A plug only switches power.';
+  static const toWholeHome = 'to the whole home';
+  static const lightModeWholeHome = 'Light mode · whole home';
+  static const speed = 'Speed';
+
+  /// The Scenes tab's subtitle counts the kit's own scene table rather than
+  /// repeating a fixed pair of numbers, so the line stays true when the table
+  /// changes.
+  static String modesSubtitle(int staticCount, int dynamicCount) =>
+      'Colour, $staticCount static and $dynamicCount dynamic scenes';
+  static String lightModeFor(String name) => 'Light mode · $name';
+  static String sceneApplied(String name) => '$name applied';
+  static String toTarget(String name) => 'to $name';
+  static String speedFor(String scene) => 'Speed — $scene';
+  static String kelvinLabel(int kelvin) => '${kelvin}K';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -182,6 +213,23 @@ class Strings {
     moveLightsFirst,
     newRoom,
     createRoom,
+    lightModes,
+    applyScenesTo,
+    colours,
+    whites,
+    staticTab,
+    dynamicTab,
+    dynamicNote,
+    staticNote,
+    noColourBulb,
+    colourNeedsRgb,
+    noWhiteChannel,
+    bulbsOnlyDim,
+    noSceneChannel,
+    plugOnlySwitches,
+    toWholeHome,
+    lightModeWholeHome,
+    speed,
     blinkLight,
     glyphSofa,
     glyphBed,

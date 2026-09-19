@@ -14,7 +14,12 @@ import 'package:wizctl_app/app/debug_flags_holder.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
+import 'package:wizctl_app/domain/repositories/home_repository.dart';
+import 'package:wizctl_app/domain/repositories/light_repository.dart';
+import 'package:wizctl_app/domain/repositories/room_repository.dart';
+import 'package:wizctl_app/domain/repositories/settings_repository.dart';
 import 'package:wizctl_app/domain/services/device_command_pipeline.dart';
+import 'package:wizctl_app/domain/services/live_state_store.dart';
 import 'package:wizctl_app/domain/services/network_monitor.dart';
 import 'package:wizctl_app/domain/services/sync_coordinator.dart';
 import 'package:wizctl_app/domain/services/target_resolver.dart';
@@ -153,11 +158,21 @@ class AppScope {
       BlocProvider<SettingsCubit>.value(value: settingsCubit),
       BlocProvider<InspectorCubit>.value(value: inspector),
     ],
-    // `RepositoryProvider` is a `Provider`, which asserts against
-    // `Listenable` values, and `ToastController` is a `ChangeNotifier`;
-    // `context.read<ToastController>()` resolves from either.
-    child: ChangeNotifierProvider<ToastController>.value(
-      value: toasts,
+    // The repositories and the store by type, the way the shell provides them
+    // (Task 19), so a view that reads one straight off the context — the modes
+    // target sheet does — finds it here too.
+    child: MultiRepositoryProvider(
+      providers: [
+        // `RepositoryProvider` is a `Provider`, which asserts against
+        // `Listenable` values, and `ToastController` is a `ChangeNotifier`;
+        // `context.read<ToastController>()` resolves from either.
+        ChangeNotifierProvider<ToastController>.value(value: toasts),
+        RepositoryProvider<HomeRepository>.value(value: seed.homes),
+        RepositoryProvider<RoomRepository>.value(value: seed.rooms),
+        RepositoryProvider<LightRepository>.value(value: seed.lights),
+        RepositoryProvider<SettingsRepository>.value(value: seed.settings),
+        RepositoryProvider<LiveStateStore>.value(value: seed.store),
+      ],
       child: child,
     ),
   );
