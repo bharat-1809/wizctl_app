@@ -95,6 +95,15 @@ class Strings {
   // Semantics.
   static const blinkLight = 'Blink this light';
 
+  /// What the screen reader calls each room glyph in the picker
+  /// (`GlyphPicker.labelFor`): the thing drawn, not the enum's name.
+  static const glyphSofa = 'Sofa';
+  static const glyphBed = 'Bed';
+  static const glyphKitchen = 'Kitchen';
+  static const glyphBath = 'Bath';
+  static const glyphLamp = 'Lamp';
+  static const glyphTrees = 'Trees';
+
   /// `<ip>:38899`, the address every device fact and toast body shows.
   static String udpAddress(String ip) => '$ip:$wizPort';
   static String didNotAnswer(String ip) =>
@@ -174,5 +183,11 @@ class Strings {
     newRoom,
     createRoom,
     blinkLight,
+    glyphSofa,
+    glyphBed,
+    glyphKitchen,
+    glyphBath,
+    glyphLamp,
+    glyphTrees,
   ];
 }

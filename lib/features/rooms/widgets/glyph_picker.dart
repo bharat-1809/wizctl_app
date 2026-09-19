@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/copy/strings.dart';
 import '../../../core/icons/wiz_icon_data.dart';
 import '../../../core/theme/wiz_theme.dart';
 import '../../../core/widgets/wiz_icon_key.dart';
@@ -15,12 +16,12 @@ class GlyphPicker extends StatelessWidget {
 
   /// What the screen reader calls each glyph.
   static String labelFor(RoomGlyph glyph) => switch (glyph) {
-    RoomGlyph.sofa => 'Sofa',
-    RoomGlyph.bed => 'Bed',
-    RoomGlyph.utensils => 'Kitchen',
-    RoomGlyph.bath => 'Bath',
-    RoomGlyph.lampDesk => 'Lamp',
-    RoomGlyph.trees => 'Trees',
+    RoomGlyph.sofa => Strings.glyphSofa,
+    RoomGlyph.bed => Strings.glyphBed,
+    RoomGlyph.utensils => Strings.glyphKitchen,
+    RoomGlyph.bath => Strings.glyphBath,
+    RoomGlyph.lampDesk => Strings.glyphLamp,
+    RoomGlyph.trees => Strings.glyphTrees,
   };
 
   @override
