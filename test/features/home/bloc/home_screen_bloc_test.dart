@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
+import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/domain/services/device_command_pipeline.dart';
 import 'package:wizctl_app/domain/services/network_monitor.dart';
 import 'package:wizctl_app/domain/services/sync_coordinator.dart';
@@ -34,6 +35,21 @@ void main() {
     sync: sync,
   );
 
+  /// A coordinator over the seeded lights. [pollInterval] is the knob the
+  /// tests need: short enough to see a tick, or long enough that nothing
+  /// can read a bulb except the code under test.
+  SyncCoordinator coordinator(Duration pollInterval) => SyncCoordinator(
+    refresh: RefreshStates(
+      gateway: gateway,
+      store: seed.store,
+      lights: seed.lights,
+      clock: FakeClock(),
+    ),
+    lights: seed.lights,
+    settings: seed.settings,
+    pollInterval: pollInterval,
+  );
+
   setUp(() async {
     seed = SeedHome();
     addTearDown(seed.dispose);
@@ -51,17 +67,7 @@ void main() {
       clock: FakeClock(),
       ids: SequenceIds(),
     );
-    sync = SyncCoordinator(
-      refresh: RefreshStates(
-        gateway: gateway,
-        store: seed.store,
-        lights: seed.lights,
-        clock: FakeClock(),
-      ),
-      lights: seed.lights,
-      settings: seed.settings,
-      pollInterval: const Duration(milliseconds: 20),
-    );
+    sync = coordinator(const Duration(milliseconds: 20));
   });
 
   tearDown(() {
@@ -108,6 +114,27 @@ void main() {
   );
 
   blocTest<HomeScreenBloc, HomeScreenState>(
+    'switching the active home re-projects onto the new one',
+    build: build,
+    act: (bloc) async {
+      bloc.add(const HomeScreenSubscribed());
+      await Future<void>.delayed(wait);
+      await seed.settings.save(const AppSettings(activeHomeId: 'h2'));
+    },
+    wait: wait,
+    verify: (bloc) {
+      var s = bloc.state;
+      expect(s.status, HomeScreenStatus.ready);
+      expect(s.home?.id, 'h2');
+      expect(s.home?.name, 'Studio');
+      expect(s.rooms.map((r) => r.room.name), ['Desk']);
+      expect(s.lights.map((l) => l.light.id), ['task']);
+      expect(s.lightCount, 1);
+      expect(s.onCount, 1);
+    },
+  );
+
+  blocTest<HomeScreenBloc, HomeScreenState>(
     'all power off reaches every light of the home',
     build: build,
     act: (bloc) async {
@@ -148,19 +175,26 @@ void main() {
 
   blocTest<HomeScreenBloc, HomeScreenState>(
     'a refresh request reads every light now',
-    build: build,
+    // A coordinator whose tick cannot fire inside this test: every read it
+    // records is one the event asked for, so the assertions below fail if
+    // `HomeRefreshRequested` reaches nothing.
+    build: () {
+      sync.dispose();
+      sync = coordinator(const Duration(minutes: 1));
+      return build();
+    },
     act: (bloc) async {
       sync.activateHome('h1');
       bloc.add(const HomeScreenSubscribed());
       await Future<void>.delayed(wait);
+      expect(gateway.reads, isEmpty, reason: 'nothing polls in this test');
       bloc.add(const HomeRefreshRequested());
     },
     wait: wait,
     verify: (bloc) {
-      expect(
-        gateway.reads.toSet(),
-        seed.all.where((l) => l.homeId == 'h1').map((l) => l.ip).toSet(),
-      );
+      var h1 = seed.all.where((l) => l.homeId == 'h1').map((l) => l.ip);
+      expect(gateway.reads, hasLength(h1.length));
+      expect(gateway.reads.toSet(), h1.toSet());
       expect(
         bloc.state.unreachableCount,
         0,
@@ -183,6 +217,23 @@ void main() {
       gateway.reads.clear();
       await Future<void>.delayed(const Duration(milliseconds: 70));
       expect(gateway.reads, isEmpty, reason: 'the scope went with the bloc');
+    },
+  );
+
+  test(
+    'a home deleted under the bloc takes its lights out of the poll',
+    () async {
+      sync.activateHome('h1');
+      var bloc = build()..add(const HomeScreenSubscribed());
+      await Future<void>.delayed(const Duration(milliseconds: 70));
+      expect(gateway.reads, isNotEmpty, reason: 'the home was being polled');
+      await seed.homes.delete('h1');
+      await Future<void>.delayed(wait);
+      expect(bloc.state.status, HomeScreenStatus.noHome);
+      gateway.reads.clear();
+      await Future<void>.delayed(const Duration(milliseconds: 70));
+      expect(gateway.reads, isEmpty, reason: 'nothing is on show to poll');
+      await bloc.close();
     },
   );
 }

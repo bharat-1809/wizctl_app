@@ -85,6 +85,9 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     ).map((tuple) {
       var (home, rooms, lights, states) = tuple;
       if (home == null) {
+        // The active id names a home that no longer exists. Its lights are
+        // no longer on show, so the scope must let go of them too.
+        _scope?.update(const {});
         return const HomeScreenState(
           status: HomeScreenStatus.noHome,
           home: null,
