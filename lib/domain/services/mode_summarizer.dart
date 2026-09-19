@@ -75,6 +75,18 @@ class ModeSummarizer {
   static List<LiveLight> sceneable(List<LiveLight> lights) =>
       lights.where((l) => CapabilityRules.scenes(l.light.bulbClass)).toList();
 
+  /// The lights a colour can reach — `ApplyColour`'s own rule. A plug or a
+  /// white-only bulb is never written to, so neither gets a say in whether the
+  /// swatch is selected.
+  static List<LiveLight> colourable(List<LiveLight> lights) =>
+      lights.where((l) => CapabilityRules.colour(l.light.bulbClass)).toList();
+
+  /// The lights a kelvin can reach — `ApplyWhite`'s own rule. A plug and a
+  /// dimmable white have no temperature to set, so neither gets a say in
+  /// whether a white is selected.
+  static List<LiveLight> whiteable(List<LiveLight> lights) =>
+      lights.where((l) => CapabilityRules.kelvin(l.light.bulbClass)).toList();
+
   static bool sceneSelected(List<LiveLight> lights, int sceneId) {
     var reachable = sceneable(lights);
     return reachable.isNotEmpty &&
@@ -85,18 +97,22 @@ class ModeSummarizer {
         );
   }
 
-  static bool colourSelected(List<LiveLight> lights, Rgb rgb) =>
-      lights.isNotEmpty &&
-      lights.every(
-        (l) => l.state.active == ActiveChannel.colour && l.state.rgb == rgb,
-      );
+  static bool colourSelected(List<LiveLight> lights, Rgb rgb) {
+    var reachable = colourable(lights);
+    return reachable.isNotEmpty &&
+        reachable.every(
+          (l) => l.state.active == ActiveChannel.colour && l.state.rgb == rgb,
+        );
+  }
 
-  static bool whiteSelected(List<LiveLight> lights, int kelvin) =>
-      lights.isNotEmpty &&
-      lights.every(
-        (l) =>
-            l.state.active == ActiveChannel.white && l.state.kelvin == kelvin,
-      );
+  static bool whiteSelected(List<LiveLight> lights, int kelvin) {
+    var reachable = whiteable(lights);
+    return reachable.isNotEmpty &&
+        reachable.every(
+          (l) =>
+              l.state.active == ActiveChannel.white && l.state.kelvin == kelvin,
+        );
+  }
 
   static bool allOnOneDynamicScene(List<LiveLight> lights) {
     // Filtered before reading `first`, or a plug that happens to sort first

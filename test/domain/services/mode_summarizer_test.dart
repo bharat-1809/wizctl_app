@@ -164,6 +164,55 @@ void main() {
     expect(ModeSummarizer.allOnOneDynamicScene([socket]), isFalse);
   });
 
+  test('a plug never holds a colour or a white selection back', () {
+    var socket = ll(
+      'p',
+      BulbClass.socket,
+      LiveState.initial.copyWith(isOn: true),
+    );
+    // The plug leads each list, as it would in a room where it sorts first.
+    expect(
+      ModeSummarizer.colourSelected([
+        socket,
+        ll('a', BulbClass.rgb, colour),
+      ], const Rgb(255, 120, 60)),
+      isTrue,
+      reason: 'ApplyColour never writes to a plug, so it can never agree',
+    );
+    expect(
+      ModeSummarizer.colourSelected([
+        socket,
+        ll('a', BulbClass.rgb, colour),
+        ll('b', BulbClass.tw, white),
+      ], const Rgb(255, 120, 60)),
+      isTrue,
+      reason: 'nor to a tunable white: only the colour bulbs get a say',
+    );
+    expect(
+      ModeSummarizer.whiteSelected([
+        socket,
+        ll('a', BulbClass.tw, white),
+      ], 2700),
+      isTrue,
+    );
+    expect(
+      ModeSummarizer.whiteSelected([
+        socket,
+        ll('a', BulbClass.dw, white),
+      ], 2700),
+      isFalse,
+      reason:
+          "each filter is its own write's rule: a dimmable white takes no "
+          'kelvin, so nothing is left to agree',
+    );
+    expect(
+      ModeSummarizer.colourSelected([socket], const Rgb(255, 120, 60)),
+      isFalse,
+      reason: 'plugs only: there is no colour channel to be selected',
+    );
+    expect(ModeSummarizer.whiteSelected([socket], 2700), isFalse);
+  });
+
   test('the kelvin ramp hits its stops and interpolates between them', () {
     expect(ModeSummarizer.kelvinRgb(2200), const Rgb(255, 178, 92));
     expect(ModeSummarizer.kelvinRgb(6500), const Rgb(220, 233, 255));
