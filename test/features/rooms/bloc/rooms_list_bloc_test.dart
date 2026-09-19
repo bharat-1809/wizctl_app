@@ -106,6 +106,29 @@ void main() {
   );
 
   blocTest<RoomsListBloc, RoomsListState>(
+    'losing the active home empties the list and blocks an add',
+    build: build,
+    act: (bloc) async {
+      bloc.add(const RoomsListSubscribed());
+      await Future<void>.delayed(wait);
+      await seed.settings.save(const AppSettings());
+      await Future<void>.delayed(wait);
+      bloc.add(const RoomAdded('Study', RoomGlyph.lampDesk));
+    },
+    wait: wait,
+    verify: (bloc) async {
+      expect(bloc.state.status, RoomsListStatus.noHome);
+      expect(bloc.state.homeId, isNull, reason: 'no home, no id to add to');
+      expect(bloc.state.rooms, isEmpty);
+      expect(
+        await seed.rooms.getByHome('h1'),
+        hasLength(3),
+        reason: 'the add had nowhere to land',
+      );
+    },
+  );
+
+  blocTest<RoomsListBloc, RoomsListState>(
     'the refusal is an error notice with the spec\'s line',
     build: build,
     act: (bloc) => bloc

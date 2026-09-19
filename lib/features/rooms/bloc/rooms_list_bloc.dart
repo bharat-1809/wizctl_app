@@ -56,14 +56,13 @@ class RoomsListBloc extends Bloc<RoomsListEvent, RoomsListState> {
       // an `asyncExpand` would pause on the first home and never read the
       // next one (`lib/core/util/latest.dart` says it in full).
       switchLatest(activeHomeIds(_settings), _forHome),
-      // The list arrives from the streams; the notice is the bloc's own and
-      // survives until the view has acted on it.
-      onData: (next) => state.copyWith(
-        status: next.status,
-        homeId: next.homeId,
-        rooms: next.rooms,
-        lightCount: next.lightCount,
-      ),
+      // The projection is the truth, taken whole: that is what drops the home
+      // id when the active home goes away, where a field-by-field `copyWith`
+      // keeps the old one — `copyWith` reads `homeId ?? this.homeId` — and
+      // would let an add land in a home that is no longer on show. Only the
+      // in-flight notice, which is the bloc's own and not the streams',
+      // survives, until the view has acted on it.
+      onData: (next) => next.copyWith(notice: state.notice),
     );
   }
 
