@@ -86,14 +86,14 @@ void main() {
     );
     await tester.drag(find.byType(WizDial).first, const Offset(0, -40));
     await tester.pump();
-    expect(brightness, isNotEmpty);
+    expect(brightness.length, greaterThanOrEqualTo(2));
     expect(brightness.last, greaterThan(58), reason: 'the drag raised it');
     expect(
-      brightness.where((v) => v == brightness.last).length,
-      greaterThanOrEqualTo(2),
+      brightness.last,
+      brightness[brightness.length - 2],
       reason:
-          'the release repeats the value the drag settled on, so the '
-          'last value always reaches the use case',
+          'the release repeats the value the drag settled on, so the last '
+          'value always reaches the use case',
     );
     expect(kelvin, isEmpty, reason: 'one dial does not write the other');
   });

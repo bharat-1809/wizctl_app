@@ -38,82 +38,95 @@ class RoomScreen extends StatelessWidget {
     var offNetwork = context.select<NetworkCubit, bool>(
       (c) => c.state.offNetwork,
     );
-    return BlocBuilder<RoomBloc, RoomState>(
-      builder: (context, state) {
-        var bloc = context.read<RoomBloc>();
-        var room = state.room;
-        if (state.status != RoomStatus.ready || room == null) {
-          return const ScreenScroll(children: []);
-        }
-        return ScreenScroll(
-          // Awaited, not fired and forgotten: the filament has to stay up for
-          // as long as the read takes, and an event added to a bloc is over
-          // on the next microtask.
-          onRefresh: () {
-            var done = Completer<void>();
-            bloc.add(RoomRefreshRequested(done: done));
-            return done.future;
-          },
-          children: [
-            WizTopBar(
-              title: room.name,
-              subtitle: plural(state.lights.length, 'light'),
-              leading: WizIconKey(
-                icon: WizIcons.chevronLeft,
-                semanticsLabel: Strings.back,
-                onPressed: () => popOr(context, AppRoutes.rooms),
-              ),
-              trailing: WizToggle(
-                value: state.anyOn,
-                onChanged: (on) => bloc.add(RoomPowerToggled(on)),
-                semanticsLabel: Strings.roomPower(room.name),
-              ),
-            ),
-            if (offNetwork) const OffNetworkBanner(),
-            if (state.isEmpty)
-              WizEmptyState(
-                icon: WizIcons.lightbulb,
-                title: Strings.noLightsInRoom,
-                body: Strings.discoverThenPlace,
-                action: WizButton(
-                  label: Strings.discoverLights,
-                  variant: WizButtonVariant.primary,
-                  onPressed: () => context.go(AppRoutes.discover),
+    return BlocListener<RoomBloc, RoomState>(
+      // A room deleted while its screen is open — or an id from a deep link
+      // that no longer names one — leaves nothing to draw, and the blank body
+      // below carries no bar and so no Back. The screen leaves instead of
+      // stranding the reader in it. `gone` is one-shot, but the guard keeps
+      // the listener from firing twice if that ever changes.
+      listenWhen: (prev, cur) =>
+          prev.status != RoomStatus.gone && cur.status == RoomStatus.gone,
+      listener: (context, state) => popOr(context, AppRoutes.rooms),
+      child: BlocBuilder<RoomBloc, RoomState>(
+        builder: (context, state) {
+          var bloc = context.read<RoomBloc>();
+          var room = state.room;
+          // Blank while the first read is in flight; `gone` is on its way out
+          // through the listener above and shows this for the one frame it
+          // takes.
+          if (state.status != RoomStatus.ready || room == null) {
+            return const ScreenScroll(children: []);
+          }
+          return ScreenScroll(
+            // Awaited, not fired and forgotten: the filament has to stay up for
+            // as long as the read takes, and an event added to a bloc is over
+            // on the next microtask.
+            onRefresh: () {
+              var done = Completer<void>();
+              bloc.add(RoomRefreshRequested(done: done));
+              return done.future;
+            },
+            children: [
+              WizTopBar(
+                title: room.name,
+                subtitle: plural(state.lights.length, 'light'),
+                leading: WizIconKey(
+                  icon: WizIcons.chevronLeft,
+                  semanticsLabel: Strings.back,
+                  onPressed: () => popOr(context, AppRoutes.rooms),
                 ),
-              )
-            else
-              const WholeRoomPanel(dialSize: dialSize),
-            for (var (i, live) in state.lights.indexed)
-              RiseIn(
-                index: i,
-                child: LightCard(
-                  name: live.light.name,
-                  meta: live.state.reachable
-                      ? ModeSummarizer.summarize([live]).name
-                      : live.light.ip,
-                  icon: WizIcons.byName(live.light.fixture.iconName)!,
-                  on: live.state.isOn,
-                  unreachable: !live.state.reachable,
-                  brightness: live.state.brightness.toDouble(),
-                  // Spec §10.3: a plug shows no rail, and
-                  // `WizBrightnessControl.none` draws neither rail nor meter.
-                  control: live.light.bulbClass == BulbClass.socket
-                      ? WizBrightnessControl.none
-                      : WizBrightnessControl.rail,
-                  onToggle: (on) =>
-                      bloc.add(RoomLightPowerToggled(live.light.id, on)),
-                  onBrightness: (v) => bloc.add(
-                    RoomLightBrightnessChanged(live.light.id, v.round()),
-                  ),
-                  onBrightnessEnd: (v) => bloc.add(
-                    RoomLightBrightnessChanged(live.light.id, v.round()),
-                  ),
-                  onTap: () => context.push(AppRoutes.light(live.light.id)),
+                trailing: WizToggle(
+                  value: state.anyOn,
+                  onChanged: (on) => bloc.add(RoomPowerToggled(on)),
+                  semanticsLabel: Strings.roomPower(room.name),
                 ),
               ),
-          ],
-        );
-      },
+              if (offNetwork) const OffNetworkBanner(),
+              if (state.isEmpty)
+                WizEmptyState(
+                  icon: WizIcons.lightbulb,
+                  title: Strings.noLightsInRoom,
+                  body: Strings.discoverThenPlace,
+                  action: WizButton(
+                    label: Strings.discoverLights,
+                    variant: WizButtonVariant.primary,
+                    onPressed: () => context.go(AppRoutes.discover),
+                  ),
+                )
+              else
+                const WholeRoomPanel(dialSize: dialSize),
+              for (var (i, live) in state.lights.indexed)
+                RiseIn(
+                  index: i,
+                  child: LightCard(
+                    name: live.light.name,
+                    meta: live.state.reachable
+                        ? ModeSummarizer.summarize([live]).name
+                        : live.light.ip,
+                    icon: WizIcons.byName(live.light.fixture.iconName)!,
+                    on: live.state.isOn,
+                    unreachable: !live.state.reachable,
+                    brightness: live.state.brightness.toDouble(),
+                    // Spec §10.3: a plug shows no rail, and
+                    // `WizBrightnessControl.none` draws neither rail nor meter.
+                    control: live.light.bulbClass == BulbClass.socket
+                        ? WizBrightnessControl.none
+                        : WizBrightnessControl.rail,
+                    onToggle: (on) =>
+                        bloc.add(RoomLightPowerToggled(live.light.id, on)),
+                    onBrightness: (v) => bloc.add(
+                      RoomLightBrightnessChanged(live.light.id, v.round()),
+                    ),
+                    onBrightnessEnd: (v) => bloc.add(
+                      RoomLightBrightnessChanged(live.light.id, v.round()),
+                    ),
+                    onTap: () => context.push(AppRoutes.light(live.light.id)),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

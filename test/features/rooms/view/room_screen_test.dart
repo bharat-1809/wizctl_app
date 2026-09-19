@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
@@ -212,6 +213,50 @@ void main() {
       await tester.tap(find.byType(ModeRow));
       await tester.pumpAndSettle();
       expect(find.text('Light mode · Living Room'), findsOneWidget);
+
+      // Dismissed rather than left up: closing the sheet is what runs the
+      // `whenComplete(bloc.close)` inside `showModesSheet`, so the bloc it
+      // built does not outlive this case.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Light mode · Living Room'), findsNothing);
+    });
+  });
+
+  testWidgets('Back leaves for the rooms list when nothing is beneath', (
+    tester,
+  ) async {
+    await withRoom(tester, 'living', (scope, bloc) async {
+      var router = await pumpRouted(
+        tester,
+        screen(scope, bloc),
+        targets: [AppRoutes.rooms],
+        size: _phone,
+      );
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), AppRoutes.rooms);
+    });
+  });
+
+  testWidgets('a room deleted under the screen leaves it', (tester) async {
+    await withRoom(tester, 'living', (scope, bloc) async {
+      var router = await pumpRouted(
+        tester,
+        screen(scope, bloc),
+        targets: [AppRoutes.rooms],
+        size: _phone,
+      );
+      await tester.pump();
+      expect(find.text('Living Room'), findsOneWidget);
+      await scope.seed.rooms.delete('living');
+      await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        AppRoutes.rooms,
+        reason: 'the blank body has no bar and so no Back of its own',
+      );
     });
   });
 
