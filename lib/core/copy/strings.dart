@@ -332,6 +332,32 @@ class Strings {
   /// Lower case: it is the command the CLI answers to, not a display name.
   static String windowTitle(String home) => 'wizctl · $home';
 
+  // The desktop rail and grid (spec §10.9). Four of its lines are words this
+  // table already holds and [all] may not hold a value twice, so the rail's
+  // "All lights", "Rooms" and "Scenes" read [allLights], [rooms] and
+  // [tabScenes], and the grid's sub-line is [lightsOn], which already formats
+  // "<n> lights · <k> on" for a room card.
+  static const lightsOnTile = 'Lights on';
+  static const notAnsweringTile = 'Not answering';
+
+  /// The caps label over the grid's cards.
+  static const lights = 'Lights';
+
+  /// The rail's second section: All lights, Scenes, Discovery, Settings.
+  static const railHouse = 'House';
+
+  /// A room id that names nothing — deleted under the window, or a stale deep
+  /// link. The rail is still there, so the grid offers the way on rather than
+  /// leaving.
+  static const noRoom = 'No room';
+  static const createRoomToGroup = 'Create a room to group lights';
+
+  /// The "Lights on" tile: on out of total, the way an instrument reads.
+  static String onOf(int on, int total) => '$on / $total';
+
+  /// The rail's footer: what is lit, and the port every light is reached on.
+  static String railFooter(int on) => '$on on · udp $wizPort';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -554,6 +580,12 @@ class Strings {
     oneLightDidNotAnswer,
     tabHome,
     tabScenes,
+    lightsOnTile,
+    notAnsweringTile,
+    lights,
+    railHouse,
+    noRoom,
+    createRoomToGroup,
     windowSetup,
     blinkLight,
     glyphSofa,

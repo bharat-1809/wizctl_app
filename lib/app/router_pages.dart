@@ -10,7 +10,7 @@ import '../features/discovery/view/discovery_screen.dart';
 import '../features/discovery/widgets/discovery_notice_listener.dart';
 import '../features/home/bloc/home_screen_bloc.dart';
 import '../features/home/bloc/home_screen_event.dart';
-import '../features/home/view/home_screen.dart';
+import '../features/home/view/home_page.dart';
 import '../features/lights/bloc/light_bloc.dart';
 import '../features/lights/bloc/light_event.dart';
 import '../features/lights/view/light_screen.dart';
@@ -26,7 +26,7 @@ import '../features/rooms/bloc/room_bloc.dart';
 import '../features/rooms/bloc/room_event.dart';
 import '../features/rooms/bloc/rooms_list_bloc.dart';
 import '../features/rooms/bloc/rooms_list_event.dart';
-import '../features/rooms/view/room_screen.dart';
+import '../features/rooms/view/room_page.dart';
 import '../features/rooms/view/rooms_screen.dart';
 import '../features/rooms/widgets/rooms_notice_listener.dart';
 import '../features/settings/view/settings_screen.dart';
@@ -113,7 +113,7 @@ class AppPages {
         setPower: deps.setPower,
         sync: deps.sync,
       )..add(const HomeScreenSubscribed()),
-      child: const HomeScreen(),
+      child: const HomePage(),
     ),
   );
 
@@ -146,7 +146,7 @@ class AppPages {
         setKelvin: deps.setKelvin,
         sync: deps.sync,
       )..add(const RoomSubscribed()),
-      child: const RoomScreen(),
+      child: const RoomPage(),
     ),
   );
 
