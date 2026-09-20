@@ -10,6 +10,7 @@ import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_tab_bar.dart';
+import 'package:wizctl_app/core/widgets/wiz_toast_layer.dart';
 import 'package:wizctl_app/data/db/app_database.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/features/discovery/view/discovery_screen.dart';
@@ -101,7 +102,7 @@ void main() {
   /// `runAsync`, off the fake clock.
   Future<void> withApp(
     WidgetTester tester,
-    Future<void> Function(AppServices services) body, {
+    Future<void> Function() body, {
     bool withHome = true,
   }) async {
     var services = await _services(tester, FakeGateway(), withHome: withHome);
@@ -109,7 +110,7 @@ void main() {
       await setSurface(tester, _phone);
       await tester.pumpWidget(WizCtlApp(services: services));
       await settle(tester);
-      await body(services);
+      await body();
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(tester);
@@ -119,7 +120,7 @@ void main() {
   }
 
   testWidgets('a fresh install opens on setup with no tab bar', (tester) async {
-    await withApp(tester, withHome: false, (services) async {
+    await withApp(tester, withHome: false, () async {
       expect(find.byType(OnboardingScreen), findsOneWidget);
       expect(find.byType(WizTabBar<ShellBranch>), findsNothing);
       expect(find.text(Strings.nameThisHome), findsOneWidget);
@@ -129,7 +130,7 @@ void main() {
   testWidgets('a fresh install titles the window for the setup it is on', (
     tester,
   ) async {
-    await withApp(tester, withHome: false, (services) async {
+    await withApp(tester, withHome: false, () async {
       expect(
         tester.widget<Title>(find.byType(Title)).title,
         Strings.windowSetup,
@@ -140,7 +141,7 @@ void main() {
   testWidgets('with a home: home, the tabs, a room and back, then discovery', (
     tester,
   ) async {
-    await withApp(tester, (services) async {
+    await withApp(tester, () async {
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.text('Kaverappa House'), findsOneWidget);
       expect(find.byType(WizTabBar<ShellBranch>), findsOneWidget);
@@ -177,8 +178,26 @@ void main() {
     });
   });
 
+  testWidgets('the toast stack sits above the root navigator', (tester) async {
+    await withApp(tester, () async {
+      // Structural rather than a paint check: the layer is installed by
+      // `MaterialApp.builder`, which wraps the router's own navigator, so it
+      // paints over every route — and the kit's sheets are root-navigator
+      // routes (spec §11.2). A layer *inside* a navigator would be covered by
+      // the next route pushed onto it.
+      expect(find.byType(WizToastLayer), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(WizToastLayer),
+          matching: find.byType(Navigator),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
   testWidgets('the window title follows the home', (tester) async {
-    await withApp(tester, (services) async {
+    await withApp(tester, () async {
       expect(
         tester.widget<Title>(find.byType(Title)).title,
         Strings.windowTitle('Kaverappa House'),
