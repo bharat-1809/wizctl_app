@@ -12,6 +12,7 @@ import 'package:wizctl_app/core/widgets/wiz_text_field.dart';
 import 'package:wizctl_app/features/discovery/bloc/discovery_bloc.dart';
 import 'package:wizctl_app/features/discovery/widgets/skeleton_rows.dart';
 import 'package:wizctl_app/features/onboarding/bloc/onboarding_bloc.dart';
+import 'package:wizctl_app/features/onboarding/bloc/onboarding_state.dart';
 import 'package:wizctl_app/features/onboarding/view/onboarding_screen.dart';
 import 'package:wizctl_app/features/onboarding/widgets/assign_card.dart';
 import 'package:wizctl_app/features/onboarding/widgets/keep_row.dart';
@@ -57,6 +58,12 @@ const Duration _settled = Duration(milliseconds: 500);
 /// device it finds: long enough that a frame lands mid-run, with the radar
 /// and the skeletons on show.
 const Duration _slowRead = Duration(seconds: 1);
+
+/// How long the fake repository holds the first light's write open: long
+/// enough that several bounded pumps land while the finish is still in
+/// flight. Every test that sets it pumps it out again before returning, so no
+/// timer outlives the test.
+const Duration _slowInsert = Duration(seconds: 5);
 
 /// The alias typed into the first card. Deliberately not the bulb
 /// placeholder, so the field's own text can be told from its hint.
@@ -314,6 +321,15 @@ void main() {
       await nameHomeAndScan(tester);
       await tester.tap(find.text('WiZ Smart Plug'));
       await tester.pump();
+      await tester.tap(find.text('WiZ RGB'));
+      await tester.pump();
+      expect(
+        keyEnabled(tester, 'SAVE 0 LIGHTS'),
+        isFalse,
+        reason: 'there is nothing to name',
+      );
+      await tester.tap(find.text('WiZ RGB'));
+      await tester.pump();
       await tester.tap(find.text('SAVE 1 LIGHT'));
       await settleStep(tester);
       expect(find.byType(AssignCard), findsOneWidget);
@@ -413,6 +429,42 @@ void main() {
         isTrue,
         reason: 'a refused finish can be tried again',
       );
+    });
+  });
+
+  testWidgets('a finish in flight takes Back and Finish away', (tester) async {
+    await withOnboarding(tester, (scope, onboarding, discovery) async {
+      var router = await pumpRouted(
+        tester,
+        screen(scope, onboarding, discovery),
+        targets: [AppRoutes.home],
+        size: _phone,
+      );
+      await nameHomeAndScan(tester);
+      await tester.tap(find.text('SAVE 2 LIGHTS'));
+      await settleStep(tester);
+      await tester.enterText(find.byType(WizTextField).at(0), _alias);
+      await tester.enterText(find.byType(WizTextField).at(1), 'Plug by the TV');
+      await tester.pump();
+      // The first light's write is held open, so the finish is in flight for
+      // the length of the pumps below.
+      scope.seed.lights.insertLatency = _slowInsert;
+      await tester.tap(find.text('FINISH SETUP'));
+      await tester.pump(_settled);
+      expect(keyEnabled(tester, 'FINISH SETUP'), isFalse);
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pump();
+      expect(
+        onboarding.state.step,
+        OnboardingStep.nameLights,
+        reason: 'the flow is over; Back has nothing to go back to (P75)',
+      );
+      expect(find.text('Name your lights'), findsOneWidget);
+      // Let the held write land, so nothing is pending at teardown.
+      scope.seed.lights.insertLatency = Duration.zero;
+      await tester.pump(_slowInsert);
+      await tester.pump(_settled);
+      expect(currentLocation(router), AppRoutes.home);
     });
   });
 
