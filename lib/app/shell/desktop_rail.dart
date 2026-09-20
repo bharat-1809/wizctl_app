@@ -82,18 +82,21 @@ class DesktopRail extends StatelessWidget {
       brand: _Brand(homes: homes),
       collapsedBrand: _Brand(homes: homes, collapsed: true),
       sections: [
-        WizRailSection(
-          title: Strings.rooms,
-          items: [
-            for (var tile in home.rooms)
-              WizRailItem(
-                value: RoomRailItem(tile.room.id),
-                label: tile.room.name,
-                icon: WizIcons.byName(tile.room.glyph.iconName)!,
-                meta: '${tile.lightCount}',
-              ),
-          ],
-        ),
+        // Dropped whole when the home has none, rather than leaving a caption
+        // over nothing: a first run, or the last room deleted.
+        if (home.rooms.isNotEmpty)
+          WizRailSection(
+            title: Strings.rooms,
+            items: [
+              for (var tile in home.rooms)
+                WizRailItem(
+                  value: RoomRailItem(tile.room.id),
+                  label: tile.room.name,
+                  icon: WizIcons.byName(tile.room.glyph.iconName)!,
+                  meta: '${tile.lightCount}',
+                ),
+            ],
+          ),
         WizRailSection(
           title: Strings.railHouse,
           items: [

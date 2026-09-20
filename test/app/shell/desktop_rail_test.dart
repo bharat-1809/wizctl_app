@@ -74,9 +74,19 @@ void main() {
     WidgetTester tester,
     Future<void> Function(AppScope scope, Widget rail) body, {
     bool collapsed = false,
+    bool rooms = true,
   }) async {
     await setSurface(tester, _desktop);
     var scope = AppScope(SeedHome());
+    if (!rooms) {
+      for (var room in [
+        scope.seed.living,
+        scope.seed.bedroom,
+        scope.seed.kitchen,
+      ]) {
+        await scope.seed.rooms.delete(room.id);
+      }
+    }
     await scope.start();
     var bloc = HomeScreenBloc(
       homes: scope.seed.homes,
@@ -184,6 +194,28 @@ void main() {
       });
     },
   );
+
+  testWidgets('a home with no rooms shows no ROOMS caption, only HOUSE', (
+    tester,
+  ) async {
+    await withRail(tester, rooms: false, (scope, rail) async {
+      await pumpRouted(tester, rail, size: _desktop);
+      await settle(tester);
+
+      expect(
+        find.text(Strings.rooms.toUpperCase()),
+        findsNothing,
+        reason: 'a caption over nothing is a heading with no section',
+      );
+      expect(find.text(Strings.railHouse.toUpperCase()), findsOneWidget);
+      expect(find.text(Strings.allLights), findsOneWidget);
+      expect(
+        find.text('6'),
+        findsOneWidget,
+        reason: 'the lights are still there; only the rooms are gone',
+      );
+    });
+  });
 
   testWidgets('the home pill opens the homes sheet', (tester) async {
     await withRail(tester, (scope, rail) async {

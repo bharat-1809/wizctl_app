@@ -7,10 +7,12 @@ import 'package:wizctl_app/app/app.dart';
 import 'package:wizctl_app/app/bootstrap.dart';
 import 'package:wizctl_app/app/dependencies.dart';
 import 'package:wizctl_app/app/shell/desktop_rail.dart';
+import 'package:wizctl_app/app/shell/rail_item.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
+import 'package:wizctl_app/core/widgets/wiz_rail.dart';
 import 'package:wizctl_app/core/widgets/wiz_tab_bar.dart';
 import 'package:wizctl_app/core/widgets/wiz_toast_layer.dart';
 import 'package:wizctl_app/data/db/app_database.dart';
@@ -228,9 +230,17 @@ void main() {
             "grid's own title",
       );
       // The room's own bloc, read through the grid that is drawing it: the
-      // claim below is that a resize swaps the widget and keeps this object.
+      // room id to check the rail against, and the object the resize below
+      // has to keep.
       var before = BlocProvider.of<RoomBloc>(
         tester.element(find.byType(GridScreen)),
+      );
+      expect(
+        tester.widget<WizRail<RailItem>>(find.byType(WizRail<RailItem>)).value,
+        RoomRailItem(before.roomId),
+        reason:
+            'the rail lights the row it went to — the same room the '
+            'content column is drawing — not only the one it left',
       );
 
       await setSurface(tester, _phone);
