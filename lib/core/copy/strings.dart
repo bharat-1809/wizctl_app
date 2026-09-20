@@ -144,11 +144,61 @@ class Strings {
   /// is never spoken. A key with no target name yet falls back to [applyTo].
   static String applyToTarget(String name) => 'Apply to $name';
 
+  // Light detail (spec §10.4, §15).
+  static const live = 'Live';
+  static const noReply = 'No reply';
+  static const noReplyFromLight = 'No reply from this light';
+  static const mayBeOffAtWall =
+      'It may be switched off at the wall, or the router changed its address.';
+  static const colourTempTile = 'Colour temp';
+  static const classTile = 'Class';
+  static const power = 'Power';
+  static const intensity = 'Intensity';
+  static const on = 'On';
+  static const off = 'Off';
+  static const plugOnlyNote =
+      'A plug switches power only. It has no brightness, colour or scene channel.';
+  static const dimsNoWhite = 'This bulb dims but has no white channel to tune.';
+  static const device = 'Device';
+  static const address = 'Address';
+  static const mac = 'MAC';
+  static const signal = 'Signal';
+  static const noReplyLower = 'no reply';
+  static const showItAs = 'Show it as';
+  static const showItAsNote =
+      'This only changes how the light is drawn here. It does not change what the bulb supports.';
+  static const rename = 'Rename';
+  static const renameLight = 'Rename light';
+  static const forget = 'Forget';
+  static const alias = 'Alias';
+  static const aliasPlaceholder = 'Bedside bulb';
+  static const saveAlias = 'Save alias';
+  static const forgetBody =
+      'Its alias and room are removed. The bulb keeps working.';
+  static const removedFromConfig = "Removed from this home's config file";
+  static String staticSceneNote(String name) =>
+      '$name is a static scene — the bulb ignores speed.';
+  static String dbm(int rssi) => '$rssi dBm';
+  static String forgetTitle(String name) => 'Forget $name?';
+  static String forgotten(String name) => '$name forgotten';
+  static String roomAndClass(String room, String cls) => '$room · $cls';
+
+  /// What "Show it as" calls each fixture (`fixtureLabelOf`): copy, not the
+  /// domain's own `Fixture.label`. There is no `fixtureLamp` here — the desk
+  /// fixture's label is the word [glyphLamp] already holds, and [all] may not
+  /// carry a value twice.
+  static const fixtureBulb = 'Bulb';
+  static const fixtureCeiling = 'Ceiling light';
+  static const fixtureStrip = 'Light strip';
+  static const fixturePlug = 'Plug';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
   /// What the screen reader calls each room glyph in the picker
   /// (`GlyphPicker.labelFor`): the thing drawn, not the enum's name.
+  /// [glyphLamp] names the Lamp fixture in "Show it as" too — one word for one
+  /// drawn thing, and [all] may not carry a value twice.
   static const glyphSofa = 'Sofa';
   static const glyphBed = 'Bed';
   static const glyphKitchen = 'Kitchen';
@@ -274,6 +324,37 @@ class Strings {
     toWholeHome,
     lightModeWholeHome,
     speed,
+    live,
+    noReply,
+    noReplyFromLight,
+    mayBeOffAtWall,
+    colourTempTile,
+    classTile,
+    power,
+    intensity,
+    on,
+    off,
+    plugOnlyNote,
+    dimsNoWhite,
+    device,
+    address,
+    mac,
+    signal,
+    noReplyLower,
+    showItAs,
+    showItAsNote,
+    rename,
+    renameLight,
+    forget,
+    alias,
+    aliasPlaceholder,
+    saveAlias,
+    forgetBody,
+    removedFromConfig,
+    fixtureBulb,
+    fixtureCeiling,
+    fixtureStrip,
+    fixturePlug,
     blinkLight,
     glyphSofa,
     glyphBed,
