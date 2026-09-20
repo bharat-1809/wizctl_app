@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/blocs/homes_event.dart';
 import 'package:wizctl_app/app/routes.dart';
@@ -9,6 +10,9 @@ import 'package:wizctl_app/core/widgets/wiz_sheet_route.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
 import 'package:wizctl_app/features/desktop/view/inspector_body.dart';
 import 'package:wizctl_app/features/desktop/view/inspector_panel.dart';
+import 'package:wizctl_app/features/desktop/widgets/inspector_facts.dart';
+import 'package:wizctl_app/features/lights/bloc/light_bloc.dart';
+import 'package:wizctl_app/features/lights/bloc/light_event.dart';
 
 import '../../support/app_scope.dart';
 import '../../support/router_harness.dart';
@@ -130,6 +134,42 @@ void main() {
         ),
         findsOneWidget,
         reason: 'widening it back shows the light that was held all along',
+      );
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester);
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('the medium dialog closes when its light is forgotten, and still '
+      'toasts', (tester) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      await pumpAppRouter(tester, scope, size: _narrowestDesktop);
+      await settle(tester);
+      scope.inspector.select('strip');
+      await settle(tester);
+      expect(
+        find.byType(WizSheetRoute),
+        findsOneWidget,
+        reason: 'the medium class shows the inspector as a dialog',
+      );
+
+      // The body's own bloc rather than a tap on FORGET: the sheet caps at 86 %
+      // of the window, so that key is below the fold here, and what is under
+      // test is the contract — the light goes, and the dialog goes with it
+      // rather than staying up over controls that no longer reach anything.
+      BlocProvider.of<LightBloc>(tester.element(find.byType(InspectorFacts)))
+          .add(const LightForgotten());
+      await settle(tester);
+      expect(find.byType(WizSheetRoute), findsNothing);
+      expect(scope.inspector.state, isNull);
+      expect(
+        scope.toasts.toasts.single.title,
+        'Shelf strip forgotten',
+        reason: 'navigate: false skips the leave, never the toast',
       );
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
