@@ -264,7 +264,7 @@ void main() {
     });
   });
 
-  testWidgets('an id that is already gone at mount leaves exactly once', (
+  testWidgets('an id that is already gone at mount leaves for the rooms list', (
     tester,
   ) async {
     await withRoom(tester, 'nope', (scope, bloc) async {
@@ -284,16 +284,13 @@ void main() {
             'is mounted, and a listener never fires for the state a bloc is '
             'already in',
       );
-      // The post-frame leave lands inside `pumpRouted`'s own first frame,
-      // before any listener can be attached, so what is counted from here is
-      // the *second* leave the one-shot must not make. The provider, not
-      // `routerDelegate`: the delegate coalesces two identical `go`s in one
-      // frame into one rebuild (the light screen's forget test says the same).
-      var navigations = 0;
-      router.routeInformationProvider.addListener(() => navigations++);
-      await tester.pump(_settled);
-      await tester.pump(_settled);
-      expect(navigations, 0, reason: 'it left once');
+      expect(
+        find.byType(RoomScreen),
+        findsNothing,
+        reason:
+            'the screen is off the tree, so it cannot leave a second time '
+            "— `LeaveWhenGone`'s one-shot is belt and braces here",
+      );
     });
   });
 
