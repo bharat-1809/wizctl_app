@@ -17,22 +17,25 @@ class BlinkCubit extends Cubit<BlinkState> {
   Future<void> blink(String ip, {BulbClass? bulbClass}) async {
     if (state.isBlinking(ip)) return;
     emit(BlinkState(blinking: {...state.blinking, ip}, failure: state.failure));
+    var failure = state.failure;
     try {
       await _blink(ip, bulbClass: bulbClass);
-      emit(
-        BlinkState(
-          blinking: {...state.blinking}..remove(ip),
-          failure: state.failure,
-        ),
-      );
     } on DeviceException catch (e) {
-      emit(
-        BlinkState(
-          blinking: {...state.blinking}..remove(ip),
-          failure: BlinkFailure(ip, e.failure),
-        ),
-      );
+      failure = BlinkFailure(ip, e.failure);
+    } catch (_) {
+      // Anything the domain never modelled — a closed database, a platform
+      // channel that went away — has to let the ip go too, or the flash key
+      // stays amber for the life of the app and the row can never be tried
+      // again. Caught rather than rethrown, and deliberately not turned into a
+      // `BlinkFailure`: nothing in `lib` renders one, so a stuck key is the
+      // only consequence the user would ever have seen.
     }
+    // One emission for all three outcomes, and it reads `state.blinking` as it
+    // is now rather than as it was: another address may have started blinking
+    // while this one was in flight.
+    emit(
+      BlinkState(blinking: {...state.blinking}..remove(ip), failure: failure),
+    );
   }
 
   void clearFailure() => emit(BlinkState(blinking: state.blinking));

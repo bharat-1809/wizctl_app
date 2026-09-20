@@ -8,6 +8,14 @@ import 'package:wizctl_app/domain/usecases/usecases.dart';
 
 import '../../support/fakes.dart';
 
+/// A gateway whose read throws something the domain never modelled, the way a
+/// closed database or a platform channel that has gone away would.
+class _BrokenGateway extends FakeGateway {
+  @override
+  Future<LightState> readState(String ip) async =>
+      throw StateError('the socket went away');
+}
+
 void main() {
   late FakeGateway gateway;
   late FakeClock clock;
@@ -34,6 +42,18 @@ void main() {
       expect(gateway.sends, hasLength(2), reason: 'the write and the restore');
       expect(clock.delays, [const Duration(seconds: 2)]);
     },
+  );
+
+  blocTest<BlinkCubit, BlinkState>(
+    'a throw the domain never modelled still lets the ip go',
+    build: build,
+    setUp: () => gateway = _BrokenGateway(),
+    act: (cubit) => cubit.blink('192.168.1.115'),
+    verify: (cubit) => expect(
+      cubit.state.blinking,
+      isEmpty,
+      reason: 'otherwise the flash key stays amber for the life of the app',
+    ),
   );
 
   blocTest<BlinkCubit, BlinkState>(
