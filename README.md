@@ -68,9 +68,15 @@ domain's interfaces, and `features` draw the screens.
 - **`lib/features`** — one folder per screen area, each with `bloc/`, `view/`
   and `widgets/`. A bloc stays pure: no `flutter/widgets.dart`,
   `material.dart` or `cupertino.dart`, no `flutter_bloc`, no `go_router`, no
-  `lib/data` and no widget kit — `test/features/layering_test.dart` scans the
-  source and fails on any of those imports — and, by convention, never another
-  bloc.
+  `lib/data` and no widget kit, and, by convention, never another bloc.
+- **Layering is a source scan.** `test/features/layering_test.dart` reads every
+  import under `lib` — relative ones resolved to their real path — and fails on
+  any of three: a bloc importing widgets, `flutter_bloc`, `go_router`,
+  `lib/data` or the kit; anything in `lib/core` importing `lib/features` or
+  `lib/app`; and anything in `lib/features` importing `lib/app/router*` or
+  `lib/app/shell/`. A screen navigates through `AppRoutes` and
+  `lib/app/navigation.dart`; the shells compose the features, never the other
+  way round.
 - **One-shot effects** are a `notice` field on a bloc's state, cleared by a
   `…NoticeCleared` event once the view has acted on it; blocs never call the
   toast controller or the router themselves.
