@@ -260,8 +260,8 @@ class Strings {
   static const plugPlaceholder = 'Plug by the TV';
   static const bulbPlaceholder = 'Ceiling dome light';
 
-  /// The accessible name of a found row on the first run: the row itself is
-  /// the switch that keeps or drops the light.
+  /// What the check cap on a found row is called (`KeepRow`): the first run's
+  /// rows are switches, and this is what tapping one does.
   static const keepLight = 'Keep this light';
 
   static String saveNLights(int n) => 'Save ${plural(n, 'light')}';

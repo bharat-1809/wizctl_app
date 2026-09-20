@@ -1,0 +1,63 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../core/layout/wiz_layout.dart';
+import '../../../core/theme/wiz_theme.dart';
+import '../bloc/onboarding_bloc.dart';
+import '../bloc/onboarding_state.dart';
+import 'discovering_step.dart';
+import 'name_home_step.dart';
+import 'name_lights_step.dart';
+
+/// The first run (spec §10.1): stacked on a phone, a centred 560 column on
+/// anything wider. It scrolls as one, inside the safe areas and the gutter;
+/// no tab bar exists yet, so there is no bottom inset beyond the safe area.
+class OnboardingScreen extends StatelessWidget {
+  const OnboardingScreen({super.key});
+
+  /// `design/reference/WizCtl_Desktop.dc.html:43`: `width: 560px`.
+  static const double desktopColumn = 560;
+
+  /// The column itself, so a test can measure it.
+  static const Key columnKey = Key('onboarding-column');
+
+  @override
+  Widget build(BuildContext context) {
+    var wiz = context.wiz;
+    var gutter = context.layout.gutter;
+    var step = context.select<OnboardingBloc, OnboardingStep>(
+      (b) => b.state.step,
+    );
+    var body = switch (step) {
+      OnboardingStep.nameHome => const NameHomeStep(),
+      OnboardingStep.discovering => const DiscoveringStep(),
+      OnboardingStep.nameLights => const NameLightsStep(),
+    };
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          key: columnKey,
+          constraints: const BoxConstraints(maxWidth: desktopColumn),
+          // A single scroll view rather than the lazy list every other screen
+          // uses: a step is one block of copy and controls, and the keyboard
+          // has to be able to push all of it.
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              gutter,
+              wiz.space.s4,
+              gutter,
+              wiz.space.s8,
+            ),
+            child: AnimatedSwitcher(
+              duration: wiz.motion.screenEnter,
+              switchInCurve: wiz.motion.tactile,
+              // Identity by step, so the switcher cross-fades between them
+              // instead of rebuilding one subtree in place.
+              child: KeyedSubtree(key: ValueKey(step), child: body),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

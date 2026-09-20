@@ -166,6 +166,19 @@ class AppScope {
   );
   LearnHomeSubnet get learnHomeSubnet => LearnHomeSubnet(homes: seed.homes);
 
+  /// The first run's one write (Task 16), for an `OnboardingBloc`. It shares
+  /// [ids] and [clock] with everything else here, so a test can predict the
+  /// ids the home, its rooms and its lights are given.
+  FinishOnboarding get finishOnboarding => FinishOnboarding(
+    homes: seed.homes,
+    rooms: seed.rooms,
+    lights: seed.lights,
+    settings: seed.settings,
+    store: seed.store,
+    ids: ids,
+    clock: clock,
+  );
+
   /// The management use cases a light's own screen owns (Task 12). Unlike
   /// the writes above these never reach a bulb, so they take the repository
   /// and the store rather than the pipeline.
