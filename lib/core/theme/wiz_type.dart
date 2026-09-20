@@ -62,6 +62,11 @@ class WizType {
   // WIZCTL wordmark (Sidebar brand): display face, weight 900, 0.02 em.
   static const double wordmarkTracking = 0.02;
 
+  /// The first run's own wordmark tracks far wider than the rail's, because it
+  /// is drawn small: `design/reference/WizCtl_Mobile.dc.html:50` — 15 px,
+  /// weight 800, `.22em`.
+  static const double wordmarkTrackingSmall = 0.22;
+
   /// Neumatic Compressed never tracks tighter than [neumaticTrackingPad]
   /// logical pixels plus [neumaticTrackingEm] of its size.
   ///

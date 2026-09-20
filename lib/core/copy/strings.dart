@@ -241,6 +241,34 @@ class Strings {
   static String broadcastOn(String subnet) => 'Broadcast on $subnet.0/24';
   static String ipAndClass(String ip, String cls) => '$ip · $cls';
 
+  // First run (spec §10.1). The scanning step's title is [discovering], the
+  // word the discovery screen's filament already carries — [all] may not hold
+  // a value twice, so there is no second "Discovering" here.
+  static const wordmark = 'WIZCTL';
+  static const nameThisHome = 'Name this home';
+  static const homeStoredHere =
+      "Rooms and lights are stored in this home's config file on this machine. You can keep several homes here.";
+  static const homeName = 'Home name';
+  static const homeNamePlaceholder = 'Kaverappa House';
+  static const createHome = 'Create home';
+  static const homeRequired =
+      'A home is required. You can add more homes later and switch between them.';
+  static const sweepingSubnet = 'Sweeping subnet';
+  static const nameYourLights = 'Name your lights';
+  static const nameReplacesAddress = 'A name replaces the address';
+  static const finishSetup = 'Finish setup';
+  static const plugPlaceholder = 'Plug by the TV';
+  static const bulbPlaceholder = 'Ceiling dome light';
+
+  /// The accessible name of a found row on the first run: the row itself is
+  /// the switch that keeps or drops the light.
+  static const keepLight = 'Keep this light';
+
+  static String saveNLights(int n) => 'Save ${plural(n, 'light')}';
+  static String homeSetUp(String name) => '$name is set up';
+  static String lightsInRooms(int lights, int rooms) =>
+      '${plural(lights, 'light')} in ${plural(rooms, 'room')}';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -422,6 +450,20 @@ class Strings {
     listeningForLights,
     saveFailed,
     unknownClass,
+    wordmark,
+    nameThisHome,
+    homeStoredHere,
+    homeName,
+    homeNamePlaceholder,
+    createHome,
+    homeRequired,
+    sweepingSubnet,
+    nameYourLights,
+    nameReplacesAddress,
+    finishSetup,
+    plugPlaceholder,
+    bulbPlaceholder,
+    keepLight,
     blinkLight,
     glyphSofa,
     glyphBed,
