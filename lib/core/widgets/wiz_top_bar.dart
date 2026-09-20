@@ -35,42 +35,56 @@ class WizTopBar extends StatelessWidget {
     var gap = wiz.space.s5 + wiz.space.s1;
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: minHeight),
-      child: Row(
-        children: [
-          if (leading != null) ...[leading!, SizedBox(width: gap)],
-          Expanded(
-            child: Column(
-              // Without this the titles take every pixel of a bounded
-              // height offered from above — a `Center`, a sized box — and
-              // the bar measures that instead of its own [minHeight].
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: wiz.typography.title.copyWith(color: c.textPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (subtitle != null)
-                  Padding(
-                    // TopBar.jsx `marginTop: 2` under the title.
-                    padding: EdgeInsets.only(top: wiz.space.s1),
-                    child: Text(
-                      subtitle!,
-                      style: wiz.typography.bodySm.copyWith(
-                        color: c.textTertiary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+      // A container whose children are explicit, the way `WizStatusBanner`
+      // isolates its own row. A labelled `WizPressable` annotates with
+      // `container: false`, so wherever the bar sits inside a semantics
+      // boundary — every screen puts it in `ScreenScroll`, and a lazy list
+      // makes each item one through `IndexedSemantics` — a leading Back key
+      // would otherwise absorb the title, the sub-line and the trailing
+      // control and read as one button called "Back / Shelf strip / Living
+      // Room" (P67). A bar whose trailing slot carries a label of its own
+      // escaped that already, because two `isButton` configs cannot share a
+      // node; this gives every bar the behaviour those had.
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        child: Row(
+          children: [
+            if (leading != null) ...[leading!, SizedBox(width: gap)],
+            Expanded(
+              child: Column(
+                // Without this the titles take every pixel of a bounded
+                // height offered from above — a `Center`, a sized box — and
+                // the bar measures that instead of its own [minHeight].
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: wiz.typography.title.copyWith(color: c.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
+                  if (subtitle != null)
+                    Padding(
+                      // TopBar.jsx `marginTop: 2` under the title.
+                      padding: EdgeInsets.only(top: wiz.space.s1),
+                      child: Text(
+                        subtitle!,
+                        style: wiz.typography.bodySm.copyWith(
+                          color: c.textTertiary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          if (trailing != null) ...[SizedBox(width: gap), trailing!],
-        ],
+            if (trailing != null) ...[SizedBox(width: gap), trailing!],
+          ],
+        ),
       ),
     );
   }

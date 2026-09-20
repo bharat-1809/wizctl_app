@@ -93,40 +93,29 @@ class DiscoveryScreen extends StatelessWidget {
         }
         return ScreenScroll(
           children: [
-            // The bar's children are made explicit, the way
-            // `WizStatusBanner` makes its own: a labelled `WizPressable` is
-            // one node that absorbs the words beside it, and on a phone the
-            // only labelled control in this bar is Back — so without this the
-            // whole bar collapses into one button called "Back / Discover
-            // lights / Local network" (P67; the Light screen carries the same
-            // wrapper for the same reason, and Task 23 fixes the kit).
-            Semantics(
-              container: true,
-              explicitChildNodes: true,
-              child: WizTopBar(
-                title: compact ? Strings.discoverLights : Strings.discovery,
-                subtitle: counting
-                    ? Strings.addresses(progress.probed, progress.total)
-                    : Strings.localNetwork,
-                leading: compact
-                    ? WizIconKey(
-                        icon: WizIcons.chevronLeft,
-                        semanticsLabel: Strings.back,
-                        onPressed: () => popOr(context, AppRoutes.home),
-                      )
-                    : null,
-                trailing: compact
-                    ? null
-                    : WizButton(
-                        label: Strings.rescan,
-                        variant: WizButtonVariant.ghost,
-                        size: WizButtonSize.sm,
-                        icon: WizIcons.refreshCw,
-                        onPressed: state.isScanning
-                            ? null
-                            : () => bloc.add(const DiscoveryStarted()),
-                      ),
-              ),
+            WizTopBar(
+              title: compact ? Strings.discoverLights : Strings.discovery,
+              subtitle: counting
+                  ? Strings.addresses(progress.probed, progress.total)
+                  : Strings.localNetwork,
+              leading: compact
+                  ? WizIconKey(
+                      icon: WizIcons.chevronLeft,
+                      semanticsLabel: Strings.back,
+                      onPressed: () => popOr(context, AppRoutes.home),
+                    )
+                  : null,
+              trailing: compact
+                  ? null
+                  : WizButton(
+                      label: Strings.rescan,
+                      variant: WizButtonVariant.ghost,
+                      size: WizButtonSize.sm,
+                      icon: WizIcons.refreshCw,
+                      onPressed: state.isScanning
+                          ? null
+                          : () => bloc.add(const DiscoveryStarted()),
+                    ),
             ),
             if (offNetwork) const OffNetworkBanner(),
             if (state.isScanning)

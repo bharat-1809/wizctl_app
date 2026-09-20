@@ -51,33 +51,21 @@ class LightScreen extends StatelessWidget {
           var reachable = state.live.reachable;
           return ScreenScroll(
             children: [
-              // The bar's children are made explicit, the way
-              // `WizStatusBanner` makes its own: a labelled `WizPressable` is
-              // one node that absorbs the words beside it, and the only
-              // labelled control in this bar is Back — so without this the
-              // whole bar collapses into one button called "Back / Shelf strip
-              // / Living Room · Tunable White / LIVE". The Room screen's bar
-              // escapes it only because its trailing switch carries a label
-              // too, and two labels cannot share a node.
-              Semantics(
-                container: true,
-                explicitChildNodes: true,
-                child: WizTopBar(
-                  title: light.name,
-                  subtitle: Strings.roomAndClass(
-                    state.room?.name ?? '',
-                    light.className,
-                  ),
-                  leading: WizIconKey(
-                    icon: WizIcons.chevronLeft,
-                    semanticsLabel: Strings.back,
-                    onPressed: () => popOr(context, lightParent(light.roomId)),
-                  ),
-                  trailing: WizBadge(
-                    label: reachable ? Strings.live : Strings.noReply,
-                    tone: reachable ? WizBadgeTone.online : WizBadgeTone.danger,
-                    dot: true,
-                  ),
+              WizTopBar(
+                title: light.name,
+                subtitle: Strings.roomAndClass(
+                  state.room?.name ?? '',
+                  light.className,
+                ),
+                leading: WizIconKey(
+                  icon: WizIcons.chevronLeft,
+                  semanticsLabel: Strings.back,
+                  onPressed: () => popOr(context, lightParent(light.roomId)),
+                ),
+                trailing: WizBadge(
+                  label: reachable ? Strings.live : Strings.noReply,
+                  tone: reachable ? WizBadgeTone.online : WizBadgeTone.danger,
+                  dot: true,
                 ),
               ),
               if (offNetwork) const OffNetworkBanner(),

@@ -65,30 +65,20 @@ class _DiscoveringStepState extends State<DiscoveringStep> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // The bar's children are made explicit, the way `WizStatusBanner`
-            // makes its own: a labelled `WizPressable` is one node that
-            // absorbs the words beside it, and Back is the only labelled
-            // control in this bar — so without this the whole bar collapses
-            // into one button called "Back / Discovering / Local network"
-            // (P67; Task 23 fixes the kit and removes this wrapper).
-            Semantics(
-              container: true,
-              explicitChildNodes: true,
-              child: WizTopBar(
-                title: Strings.discovering,
-                subtitle: counted == null
-                    ? Strings.localNetwork
-                    : Strings.addresses(counted.probed, counted.total),
-                leading: WizIconKey(
-                  icon: WizIcons.chevronLeft,
-                  semanticsLabel: Strings.back,
-                  onPressed: () {
-                    // Cancel first: the run's own wind-down can take as long
-                    // as the gateway's timeout, and the step is leaving now.
-                    discovery.add(const DiscoveryCancelled());
-                    onboarding.add(const OnboardingBack());
-                  },
-                ),
+            WizTopBar(
+              title: Strings.discovering,
+              subtitle: counted == null
+                  ? Strings.localNetwork
+                  : Strings.addresses(counted.probed, counted.total),
+              leading: WizIconKey(
+                icon: WizIcons.chevronLeft,
+                semanticsLabel: Strings.back,
+                onPressed: () {
+                  // Cancel first: the run's own wind-down can take as long
+                  // as the gateway's timeout, and the step is leaving now.
+                  discovery.add(const DiscoveryCancelled());
+                  onboarding.add(const OnboardingBack());
+                },
               ),
             ),
             SizedBox(height: wiz.space.s6),

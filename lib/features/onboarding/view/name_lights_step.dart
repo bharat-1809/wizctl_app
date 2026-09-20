@@ -26,24 +26,18 @@ class NameLightsStep extends StatelessWidget {
       builder: (context, state) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // P67, as on step 2: Back is the only labelled control in the bar,
-          // so without this the bar reads as one button carrying its titles.
-          Semantics(
-            container: true,
-            explicitChildNodes: true,
-            child: WizTopBar(
-              title: Strings.nameYourLights,
-              subtitle: Strings.nameReplacesAddress,
-              leading: WizIconKey(
-                icon: WizIcons.chevronLeft,
-                semanticsLabel: Strings.back,
-                // Once the finish is away the flow is over, whether it is
-                // still in flight or already written: there is nothing to go
-                // back to, and the notice navigates on.
-                onPressed: state.finishing
-                    ? null
-                    : () => bloc.add(const OnboardingBack()),
-              ),
+          WizTopBar(
+            title: Strings.nameYourLights,
+            subtitle: Strings.nameReplacesAddress,
+            leading: WizIconKey(
+              icon: WizIcons.chevronLeft,
+              semanticsLabel: Strings.back,
+              // Once the finish is away the flow is over, whether it is
+              // still in flight or already written: there is nothing to go
+              // back to, and the notice navigates on.
+              onPressed: state.finishing
+                  ? null
+                  : () => bloc.add(const OnboardingBack()),
             ),
           ),
           SizedBox(height: wiz.space.s5),
