@@ -451,3 +451,91 @@ TDD throughout (red, green, refactor). No golden tests; visuals are reviewed on 
 ## 20. Out of scope
 
 Web, cloud, accounts, schedules/timers, the Rhythm music mode beyond selecting it, firmware updates, bulb reboot/reset, multi-device sync, photography or illustration, a logo mark, golden tests.
+
+## Amendments, 2026-09-19 (Plan 4)
+
+Rulings taken while implementing the features and the desktop shells. Each is
+also in the plan's ledger with its reason and its cost if wrong; only the ones
+that change what a reader of the sections above would expect are repeated here.
+Plumbing, test-harness conventions and the kit's own semantics stay in the
+ledger and in `lib/core/widgets/README.md`.
+
+### Navigation and the leave rules (§9, §10.3, §10.4, §10.9)
+
+- §9: the Room and Light screens live in the Rooms branch, so Back from a room opened from Home goes to the Rooms list, not Home — Back always pops. Discovery is a fifth branch with the tab bar hidden; its Back goes Home.
+- §9: a light's natural parent is its room. Back, the forget notice and the gone-leave all fall back to `lightParent(roomId)` — the room when it is known, else Home — never the Rooms list.
+- §9/§10.3/§10.4: a screen whose subject disappears leaves instead of rendering blank. `RoomScreen` on `RoomStatus.gone` and `LightScreen` on `LightStatus.gone` call `popOr(context, <parent route>)`, and navigate exactly once. The Light screen's gone-leave is a post-frame one-shot, because an unknown id is already `gone` before the screen mounts.
+- §10.9: the desktop light route does not outlive its light either. `_LightOnDesktop` leaves on `status == gone` (`go(AppRoutes.room(roomId))`, else Home) exactly once, and the inspector's notice listener passes `navigate: false` so only one of the two navigates.
+- A sheet that creates a room outside the Rooms tab — discovery's save sheet, the desktop grid's "Add room" — calls `AddRoom` directly and toasts. The Rooms tab's bloc is not in scope there.
+- Open design item: `popOr` pops the topmost route of the root navigator, so a sheet or a pushed light screen sitting on a deleted room is dismissed instead of the screen beneath it leaving, and `listenWhen` does not fire again afterwards. Decide what is intended before anyone "fixes" it.
+- Open design item (a Plan 3 contract this plan did not change): `SyncCoordinator.activateHome` restarts polling for the new home but performs no immediate read, so a home switch shows the previous home's last-known state until the first poll tick. Say whether an immediate read on activate is wanted.
+
+### Domain rules (§5)
+
+- §5.4: `RoomAggregates` is `Equatable`.
+- §5.12: `ApplyColour` coalesces like a dial drag (throttle key `colour:<target>`), so the wheel writes while it is being dragged.
+
+### Discovery (§5.7, §10.8)
+
+- §5.7: `RunDiscovery` accepts no home — on the first run nothing is probed and nothing is already saved.
+- §5.7: the home subnet is learned only from a run that found at least one device (`devices.isNotEmpty`). `LearnHomeSubnet` never overwrites, so one empty scan on a guest network would otherwise latch the wrong subnet for good.
+- §10.8: the error view keys its copy on the failure type, never on `failure.message` — a run that throws arrives as an `UnreachableFailure` with an empty ip.
+- §10.8: every non-off-network failure renders the port-busy copy (`portBusyTitle` / `portBusyBody`); there is no separate generic "discovery failed" constant. Whether that copy should split is an open question — the closing on-device walk was asked to compare a real port conflict against a real thrown run.
+- §10.8: the found banner names the LAST run — `sweptSubnet(subnet, total)` when that run swept, `broadcastOn(subnet)` otherwise. `sweptOnce` only decides whether the sweep is offered after an empty scan.
+- Open design items: `state.failedRanges` has no copy line in §10.8, so a partly failed sweep is silent today; and there is no Stop control during a scan (§10.8 specifies none — only that leaving the screen cancels). Say which is intended.
+
+### Onboarding (§10.1)
+
+- §10.1: no write failure strands the first run. `_onFinished` catches `Object`, clears `finishing` and raises `OnboardingError`; after a successful finish `finishing` stays true, so a repeated `OnboardingFinished` is a no-op and no second home is written.
+- §10.1/§12: a step whose cross-fade has not completed takes no pointers — an `IgnorePointer` keyed on the switcher's animation status — so no tap acts during the 300 ms fade.
+- Open design item: the kit's `WizButton` has no busy state, so §10.1's "Finish" spinner has nothing to attach to. As shipped, Finish is the disabled key plus the toast. Either §10.1 drops the spinner or the kit gains a busy state; it is listed under "Known debt" in `lib/core/widgets/README.md`.
+- Open design item: `FinishOnboarding` writes the home and its rooms before the lights, so a non-domain failure part-way through the lights leaves a partly written home and a retry writes a second one. Rolling that back is a unit-of-work boundary the domain does not have and no task specified.
+
+### Motion and cues (§12, §13)
+
+- §12: the written policy lives in `lib/core/motion/reduced_motion.dart`, with the kit's half of it in `lib/core/widgets/README.md` under "Reduced motion".
+- §12: screen and step transitions take no time under reduced motion. `wizFadePage(reduced:)` is fed by `AppPages._fade` reading `wizReducedMotion(context)` — a `Page`'s durations are fixed above the navigator, so the page takes the answer as a flag — and the onboarding step switcher reads the switch in its own build. The fixture hero rides the route animation and needs nothing of its own.
+- §12: the policy's last clause is what Flutter already does, not something the app enforces. State changes — caps, dials, colours, the press recipe — ask for nothing of their own: under the platform flag every non-repeating `AnimationController` runs at 5 % of its duration, about one frame, and the app does not override that with `AnimationBehavior.preserve`. What the framework does *not* shorten is the loops, the staggers and the page and step transitions (`repeat()` is unscaled, and a route's or a switcher's controller is shortened to 5 % rather than to zero), which is why each of those asks `wizReducedMotion` for itself. So §12's "all skipped under reduced motion" holds for state changes through the framework rather than through the app, and the on-device delta for a page transition is 15 ms → 0. The audit behind this read every file that consults the switch (twelve, two of them fixed) and every state-change animation that does not (fifteen): task-23-report.md, "Reduced-motion audit".
+- Known test limit: the test harness's `reducedMotion(...)` overrides `MediaQuery` only, so widget tests never see the 5 % scaling. A device is the only proof of that half.
+- §10.1, §10.2, §10.6, §10.8 and §13: a primary key whose required field is blank is **disabled**, and a disabled pressable fires no cue at all — so `reject` never plays for it. §13's `reject` is a refusal *after* a press. §10.1's New room sheet, §10.2's Homes sheet, §10.6's Add-room sheet and §10.8's Save-light sheet each say "empty name → reject"; that is what this reverses. An enabled key already plays `confirm` on pointer down.
+
+### Accessibility (§10.2, §10.3, §11)
+
+- §10.2/§10.3: pull-to-refresh is gesture-only. `RefreshIndicator.noSpinner` exposes no semantics action, and neither Home nor Room carries another refresh key, so a screen-reader or switch-control user has no explicit "read now" on either screen; the app's polling still refreshes state on its tick. **An open accessibility item, not fixed in this plan.**
+- §11: §11.2 describes `WizTopBar`'s slots but not its semantics, and the bar's semantics needed fixing — every screen puts the bar inside `ScreenScroll`, whose lazy-list items are semantics boundaries, which merged the whole bar into one button. What it reads as now is kit behaviour and is written down in `lib/core/widgets/README.md` under "Hosted-control semantics", not here.
+- §11: the kit's known accessibility and completeness debt — the three name sheets, `WizListRow`'s single-line meta, `WizButton`'s missing busy state, `ToastController.update` on a dismissed id, `DualDials`' inert knob — is listed in `lib/core/widgets/README.md` under "Known debt".
+
+### Desktop and the responsive rules (§10.9, §14, §15)
+
+- §10.9: the desktop rail is fed by a `HomeScreenBloc` of its own. The modes dialog's scene grid uses a minimum tile of 140 at 104 tall; the desktop Scenes tab uses 130 at 140 tall.
+- §10.9/§15: shells mount no banners. Every screen places its own `OffNetworkBanner` / `UnreachableBanner` inside its scroll, and the app root provides and subscribes `NetworkCubit` and `UnreachableCubit`.
+- §15: `UnreachableBanner` takes an optional `lightIds` filter (null = the whole home). The room grid passes its room's ids, so the banner counts and names only that room's silent lights, while the home grid and Settings keep the home-wide reading.
+- §10.9: the medium-width inspector dialog's chrome title is generic copy (`Strings.inspector`), and the shared body's live name heading is the ONE place the light's name appears, so a rename updates at once. `showInspectorDialog` performs no repository read for a title. (This revises an earlier ruling that had the dialog read the name for its title: two names, one of them stale after a rename, is worse.)
+- §14: the compact scroll body puts 8 px under the top inset; the desktop body puts 24.
+- §14/§10.9: the desktop content column is full width in this plan. The "660 max width" reading column exists only in the plan's own prose, never in §14 or §10.9. Whether the text-heavy branches (Settings, Discovery, Modes) should get one is an open design item; if one is ever added it must not install a second `WizLayoutScope`, because Settings reads `context.layout.widthClass` from the nearest scope.
+- Open item: `/lights/:id` at a medium window is unspecified. As built, the inspector dialog opens over the grid and dismissing it clears the selection while the URL stays.
+
+### Copy, banners and the fixture labels (§7, §10.4, §10.5, §10.6, §10.7, §15)
+
+- §15: the wrong-network banner takes the `warn` tone (the wifi glyph), not `error`.
+- §10.5: the Scenes tab's subtitle counts the scenes from the kit's own table at build time — "Colour, 13 static and 23 dynamic scenes" as the table stands — not the prototype's 15 and 21.
+- §10.6: the Rooms list row's meta is pluralised ("1 light · 1 on").
+- §10.7: the Config file row shows the path as its meta and `configFileNote` as a separate `bodySm` / `textTertiary` caption beneath the row. `WizListRow`'s meta is single-line and no kit parameter was added for a second one, so the note is not the row's second meta line. The CLI parity row confirms the copy with an info toast; a clipboard write that fails toasts `Strings.couldNotCopy`; and when the package version cannot be read, the row falls back to an inert whole-home reading.
+- §7 and the §10 copy tables: `core` carries no domain knowledge, so the `Fixture` → label switch lives in `lib/app/widgets/fixture_kind.dart` as `fixtureLabelOf(Fixture)` over `Strings` constants, and `lib/core/copy/strings.dart` never imports the domain. The desk fixture reuses `Strings.glyphLamp`, because `Strings.all` forbids duplicate values. Same family: the six glyph screen-reader labels, the twelve hue names and the apply-to key's value-carrying label all moved into `Strings` too.
+- The deliberate exception: the domain keeps its own copy. `Fixture.label` and `Light.className`'s `'Unknown'` duplicate `Strings` values because the domain does not import `Strings`.
+- §15: the database-error banner ("Could not read this home's config") is **not implemented in this plan**. A database that will not open fails at bootstrap with a console error, and repository stream errors are not surfaced as a banner. Write failures are surfaced as notices only where a ruling put one: a failed forget, the discovery save, and the onboarding finish. `HomesBloc` and `RoomsListBloc` still let a real database failure escape to `Bloc.onError`, and no section here has a convention for that. On the polish list.
+- §15: a retry is per batch, which is how the command pipeline builds it. Any error toast's Retry dismisses every error toast of that batch, pushes ONE loading toast (`Strings.retrying(name)` for a single light, `Strings.retryingLights(n)` — "Retrying <n> lights" — for several) and calls `retry(id)` once; the first failure for that id turns that toast into "Still no reply", and later ones for the same id are ignored. §15's table has the error row and the retry-error row but not that intermediate loading toast. A command sent with no local network at all reads "This device has no local network." in the toast body too, not only in the banner.
+- §10.4 and §12's additions list: the shared-element hero from light card to light detail was **not built**. The 300 ms page fade covers the push, and the flight is on the polish list.
+
+### Platform (§13, §17)
+
+- §17: the desktop minimum is a FRAME minimum, not a content minimum. `NSWindow.minSize` on macOS and `MINMAXINFO.ptMinTrackSize` on Windows both bound the window including its chrome, so on macOS the content view at the minimum is about 720×532. The Linux hint (`gtk_window_set_geometry_hints` with `GDK_HINT_MIN_SIZE`) is a *content*-size hint by GTK's own definition, and the Windows pair is scaled by the monitor's DPI — so the three runners do not agree on what 720×560 bounds. Whether the content floor matters to the medium layout is an open design item.
+- §17: `WindowLimits` (`lib/core/platform/window_limits.dart`) is the Dart-side source of the two numbers; each runner repeats them in its own language, and `test/platform/platform_config_test.dart` reads the runner files as text and pins the statements, not only the numbers. `WindowLimits.minWidth` and `WizBreakpoints.compactMax` are both 720 for a related reason and stay two constants that cross-reference each other.
+- §17: the app's name reaches every key. iOS carries `CFBundleName` and `CFBundleDisplayName` = `WizCtl`; macOS builds `WizCtl.app` through `PRODUCT_NAME` in `AppInfo.xcconfig` (the Xcode navigator still shows the product reference as `wizctl_app.app`, which Flutter's own rename guidance leaves and which is cosmetic); and the RunnerTests host is the literal `WizCtl.app/.../WizCtl`, because `$(PRODUCT_NAME)` resolves to the test target's own name there.
+- §17 (Android): only `INTERNET` is declared. A `WifiManager.MulticastLock` is outside this plan and is the first suspect if broadcast discovery comes back empty on Android — the README's "Platform notes" says so.
+- §13: the iOS audio session is `ambient` + `mixWithOthers` (`wizAudioSession` in `lib/core/feedback/audio_session_config.dart`), configured by `configureAudioSession()` inside `SoLoudPlayer._start()` before `SoLoud.instance.init()`. It is a no-op off iOS and never throws: a failure is reported through `FlutterError.reportError` and the engine default stands. Known gap: the iOS branch is untested, because it needs the plugin channel. An on-device iOS walk is the only proof.
+
+### The closing gates (§17, §19)
+
+- §19's "text-scale 1.3 does not overflow the light card or room card" is `test/app/text_scale_test.dart`, which also covers the All lights panel.
+- Windows, Linux, Android and iOS were never built in this run: no toolchain on the machine it ran on. A green `flutter build macos --debug` is the one native build it proves. Where a toolchain exists, the two compiles to run first are `linux/runner/my_application.cc` (the `GdkGeometry` block) and `windows/runner/win32_window.cpp` (the `WM_GETMINMAXINFO` case).
