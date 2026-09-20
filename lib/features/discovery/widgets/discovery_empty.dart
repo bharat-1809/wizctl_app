@@ -47,12 +47,33 @@ class DiscoveryEmpty extends StatelessWidget {
           icon: WizIcons.radio,
           title: wrongNetwork
               ? Strings.notOnHomeNetworkTitle
-              : Strings.portBusyTitle,
-          body: wrongNetwork ? Strings.joinHomeNetwork : Strings.portBusyBody,
-          action: WizButton(
-            label: Strings.tryAgain,
-            variant: WizButtonVariant.primary,
-            onPressed: () => bloc.add(const DiscoveryStarted()),
+              : Strings.searchFailedTitle,
+          body: wrongNetwork
+              ? Strings.joinHomeNetwork
+              : Strings.searchFailedBody,
+          // The sweep is offered on every failure, with no gate (P91 as
+          // amended): `state.subnet` is always null after a quick run that
+          // threw — only the sweeping phase and `DiscoveryFinished` carry one
+          // — and `sweep()` learns its own range anyway, which is why the
+          // empty view offers the same key ungated. A broadcast with no route
+          // is otherwise a dead end on the first run.
+          action: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: wiz.space.s5,
+            runSpacing: wiz.space.s5,
+            children: [
+              WizButton(
+                label: Strings.tryAgain,
+                variant: WizButtonVariant.primary,
+                onPressed: () => bloc.add(const DiscoveryStarted()),
+              ),
+              WizButton(
+                label: Strings.scanSubnet,
+                variant: WizButtonVariant.secondary,
+                icon: WizIcons.radio,
+                onPressed: () => bloc.add(const DiscoverySweepRequested()),
+              ),
+            ],
           ),
         );
       case _:

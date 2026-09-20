@@ -139,7 +139,7 @@ class _DiscoveringStepState extends State<DiscoveringStep> {
             ] else
               // Idle, nothing found and a run that failed are the same three
               // zero states the discovery screen shows, including the
-              // wrong-network copy a failure keys on (P73), so they are drawn
+              // wrong-network copy a failure keys on (P91), so they are drawn
               // by the same widget rather than written twice.
               DiscoveryEmpty(state: state),
           ],

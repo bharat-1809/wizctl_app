@@ -210,9 +210,14 @@ class Strings {
   static const room = 'Room';
   static const saveLight = 'Save light';
   static const tryAgain = 'Try again';
-  static const portBusyTitle = 'Could not open the discovery port';
-  static const portBusyBody =
-      'Another app is using UDP 38899. Close it, then try again.';
+
+  /// A run that failed for anything but being off the home network (P91). The
+  /// package binds UDP 38899 and falls back to an ephemeral port when it is
+  /// taken, so no failure that reaches the app is a port conflict; what the
+  /// user can act on is the sweep.
+  static const searchFailedTitle = 'Could not search this network';
+  static const searchFailedBody =
+      'The broadcast did not go out. Scan the subnet to try each address in turn.';
   static const listeningForLights = 'Listening for lights';
 
   /// A save that failed with no loading toast left to resolve, so there is no
@@ -551,8 +556,8 @@ class Strings {
     room,
     saveLight,
     tryAgain,
-    portBusyTitle,
-    portBusyBody,
+    searchFailedTitle,
+    searchFailedBody,
     listeningForLights,
     saveFailed,
     unknownClass,

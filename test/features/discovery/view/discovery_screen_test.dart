@@ -247,20 +247,51 @@ void main() {
     );
   });
 
-  testWidgets('a run that fails is the try-again empty state', (tester) async {
+  testWidgets('a run that fails offers both a retry and a subnet scan', (
+    tester,
+  ) async {
     await withDiscovery(
       tester,
       (scope, bloc) async {
         await pumpRouted(tester, screen(scope, bloc), size: _phone);
         await discover(tester);
-        expect(find.text('Could not open the discovery port'), findsOneWidget);
+        // P91 (amended): the package falls back to an ephemeral port when
+        // 38899 is taken, so no failure that reaches the app is a port
+        // conflict; the copy says what the user can see and act on.
+        expect(find.text('Could not search this network'), findsOneWidget);
         expect(
           find.text(
-            'Another app is using UDP 38899. Close it, then try again.',
+            'The broadcast did not go out. Scan the subnet to try each '
+            'address in turn.',
           ),
           findsOneWidget,
         );
         expect(find.text('TRY AGAIN'), findsOneWidget);
+        expect(
+          find.text('SCAN SUBNET'),
+          findsOneWidget,
+          reason: 'the sweep learns its own range, so the key needs no subnet',
+        );
+      },
+      script: (scope) => scope.gateway.failing['broadcast'] =
+          const UnreachableFailure('broadcast', 'busy'),
+    );
+  });
+
+  testWidgets('the subnet-scan key on the error view starts a sweep', (
+    tester,
+  ) async {
+    await withDiscovery(
+      tester,
+      (scope, bloc) async {
+        await pumpRouted(tester, screen(scope, bloc), size: _phone);
+        await discover(tester);
+        await tester.tap(find.text('SCAN SUBNET'));
+        await tester.pump();
+        // The run the key starts is short here (no scripted probe events), so
+        // what it leaves behind is what proves it ran: only a sweep sets
+        // `sweptOnce`.
+        expect(bloc.state.sweptOnce, isTrue);
       },
       script: (scope) => scope.gateway.failing['broadcast'] =
           const UnreachableFailure('broadcast', 'busy'),
@@ -281,7 +312,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text('Could not open the discovery port'),
+          find.text('Could not search this network'),
           findsNothing,
           reason: 'the copy is keyed on the failure type, not its message',
         );

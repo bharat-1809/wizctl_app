@@ -452,6 +452,25 @@ void main() {
   );
 
   blocTest<DiscoveryBloc, DiscoveryState>(
+    'the first run of all, thrown, is the error view with no subnet learnt',
+    build: () => build(homeId: null, onboarding: true),
+    setUp: () => gateway = _BrokenGateway(),
+    act: (bloc) => bloc.add(const DiscoveryStarted()),
+    wait: wait,
+    verify: (bloc) {
+      expect(bloc.state.view, DiscoveryView.error);
+      expect(bloc.state.failure, isA<UnreachableFailure>());
+      expect(
+        bloc.state.subnet,
+        isNull,
+        reason:
+            'a quick run carries no subnet, so the error view cannot gate '
+            'its SCAN SUBNET key on one (P91, amended)',
+      );
+    },
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
     'a run that throws something the domain never modelled is the error view',
     build: build,
     setUp: () => gateway = _BrokenGateway(),
