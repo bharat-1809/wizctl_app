@@ -133,8 +133,10 @@ fvm dart format --output=none --set-exit-if-changed lib test
 fvm flutter test
 ```
 
-**719 tests**, all offline: no test reaches a real light, a real broadcast or a
-real network. Bloc tests drive real use cases over the fakes in `test/support`
+**719 tests**, all offline: no test reaches a real light or the LAN. The one
+that exercises the device gateway for real answers it with `FakeBulb`, a
+loopback UDP socket in `test/support/fake_bulb.dart`; everything else stops at a
+fake. Bloc tests drive real use cases over the fakes in `test/support`
 (`FakeGateway`, the fake repositories, `FakeClock`, `SequenceIds`); screen tests
 pump the screen inside `wizTestApp` with real blocs over the `SeedHome` fixture.
 There are no golden tests — visuals are reviewed on a device.

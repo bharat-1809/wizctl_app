@@ -503,7 +503,6 @@ ledger and in `lib/core/widgets/README.md`.
 
 - §10.2/§10.3: pull-to-refresh is gesture-only. `RefreshIndicator.noSpinner` exposes no semantics action, and neither Home nor Room carries another refresh key, so a screen-reader or switch-control user has no explicit "read now" on either screen; the app's polling still refreshes state on its tick. **An open accessibility item, not fixed in this plan.**
 - §11: §11.2 describes `WizTopBar`'s slots but not its semantics, and the bar's semantics needed fixing — every screen puts the bar inside `ScreenScroll`, whose lazy-list items are semantics boundaries, which merged the whole bar into one button. What it reads as now is kit behaviour and is written down in `lib/core/widgets/README.md` under "Hosted-control semantics", not here.
-- §11: the kit's known accessibility and completeness debt — the three name sheets, `WizListRow`'s single-line meta, `WizButton`'s missing busy state, `ToastController.update` on a dismissed id, `DualDials`' inert knob — is listed in `lib/core/widgets/README.md` under "Known debt".
 
 ### Desktop and the responsive rules (§10.9, §14, §15)
 
