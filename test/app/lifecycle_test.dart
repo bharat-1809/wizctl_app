@@ -140,7 +140,8 @@ void main() {
 
       scope.homes.add(const HomeSwitched('h2'));
       await tester.pump(_settled);
-      await sync.refreshAll();
+      // No `refreshAll()` of its own any more: activating a *different* home
+      // reads it at once (P96), so the switch alone is the proof.
       expect(scope.gateway.reads, [
         '10.0.0.42',
       ], reason: 'the Studio is the active home now');

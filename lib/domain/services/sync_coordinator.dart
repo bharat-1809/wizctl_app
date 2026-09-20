@@ -42,9 +42,22 @@ class SyncCoordinator {
        _lights = lights, // ignore: prefer_initializing_formals
        _settings = settings; // ignore: prefer_initializing_formals
 
+  /// The home the poll timer reads for. A *switch* between two homes reads the
+  /// new one at once (P96): `LiveState.initial.reachable` is false, so until
+  /// something reads, every light of the home just opened is unreachable — the
+  /// banner says "N lights did not answer", the stats count them and every
+  /// card's switch is dead, for up to a whole poll interval.
+  ///
+  /// The first activation of all is deliberately not a switch: that is the cold
+  /// start, and whether it reads is [onColdStart]'s question and the user's
+  /// `rescanOnLaunch` setting's answer.
   void activateHome(String? homeId) {
+    var previous = _homeId;
     _homeId = homeId;
     _restart();
+    if (homeId != null && previous != null && previous != homeId) {
+      unawaited(refreshAll());
+    }
   }
 
   PollScope registerScope(Set<String> lightIds) {
