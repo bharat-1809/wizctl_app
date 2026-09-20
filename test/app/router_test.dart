@@ -6,6 +6,8 @@ import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
+import 'package:wizctl_app/features/discovery/bloc/discovery_bloc.dart';
+import 'package:wizctl_app/features/discovery/view/discovery_screen.dart';
 import 'package:wizctl_app/features/home/view/home_screen.dart';
 import 'package:wizctl_app/features/modes/bloc/light_modes_bloc.dart';
 import 'package:wizctl_app/features/modes/view/modes_screen.dart';
@@ -18,6 +20,15 @@ import '../support/seed.dart';
 /// landed and nothing is mid-transition. Bounded, not `pumpAndSettle`: an
 /// active home arms the poll timer and the screens animate on.
 const Duration _settled = Duration(milliseconds: 400);
+
+/// Two bounded pumps: a `go` reaches the navigator through an asynchronous
+/// hop, so the first frame still draws the page that is leaving — and until
+/// its fade is over the page underneath is offstage, where finders do not
+/// look.
+Future<void> settle(WidgetTester tester) async {
+  await tester.pump(_settled);
+  await tester.pump(_settled);
+}
 
 /// The gallery's own settling: it mounts every kit section behind a load-in
 /// stagger, so its timers take longer to drain than a screen's. Two pumps,
@@ -58,7 +69,7 @@ void main() {
       expect(currentLocation(router), AppRoutes.setup);
 
       router.go(AppRoutes.rooms);
-      await tester.pump(_settled);
+      await settle(tester);
       expect(
         currentLocation(router),
         AppRoutes.setup,
@@ -84,7 +95,7 @@ void main() {
       expect(currentLocation(router), AppRoutes.home);
 
       router.go(AppRoutes.setup);
-      await tester.pump(_settled);
+      await settle(tester);
       expect(
         currentLocation(router),
         AppRoutes.home,
@@ -95,7 +106,7 @@ void main() {
     }
   });
 
-  testWidgets('switching home re-targets the Scenes tab at the new one', (
+  testWidgets('switching home from another tab re-targets the Scenes tab', (
     tester,
   ) async {
     var scope = AppScope(SeedHome());
@@ -104,20 +115,55 @@ void main() {
       await tester.pump();
       var router = await pumpAppRouter(tester, scope);
       router.go(AppRoutes.modes);
-      await tester.pump(_settled);
-      await tester.pump(_settled);
+      await settle(tester);
       expect(tester.widget<ModesScreen>(find.byType(ModesScreen)).homeId, 'h1');
 
+      // The Homes sheet is opened from Home, so a switch lands while the
+      // Scenes branch is offstage in the shell's `IndexedStack` — which is the
+      // case the page has to survive, since the branch stays mounted.
+      router.go(AppRoutes.home);
+      await settle(tester);
       scope.homes.add(const HomeSwitched('h2'));
-      await tester.pump(_settled);
-      await tester.pump(_settled);
-      expect(tester.widget<ModesScreen>(find.byType(ModesScreen)).homeId, 'h2');
+      await settle(tester);
+
+      var offstage = find.byType(ModesScreen, skipOffstage: false);
+      expect(tester.widget<ModesScreen>(offstage).homeId, 'h2');
       expect(
-        BlocProvider.of<LightModesBloc>(
-          tester.element(find.byType(ModesScreen)),
-        ).state.target,
+        BlocProvider.of<LightModesBloc>(tester.element(offstage)).state.target,
         const WholeHomeTarget('h2'),
         reason: 'the tab must not apply scenes to the home that was left',
+      );
+
+      router.go(AppRoutes.modes);
+      await settle(tester);
+      expect(tester.widget<ModesScreen>(find.byType(ModesScreen)).homeId, 'h2');
+    } finally {
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('switching home re-targets discovery at the new one', (
+    tester,
+  ) async {
+    var scope = AppScope(SeedHome());
+    try {
+      await scope.start();
+      await tester.pump();
+      var router = await pumpAppRouter(tester, scope);
+      router.go(AppRoutes.discover);
+      await settle(tester);
+      var screen = find.byType(DiscoveryScreen);
+      expect(
+        BlocProvider.of<DiscoveryBloc>(tester.element(screen)).homeId,
+        'h1',
+      );
+
+      scope.homes.add(const HomeSwitched('h2'));
+      await settle(tester);
+      expect(
+        BlocProvider.of<DiscoveryBloc>(tester.element(screen)).homeId,
+        'h2',
+        reason: 'a light found now belongs to the home on show, not the last',
       );
     } finally {
       await scope.dispose();
@@ -163,7 +209,7 @@ void main() {
       await scope.seed.settings.save(
         (await scope.seed.settings.get()).copyWith(activeHomeId: 'h1'),
       );
-      await tester.pump(_settled);
+      await settle(tester);
       expect(currentLocation(router), AppRoutes.home);
     } finally {
       await scope.dispose();

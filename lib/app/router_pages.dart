@@ -62,11 +62,17 @@ class AppPages {
   /// field or a sheet inside one needs the `Material` a `Scaffold` carries.
   /// Transparent, because `WizAppBackground` paints the chassis above the
   /// router and a coloured scaffold would hide it.
-  Page<void> _fade(GoRouterState state, Widget child) => wizFadePage<void>(
-    key: state.pageKey,
-    motion: motion,
-    child: Scaffold(backgroundColor: Colors.transparent, body: child),
-  );
+  ///
+  /// [scaffold] is false for the one screen that builds its own, so that no
+  /// page ends up with two.
+  Page<void> _fade(GoRouterState state, Widget child, {bool scaffold = true}) =>
+      wizFadePage<void>(
+        key: state.pageKey,
+        motion: motion,
+        child: scaffold
+            ? Scaffold(backgroundColor: Colors.transparent, body: child)
+            : child,
+      );
 
   /// The first run (spec §10.1). Its two blocs live and die with this route:
   /// once a home exists the redirect makes `/setup` unreachable, and a bloc
@@ -205,8 +211,10 @@ class AppPages {
     ),
   );
 
+  /// The one page without the shared scaffold: `GalleryScreen` builds its own
+  /// (Plan 2), and the back key floats over it in the same stack.
   Page<void> gallery(BuildContext context, GoRouterState state) =>
-      _fade(state, const GalleryPage());
+      _fade(state, const GalleryPage(), scaffold: false);
 }
 
 /// Builds for the home that is active now, and rebuilds when that changes.

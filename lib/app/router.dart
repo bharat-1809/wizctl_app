@@ -6,21 +6,34 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme/wiz_motion.dart';
 import 'blocs/homes_bloc.dart';
-import 'blocs/homes_state.dart';
 import 'router_pages.dart';
 import 'routes.dart';
 import 'shell/app_shell.dart';
 
-/// Wakes the router whenever the homes change, so the `/setup` redirect
-/// re-evaluates the moment the first home is written or the last one deleted.
+/// Wakes the router the moment the first home is written or the last one
+/// deleted, so the `/setup` redirect re-evaluates.
+///
+/// Only that — not every homes emission. A refresh re-parses the current
+/// location, which is work on every count, rename and switch, and on a pushed
+/// screen it re-runs the whole match list. Nothing else the redirect reads
+/// changes with a home's name or counts, and the pages that follow the active
+/// home watch the bloc themselves (`AppPages`).
 ///
 /// Owned by whoever builds the router (`WizCtlApp`) and disposed beside it:
 /// `GoRouter.dispose` leaves a `refreshListenable` it was handed alone.
 class HomesListenable extends ChangeNotifier {
-  late final StreamSubscription<HomesState> _subscription;
+  late final StreamSubscription<bool> _subscription;
 
   HomesListenable(HomesBloc homes) {
-    _subscription = homes.stream.listen((_) => notifyListeners());
+    // Seeded with what the bloc already says, rather than `Stream.distinct()`,
+    // which always lets the first event through: the router was built from
+    // that same state, so an emission that repeats it is not a change.
+    var hasHome = homes.state.hasHome;
+    _subscription = homes.stream.map((s) => s.hasHome).listen((next) {
+      if (next == hasHome) return;
+      hasHome = next;
+      notifyListeners();
+    });
   }
 
   @override
@@ -50,8 +63,9 @@ GoRouter buildRouter({
     initialLocation: homes.state.hasHome ? AppRoutes.home : AppRoutes.setup,
     refreshListenable: listenable,
     // The home is read off the bloc rather than the state's `extra`: the
-    // redirect runs on every navigation and on every homes change, and the
-    // bloc is the one place that knows whether a home exists at all.
+    // redirect runs on every navigation, and on every appearance or loss of a
+    // home through the listenable above, and the bloc is the one place that
+    // knows whether a home exists at all.
     redirect: (context, state) {
       var hasHome = homes.state.hasHome;
       var location = state.matchedLocation;

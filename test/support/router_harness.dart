@@ -112,8 +112,19 @@ Future<GoRouter> pumpAppRouter(
 /// uri of the imperative match's own list.
 String currentLocation(GoRouter router) {
   var list = router.routerDelegate.currentConfiguration;
-  var last = list.matches.lastOrNull;
-  return last is ImperativeRouteMatch
-      ? last.matches.uri.toString()
-      : list.uri.toString();
+  return _pushedIn(list.matches) ?? list.uri.toString();
+}
+
+/// The location of the last pushed match in [matches], or null if the top of
+/// that list was reached by a `go`.
+///
+/// It looks inside a shell, because a push from a screen in a
+/// `StatefulShellRoute` branch lands in *that branch's* match list: the top
+/// level then holds nothing but the [ShellRouteMatch], whose own uri is still
+/// the branch's location. A light pushed over its room is exactly that case.
+String? _pushedIn(List<RouteMatchBase> matches) {
+  var last = matches.lastOrNull;
+  if (last is ImperativeRouteMatch) return last.matches.uri.toString();
+  if (last is ShellRouteMatch) return _pushedIn(last.matches);
+  return null;
 }

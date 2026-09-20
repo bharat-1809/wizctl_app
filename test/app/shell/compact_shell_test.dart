@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/shell/compact_shell.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/widgets/wiz_tab_bar.dart';
 import 'package:wizctl_app/features/discovery/view/discovery_screen.dart';
+import 'package:wizctl_app/features/lights/view/light_screen.dart';
 import 'package:wizctl_app/features/rooms/view/room_screen.dart';
 import 'package:wizctl_app/features/rooms/view/rooms_screen.dart';
 
@@ -66,6 +68,49 @@ void main() {
       await settle(tester);
       expect(find.byType(DiscoveryScreen), findsOneWidget);
       expect(find.byType(WizTabBar<ShellBranch>), findsNothing);
+    });
+  });
+
+  testWidgets('a light opens over its room, under the bar, and Back returns', (
+    tester,
+  ) async {
+    await withApp(tester, (scope, router) async {
+      router.go(AppRoutes.room('living'));
+      await settle(tester);
+
+      // What the room's card does: a push, so Back pops to the room rather
+      // than going somewhere by name. The first card, because the last one on
+      // this phone sits under the floating bar until the list is scrolled.
+      await tester.tap(find.text('Ceiling dome light'));
+      await settle(tester);
+      expect(currentLocation(router), AppRoutes.light('dome'));
+      expect(find.byType(LightScreen), findsOneWidget);
+      expect(
+        find.byType(WizTabBar<ShellBranch>),
+        findsOneWidget,
+        reason: 'a light lives in the Rooms branch, under the bar',
+      );
+
+      await tester.tap(find.bySemanticsLabel(Strings.back));
+      await settle(tester);
+      expect(currentLocation(router), AppRoutes.room('living'));
+      expect(find.byType(RoomScreen), findsOneWidget);
+    });
+  });
+
+  testWidgets('a light opened cold goes back to its own room', (tester) async {
+    await withApp(tester, (scope, router) async {
+      // A deep link, or the address bar on the web: nothing underneath to pop,
+      // so Back takes `popOr`'s fallback — `lightParent`, which is the light's
+      // own room.
+      router.go(AppRoutes.light('strip'));
+      await settle(tester);
+      expect(find.byType(LightScreen), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel(Strings.back));
+      await settle(tester);
+      expect(currentLocation(router), AppRoutes.room('living'));
+      expect(find.byType(RoomScreen), findsOneWidget);
     });
   });
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/copy/strings.dart';
@@ -8,6 +7,8 @@ import '../core/theme/wiz_theme.dart';
 import '../core/widgets/toast_controller.dart';
 import '../core/widgets/wiz_icon_key.dart';
 import '../features/gallery/gallery_screen.dart';
+import 'navigation.dart';
+import 'routes.dart';
 
 /// The widget gallery behind the Settings row (debug builds only, spec §18):
 /// the Plan 2 screen with a back key floating in the top-left, since the
@@ -27,7 +28,10 @@ class GalleryPage extends StatelessWidget {
           child: WizIconKey(
             icon: WizIcons.chevronLeft,
             semanticsLabel: Strings.back,
-            onPressed: () => context.pop(),
+            // [popOr], not a bare pop: the row that opens the gallery pushes
+            // it, but a deep link — or a test — reaches it with nothing
+            // underneath, and Settings is where the row lives.
+            onPressed: () => popOr(context, AppRoutes.settings),
           ),
         ),
       ],
