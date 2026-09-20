@@ -61,6 +61,25 @@ void main() {
     );
   });
 
+  test('a scene with no gradient of its own falls back to the kelvin', () {
+    // Firmware can report a scene the design system has no colours for — a
+    // newer one, or a custom slot. The hero still has to be lit.
+    const unknown = 999;
+    expect(
+      sceneGradients.containsKey(unknown),
+      isFalse,
+      reason: 'the premise: this id has no gradient',
+    );
+    var scene = base.copyWith(
+      isOn: true,
+      reachable: true,
+      active: ActiveChannel.scene,
+      sceneId: unknown,
+      kelvin: 3000,
+    );
+    expect(emissionOf(scene, BulbClass.rgb).color, kelvinToColor(3000));
+  });
+
   test("every fixture kind maps to the hero's, and to a label", () {
     for (var f in Fixture.values) {
       expect(fixtureOf(f).name, f.name);

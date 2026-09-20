@@ -309,6 +309,17 @@ void main() {
         bloc,
         targets: [AppRoutes.room('living')],
       );
+      // One tick per `go`, so "left exactly once" is pinned by the count and
+      // not only by where it ended up: two leaves to the same location leave
+      // `currentLocation` looking perfectly right.
+      //
+      // The *provider*, not `routerDelegate`: the delegate coalesces two
+      // identical `go`s in one frame into a single rebuild and so cannot tell
+      // them apart, which was checked by mutation rather than assumed. The
+      // sheets do not show up here either way — `showWizSheet` pushes on the
+      // root navigator, not through the router — so this counts leaves alone.
+      var navigations = 0;
+      router.routeInformationProvider.addListener(() => navigations++);
 
       await openSheet(tester, find.text('SHOW IT AS'));
       expect(
@@ -359,6 +370,13 @@ void main() {
         AppRoutes.room('living'),
         reason: 'left the detail for its room: nothing beneath to pop to',
       );
+      expect(
+        navigations,
+        1,
+        reason:
+            'the forget notice leaves; the screen\'s own gone-leave stands '
+            'down for a state carrying a LightForgottenNotice',
+      );
     });
   });
 
@@ -390,6 +408,19 @@ void main() {
         expect(await scope.seed.lights.get('strip'), isNotNull);
         expect(find.text('Shelf strip'), findsOneWidget);
         expect(currentLocation(router), '/', reason: 'nothing was forgotten');
+
+        // Again, and it must say so again. `LightError` is the one notice the
+        // listener clears, and this is what that clearing buys: an equal
+        // notice is only a *change* — and so only reaches the listener — once
+        // the last one has been dropped.
+        await openSheet(tester, find.text('FORGET'));
+        await tester.tap(inSheet('FORGET'));
+        await tester.pump();
+        await tester.pump(_settled);
+        expect(scope.toasts.toasts.map((t) => t.title), [
+          'A name is required.',
+          'A name is required.',
+        ]);
       },
       // `DomainException` is sealed, so a test cannot invent a kind; this one
       // is borrowed for its message alone, which is all the screen shows.
