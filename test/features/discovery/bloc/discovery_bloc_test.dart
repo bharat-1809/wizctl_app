@@ -359,12 +359,29 @@ void main() {
   );
 
   blocTest<DiscoveryBloc, DiscoveryState>(
-    'a home without a subnet learns it from the run',
+    'a home without a subnet learns it from a run that found a light',
     build: () => build(homeId: 'h2'),
     act: (bloc) => bloc.add(const DiscoveryStarted()),
     wait: wait,
     verify: (bloc) async =>
         expect((await seed.homes.get('h2'))?.subnet, '192.168.1'),
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
+    'a run that found nothing teaches the home no subnet',
+    build: () => build(homeId: 'h2'),
+    setUp: () => gateway.broadcastResult = [],
+    act: (bloc) => bloc.add(const DiscoveryStarted()),
+    wait: wait,
+    verify: (bloc) async {
+      expect(bloc.state.view, DiscoveryView.empty);
+      expect(bloc.state.subnet, '192.168.1', reason: 'the run knew the range');
+      expect(
+        (await seed.homes.get('h2'))?.subnet,
+        isNull,
+        reason: 'a guest network with no bulbs on it is not this home',
+      );
+    },
   );
 
   blocTest<DiscoveryBloc, DiscoveryState>(

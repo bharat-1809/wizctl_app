@@ -10,7 +10,8 @@ import 'discovery_state.dart';
 
 /// The discovery run (spec §5.7, §8, §10.8): drives `RunDiscovery`,
 /// pauses polling while it runs, keeps what answered, saves rows into the
-/// home, and teaches the home its subnet the first time.
+/// home, and teaches the home its subnet the first time a run finds a light
+/// on it (spec §5.7.5).
 ///
 /// With no [homeId] (onboarding) nothing is probed, nothing is already
 /// saved and saving is not offered; the kept rows are handed to
@@ -176,7 +177,12 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
           ),
         );
         var home = homeId;
-        if (home != null && subnet != null) unawaited(_learn(home, subnet));
+        // Only a run that found something teaches the home its subnet.
+        // `LearnHomeSubnet` never overwrites, so one empty scan on a guest
+        // network would otherwise latch the wrong subnet for good.
+        if (home != null && subnet != null && devices.isNotEmpty) {
+          unawaited(_learn(home, subnet));
+        }
       case DiscoveryFailed(:var failure):
         emit(state.copyWith(view: DiscoveryView.error, failure: failure));
     }
