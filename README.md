@@ -113,7 +113,11 @@ reads the runner files and fails if any of this drifts.
   `Release.entitlements` carry `com.apple.security.network.client` and
   `com.apple.security.network.server`. Without the server entitlement the
   sandbox drops the replies the lights send back, and discovery finds
-  nothing.
+  nothing. It also declares `NSLocalNetworkUsageDescription` — the same
+  sentence iOS uses — because macOS 15 gates local-network traffic behind the
+  same privacy control: without the key, a denied or never-requested
+  permission fails every send with "No route to host" (errno 65) instead of a
+  timeout.
 - **Android** asks for `INTERNET`. Nothing else: the traffic is UDP, so
   `usesCleartextTraffic` does not apply. **Caveat:** Android may drop the
   broadcast replies discovery listens for unless the app holds a

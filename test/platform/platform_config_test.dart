@@ -25,6 +25,16 @@ void main() {
   });
 
   test('macOS opens the network in both entitlements and is named WizCtl', () {
+    // macOS 15 gates local-network traffic behind the same privacy control as
+    // iOS, and a denied or never-requested permission fails a send with
+    // EHOSTUNREACH ("No route to host", errno 65) rather than a timeout. The
+    // entitlements alone do not raise the prompt (P95).
+    var plist = _read('macos/Runner/Info.plist');
+    expect(plist, contains('<key>NSLocalNetworkUsageDescription</key>'));
+    expect(
+      plist,
+      contains('WizCtl finds and controls WiZ lights on your local network.'),
+    );
     for (var file in [
       'macos/Runner/DebugProfile.entitlements',
       'macos/Runner/Release.entitlements',
