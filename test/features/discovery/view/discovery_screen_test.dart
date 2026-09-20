@@ -317,6 +317,13 @@ void main() {
           findsNothing,
           reason: 'the copy is keyed on the failure type, not its message',
         );
+        expect(
+          find.text('SCAN SUBNET'),
+          findsNothing,
+          reason:
+              'a sweep of the network the user is being told to leave '
+              'finds nothing and poisons the ARP table for twenty minutes',
+        );
       },
       // P71: the view reads the type, never `failure.message` — which for
       // this one would name both subnets in the domain's own words.

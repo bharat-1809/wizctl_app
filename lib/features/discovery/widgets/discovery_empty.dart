@@ -51,12 +51,19 @@ class DiscoveryEmpty extends StatelessWidget {
           body: wrongNetwork
               ? Strings.joinHomeNetwork
               : Strings.searchFailedBody,
-          // The sweep is offered on every failure, with no gate (P91 as
-          // amended): `state.subnet` is always null after a quick run that
-          // threw — only the sweeping phase and `DiscoveryFinished` carry one
-          // — and `sweep()` learns its own range anyway, which is why the
-          // empty view offers the same key ungated. A broadcast with no route
-          // is otherwise a dead end on the first run.
+          // The sweep is offered beside Try again on a run that failed for any
+          // reason but the network, and with no subnet gate (P91 as amended):
+          // `state.subnet` is always null after a quick run that threw — only
+          // the sweeping phase and `DiscoveryFinished` carry one — and
+          // `sweep()` learns its own range anyway, which is why the empty view
+          // offers the same key ungated. A broadcast with no route is
+          // otherwise a dead end on the first run.
+          //
+          // Not on the wrong network, though. A sweep there walks the network
+          // the user has just been told to leave, finds nothing by
+          // construction, and fills the kernel's ARP table with incomplete
+          // entries that persist for twenty minutes — which can make the next
+          // several scans of the *right* network come back empty.
           action: Wrap(
             alignment: WrapAlignment.center,
             spacing: wiz.space.s5,
@@ -67,12 +74,13 @@ class DiscoveryEmpty extends StatelessWidget {
                 variant: WizButtonVariant.primary,
                 onPressed: () => bloc.add(const DiscoveryStarted()),
               ),
-              WizButton(
-                label: Strings.scanSubnet,
-                variant: WizButtonVariant.secondary,
-                icon: WizIcons.radio,
-                onPressed: () => bloc.add(const DiscoverySweepRequested()),
-              ),
+              if (!wrongNetwork)
+                WizButton(
+                  label: Strings.scanSubnet,
+                  variant: WizButtonVariant.secondary,
+                  icon: WizIcons.radio,
+                  onPressed: () => bloc.add(const DiscoverySweepRequested()),
+                ),
             ],
           ),
         );

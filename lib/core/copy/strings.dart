@@ -221,6 +221,15 @@ class Strings {
   static const saveLight = 'Save light';
   static const tryAgain = 'Try again';
 
+  /// Kept, and deliberately unreachable (P91). `openBroadcastSocket` binds UDP
+  /// 38899 and falls back to an ephemeral port when it is taken, so a port
+  /// conflict never reaches the app as a failure and nothing renders this pair
+  /// any more. It stays because the hand-over may want the split back, and
+  /// reconstructing settled copy is worse than carrying it.
+  static const portBusyTitle = 'Could not open the discovery port';
+  static const portBusyBody =
+      'Another app is using UDP 38899. Close it, then try again.';
+
   /// A run that failed for anything but being off the home network (P91). The
   /// package binds UDP 38899 and falls back to an ephemeral port when it is
   /// taken, so no failure that reaches the app is a port conflict; what the
@@ -576,6 +585,8 @@ class Strings {
     room,
     saveLight,
     tryAgain,
+    portBusyTitle,
+    portBusyBody,
     searchFailedTitle,
     searchFailedBody,
     listeningForLights,
