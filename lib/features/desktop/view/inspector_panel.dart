@@ -21,9 +21,6 @@ import 'inspector_body.dart';
 class InspectorPanel extends StatelessWidget {
   const InspectorPanel({super.key});
 
-  /// `WizCtl_Desktop.dc.html` line 349: the 26 / 700 name.
-  static const double nameSize = 26;
-
   @override
   Widget build(BuildContext context) {
     var wiz = context.wiz;

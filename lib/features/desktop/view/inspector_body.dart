@@ -26,7 +26,6 @@ import '../../modes/view/modes_sheet.dart';
 import '../widgets/inspector_facts.dart';
 import '../widgets/inspector_hero.dart';
 import 'grid_screen.dart';
-import 'inspector_panel.dart';
 
 /// The selected light's controls, over a `LightBloc` of its own (spec §10.9).
 /// Shared by the inspector column and the medium-width dialog, so the two
@@ -46,6 +45,12 @@ class InspectorBody extends StatelessWidget {
   final String lightId;
 
   const InspectorBody({super.key, required this.lightId});
+
+  /// `WizCtl_Desktop.dc.html` line 349: the 26 / 700 name. It lives here rather
+  /// than on `InspectorPanel` because this is the widget that draws the name —
+  /// the panel only frames it, and the two files importing each other for one
+  /// number was a cycle for nothing.
+  static const double nameSize = 26;
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +141,7 @@ class _InspectorContent extends StatelessWidget {
                         Text(
                           light.name,
                           style: wiz.typography.title.copyWith(
-                            fontSize: InspectorPanel.nameSize,
+                            fontSize: InspectorBody.nameSize,
                             color: wiz.colors.textPrimary,
                           ),
                           maxLines: 1,
