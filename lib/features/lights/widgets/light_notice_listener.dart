@@ -12,6 +12,11 @@ import '../bloc/light_state.dart';
 /// Acts on [LightBloc] notices: a forgotten light toasts and leaves the
 /// screen; an error toasts.
 ///
+/// [navigate] is false for the desktop inspector (spec §10.9), which shares the
+/// bloc's notices but not the screen's exit: there is nothing to pop beside a
+/// column, and the location is already the room the light was in. The toast is
+/// pushed either way.
+///
 /// The forgotten notice is **not** cleared. It arrives on the same state as
 /// [LightStatus.gone], and clearing it would leave `{gone, notice: null}`
 /// behind — which is indistinguishable from a light removed somewhere else,
@@ -21,7 +26,13 @@ import '../bloc/light_state.dart';
 /// read as a change.
 class LightNoticeListener extends StatelessWidget {
   final Widget child;
-  const LightNoticeListener({super.key, required this.child});
+  final bool navigate;
+
+  const LightNoticeListener({
+    super.key,
+    required this.child,
+    this.navigate = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +47,12 @@ class LightNoticeListener extends StatelessWidget {
               title: Strings.forgotten(name),
               body: Strings.removedFromConfig,
             );
-            popOr(
-              context,
-              lightParent(context.read<LightBloc>().state.light?.roomId),
-            );
+            if (navigate) {
+              popOr(
+                context,
+                lightParent(context.read<LightBloc>().state.light?.roomId),
+              );
+            }
           case LightError(:var message):
             toasts.push(tone: WizToastTone.error, title: message);
         }

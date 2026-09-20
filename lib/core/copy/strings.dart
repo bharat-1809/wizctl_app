@@ -358,6 +358,18 @@ class Strings {
   /// The rail's footer: what is lit, and the port every light is reached on.
   static String railFooter(int on) => '$on on · udp $wizPort';
 
+  // The desktop inspector (spec §10.9).
+  static const noLightSelected = 'No light selected';
+  static const pickALight = 'Pick a light on the left to control it.';
+
+  /// The inspector's second stat tile, when the light is showing one.
+  static const scene = 'Scene';
+
+  /// The inspector's device panel, under the MAC: the port every light is
+  /// reached on, and the firmware when the bulb has reported one.
+  static String fw(String? version) =>
+      version == null ? 'udp $wizPort' : 'udp $wizPort · fw $version';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -586,6 +598,9 @@ class Strings {
     railHouse,
     noRoom,
     createRoomToGroup,
+    noLightSelected,
+    pickALight,
+    scene,
     windowSetup,
     blinkLight,
     glyphSofa,
