@@ -178,6 +178,11 @@ class FakeLightRepository implements LightRepository {
   /// platform channel that went away — and check that the screen copes.
   Object? insertError;
 
+  /// What [get] throws instead of answering. Null by default. An `Object` for
+  /// [insertError]'s reason: a read can fail in ways the domain never modelled
+  /// too, and whoever asked for it has to cope.
+  Object? getError;
+
   void seed(List<Light> lights) {
     for (var l in lights) {
       _lights[l.id] = l;
@@ -217,7 +222,12 @@ class FakeLightRepository implements LightRepository {
   @override
   Future<List<Light>> getByRoom(String roomId) async => byRoom(roomId);
   @override
-  Future<Light?> get(String id) async => _lights[id];
+  Future<Light?> get(String id) async {
+    var error = getError;
+    if (error != null) throw error;
+    return _lights[id];
+  }
+
   @override
   Future<Light?> getByMac(String homeId, String mac) async => _lights.values
       .where((l) => l.homeId == homeId && l.mac == mac)

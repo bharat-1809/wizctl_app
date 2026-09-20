@@ -429,7 +429,10 @@ class Strings {
   /// The toast layer composes its title from these rather than showing
   /// `CommandPending.description`: every line the user reads lives here.
   static String sendingTo(String name) => 'Sending to $name';
-  static String sendingToLights(int n) => 'Sending to $n lights';
+
+  /// A batch, and the fallback for a single light whose name could not be
+  /// read; pluralised, so the one-light fallback does not read "1 lights".
+  static String sendingToLights(int n) => 'Sending to ${plural(n, 'light')}';
 
   /// The loading toast a Retry puts up, for one light and for a batch — a
   /// retry resends every light that failed under one report at once.

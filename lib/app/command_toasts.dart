@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../core/copy/strings.dart';
 import '../core/widgets/toast_controller.dart';
 import '../domain/entities/entities.dart';
@@ -58,7 +60,22 @@ class CommandToastListener {
   });
 
   void start() {
-    _subscription ??= pipeline.reports.listen(_onReport);
+    // `onError`, and it keeps listening: a `Stream.listen` with no error
+    // handler turns anything the pipeline's stream carries into an unhandled
+    // async error, which in release is a crash and in a test is a failure a
+    // long way from its cause. Cancelling instead would leave every later
+    // command with no toasts at all, silently, for the life of the app.
+    _subscription ??= pipeline.reports.listen(
+      _onReport,
+      onError: (Object error, StackTrace stack) => FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'wizctl_app',
+          context: ErrorDescription('listening to the command pipeline'),
+        ),
+      ),
+    );
   }
 
   Future<void> dispose() async {
@@ -82,14 +99,35 @@ class CommandToastListener {
   Future<void> _pending(CommandPending report) async {
     var single = report.lightIds.length == 1;
     Light? light;
-    if (single) light = await lights.get(report.lightIds.single);
+    // Guarded: a read that fails is not a reason for the batch to go silent.
+    // The name is all this read was for, so a failure falls through to the
+    // count title below — which is why a failed read is kept apart from a
+    // light that is simply gone.
+    var read = true;
+    if (single) {
+      try {
+        light = await lights.get(report.lightIds.single);
+      } catch (error, stack) {
+        read = false;
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stack,
+            library: 'wizctl_app',
+            context: ErrorDescription(
+              'reading the light a loading toast would name',
+            ),
+          ),
+        );
+      }
+    }
     // The read above is a suspension point: the batch may have resolved while
     // it was in flight, and arming a toast for a batch that has already
     // reported would surface it with nothing left to say.
     if (_settled.remove(report.id)) return;
     var batch = _batches[report.id];
     if (batch != null && batch.errors.isNotEmpty) return;
-    if (single && light == null) {
+    if (single && read && light == null) {
       // Gone from the repository between the send and this read: no name and
       // no address, and a count of one light would read as a lie. The entry is
       // still recorded, so a failure for this batch still pushes its error

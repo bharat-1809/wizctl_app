@@ -134,6 +134,30 @@ void main() {
     },
   );
 
+  test('a read that fails still puts the batch\'s loading toast up', () {
+    fakeAsync((async) {
+      var rig = _Rig();
+      var a = _light('a', '192.168.1.115');
+      rig.lights.seed([a]);
+      rig.gateway.sendLatency = const Duration(seconds: 2);
+      unawaited(rig.network.refresh());
+      async.flushMicrotasks();
+      rig.listener.start();
+
+      // The name is what the read was for; without it the toast falls back to
+      // the count, rather than the batch going silent.
+      rig.lights.getError = StateError('database closed');
+      unawaited(rig.pipeline.run(CommandBatch(items: [_item(a)])));
+      async.elapse(_delay * 2);
+      var toast = rig.toasts.toasts.single;
+      expect(toast.tone, WizToastTone.loading);
+      expect(toast.title, Strings.sendingToLights(1));
+      expect(toast.body, isNull, reason: 'no address was read either');
+      async.elapse(const Duration(seconds: 4));
+      rig.dispose();
+    });
+  });
+
   test('a failed write resolves the toast to the error with Retry', () {
     fakeAsync((async) {
       var rig = _Rig();
