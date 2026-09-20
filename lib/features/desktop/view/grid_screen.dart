@@ -67,12 +67,20 @@ class GridScreen extends StatelessWidget {
       showNote: true,
     );
     if (result == null) return;
-    var room = await addRoom(homeId, result.name, result.glyph);
-    toasts.push(
-      tone: WizToastTone.success,
-      title: Strings.roomSaved,
-      body: Strings.roomIsEmpty(room.name),
-    );
+    // Guarded: this key writes straight through the use case with no bloc to
+    // catch for it, so an `Object` — a closed database, a channel that went
+    // away — would otherwise reach the framework as an unhandled error and the
+    // user would see the sheet close and nothing happen.
+    try {
+      var room = await addRoom(homeId, result.name, result.glyph);
+      toasts.push(
+        tone: WizToastTone.success,
+        title: Strings.roomSaved,
+        body: Strings.roomIsEmpty(room.name),
+      );
+    } catch (_) {
+      toasts.push(tone: WizToastTone.error, title: Strings.roomSaveFailed);
+    }
   }
 
   @override

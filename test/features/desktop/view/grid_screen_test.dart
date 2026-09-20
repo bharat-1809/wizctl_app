@@ -10,6 +10,8 @@ import 'package:wizctl_app/core/widgets/wiz_dial.dart';
 import 'package:wizctl_app/core/widgets/wiz_empty_state.dart';
 import 'package:wizctl_app/core/widgets/wiz_stat_tile.dart';
 import 'package:wizctl_app/core/widgets/wiz_status_banner.dart';
+import 'package:wizctl_app/core/widgets/wiz_text_field.dart';
+import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
 import 'package:wizctl_app/features/desktop/widgets/grid_room_panel.dart';
@@ -115,6 +117,47 @@ void main() {
       );
     });
   });
+
+  testWidgets(
+    'a room write that fails on the grid toasts instead of throwing',
+    (tester) async {
+      await withScope(tester, (scope) async {
+        var bloc = HomeScreenBloc(
+          homes: scope.seed.homes,
+          rooms: scope.seed.rooms,
+          lights: scope.seed.lights,
+          store: scope.seed.store,
+          settings: scope.seed.settings,
+          setPower: scope.setPower,
+          sync: scope.sync,
+        )..add(const HomeScreenSubscribed());
+        addTearDown(() => unawaited(bloc.close()));
+        await pumpRouted(
+          tester,
+          scope.wrap(
+            BlocProvider.value(
+              value: bloc,
+              child: const GridScreen.allLights(),
+            ),
+          ),
+          size: _desktop,
+        );
+        await settle(tester);
+        scope.seed.rooms.insertError = StateError('database closed');
+
+        await tester.tap(find.text('ADD ROOM'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(WizTextField), 'Study');
+        await tester.pump();
+        await tester.tap(find.text('SAVE ROOM'));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(scope.toasts.toasts.single.tone, WizToastTone.error);
+        expect(scope.toasts.toasts.single.title, Strings.roomSaveFailed);
+      });
+    },
+  );
 
   testWidgets('a home with no lights draws the bar and the tiles, no cards', (
     tester,

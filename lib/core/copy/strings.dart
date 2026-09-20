@@ -87,6 +87,11 @@ class Strings {
   static const glyph = 'Glyph';
   static const saveRoom = 'Save room';
   static const roomSaved = 'Room saved';
+
+  /// A room write that failed under a view rather than a bloc — the desktop
+  /// grid's Add room key and the save-light sheet's New room key both write
+  /// straight through `AddRoom`.
+  static const roomSaveFailed = 'Could not save the room';
   static const renameRoom = 'Rename room';
   static const deleteRoom = 'Delete room';
   static const moveLightsFirst = 'Move its lights first';
@@ -490,6 +495,7 @@ class Strings {
     glyph,
     saveRoom,
     roomSaved,
+    roomSaveFailed,
     renameRoom,
     deleteRoom,
     moveLightsFirst,

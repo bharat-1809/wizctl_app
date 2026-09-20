@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/widgets/field_label.dart';
 import '../../../core/copy/strings.dart';
 import '../../../core/theme/wiz_theme.dart';
+import '../../../core/widgets/toast_controller.dart';
 import '../../../core/widgets/wiz_button.dart';
 import '../../../core/widgets/wiz_chip.dart';
 import '../../../core/widgets/wiz_sheet.dart';
@@ -136,13 +137,24 @@ class _SaveLightBodyState extends State<_SaveLightBody> {
   /// have to leave the sheet to make somewhere to put the light.
   Future<void> _newRoom() async {
     var addRoom = context.read<AddRoom>();
+    var toasts = context.read<ToastController>();
     var result = await showRoomSheet(
       context,
       title: Strings.newRoom,
       primaryLabel: Strings.createRoom,
     );
     if (result == null) return;
-    var room = await addRoom(widget.homeId, result.name, result.glyph);
+    // Guarded: this key writes straight through the use case with no bloc to
+    // catch for it, so an `Object` — a closed database, a channel that went
+    // away — would otherwise reach the framework as an unhandled error and the
+    // user would see the room sheet close with no new chip and no reason why.
+    Room room;
+    try {
+      room = await addRoom(widget.homeId, result.name, result.glyph);
+    } catch (_) {
+      toasts.push(tone: WizToastTone.error, title: Strings.roomSaveFailed);
+      return;
+    }
     // The sheet may have been dismissed while the room was being written, and
     // the notifiers go with it.
     if (!mounted) return;

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/app/routes.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_button.dart';
 import 'package:wizctl_app/core/widgets/wiz_filament_bar.dart';
@@ -322,6 +323,44 @@ void main() {
       script: (scope) => scope.gateway.failing['broadcast'] =
           const OffNetworkFailure('192.168.1', '10.0.0'),
     );
+  });
+
+  testWidgets("the save sheet's New room key toasts a write that fails", (
+    tester,
+  ) async {
+    await withDiscovery(tester, (scope, bloc) async {
+      // The New room chip only shows when the home has none, which is the one
+      // case the sheet writes a room for.
+      for (var room in await scope.seed.rooms.getByHome('h1')) {
+        await scope.seed.rooms.delete(room.id);
+      }
+      // `wrap:` as well as the screen's own providers: the sheet is a
+      // root-navigator route, so its `context.read<AddRoom>()` resolves above
+      // the router — which is where the app root puts the providers, and where
+      // this harness only puts them when asked.
+      await pumpRouted(
+        tester,
+        screen(scope, bloc),
+        size: _phone,
+        wrap: scope.wrap,
+      );
+      await discover(tester);
+      await tester.tap(find.text('SAVE'));
+      await tester.pump(_settled);
+      expect(find.text(Strings.newRoom), findsOneWidget, reason: 'the chip');
+      scope.seed.rooms.insertError = StateError('database closed');
+      await tester.tap(find.text(Strings.newRoom));
+      await tester.pump(_settled);
+      await tester.enterText(find.byType(WizTextField).last, 'Study');
+      await tester.pump();
+      await tester.tap(find.text('CREATE ROOM'));
+      await tester.pump(_settled);
+      await tester.pump(_settled);
+
+      expect(tester.takeException(), isNull);
+      expect(scope.toasts.toasts.single.tone, WizToastTone.error);
+      expect(scope.toasts.toasts.single.title, Strings.roomSaveFailed);
+    });
   });
 
   testWidgets('saving a row: sheet, loading toast, then the saved toast', (

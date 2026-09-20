@@ -102,6 +102,13 @@ class FakeHomeRepository implements HomeRepository {
 class FakeRoomRepository implements RoomRepository {
   final Map<String, Room> _rooms = {};
   final _changes = StreamController<void>.broadcast();
+
+  /// What [insert] throws instead of storing the room. Null by default, so a
+  /// write succeeds. An `Object`, not a `DomainException`, so a test can model
+  /// a failure the domain never modelled — a closed database, a platform
+  /// channel that went away — and check that the view that asked for the write
+  /// copes. [update] writes through [insert], so this fails one too.
+  Object? insertError;
   void seed(List<Room> rooms) {
     for (var r in rooms) {
       _rooms[r.id] = r;
@@ -128,6 +135,8 @@ class FakeRoomRepository implements RoomRepository {
   Future<Room?> get(String id) async => _rooms[id];
   @override
   Future<void> insert(Room room) async {
+    var error = insertError;
+    if (error != null) throw error;
     _rooms[room.id] = room;
     _changes.add(null);
   }
