@@ -205,6 +205,22 @@ void main() {
   );
 
   blocTest<OnboardingBloc, OnboardingState>(
+    'a room pick that names no room is dropped',
+    build: build,
+    act: (bloc) => bloc
+      ..add(const OnboardingNameChanged('Kaverappa House'))
+      ..add(const OnboardingHomeCreated())
+      ..add(const OnboardingToNaming([_rgb], '192.168.1'))
+      ..add(const OnboardingRoomPicked('192.168.1.126', 'sr-bedroom'))
+      ..add(const OnboardingRoomPicked('192.168.1.126', 'sr-nowhere')),
+    verify: (bloc) => expect(
+      bloc.state.assignments['192.168.1.126']?.roomTempId,
+      'sr-bedroom',
+      reason: 'an assignment never points at a room that does not exist',
+    ),
+  );
+
+  blocTest<OnboardingBloc, OnboardingState>(
     'finishing writes the home and reports the counts',
     build: build,
     act: (bloc) => bloc
@@ -343,6 +359,43 @@ void main() {
       expect(
         (bloc.state.notice! as OnboardingError).message,
         contains('database closed'),
+      );
+    },
+  );
+
+  blocTest<OnboardingBloc, OnboardingState>(
+    'a retry refused for the same reason is announced again',
+    build: build,
+    setUp: () => seed.lights.insertError = StateError('database closed'),
+    act: (bloc) async {
+      var notices = <OnboardingNotice?>[];
+      var sub = bloc.stream.listen((s) => notices.add(s.notice));
+      addTearDown(sub.cancel);
+      bloc
+        ..add(const OnboardingNameChanged('Kaverappa House'))
+        ..add(const OnboardingHomeCreated())
+        ..add(const OnboardingToNaming([_rgb], '192.168.1'))
+        ..add(
+          const OnboardingAliasChanged('192.168.1.126', 'Ceiling dome light'),
+        )
+        ..add(const OnboardingFinished());
+      await Future<void>.delayed(_settled);
+      // No OnboardingNoticeCleared in between, and the knob is still set, so
+      // the second refusal carries the same message as the first.
+      bloc.add(const OnboardingFinished());
+      await Future<void>.delayed(_settled);
+      var afterFirst = notices.sublist(
+        notices.indexWhere((n) => n is OnboardingError) + 1,
+      );
+      expect(
+        afterFirst,
+        contains(isNull),
+        reason: 'the retry starts with no notice, so the next one is a change',
+      );
+      expect(
+        afterFirst.whereType<OnboardingError>(),
+        hasLength(1),
+        reason: 'the second refusal is a notice of its own',
       );
     },
   );

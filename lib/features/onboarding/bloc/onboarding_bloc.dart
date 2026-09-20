@@ -40,10 +40,13 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     on<OnboardingAliasChanged>(
       (e, emit) => _assign(emit, e.ip, (a) => a.copyWith(alias: e.alias)),
     );
-    on<OnboardingRoomPicked>(
-      (e, emit) =>
-          _assign(emit, e.ip, (a) => a.copyWith(roomTempId: e.roomTempId)),
-    );
+    on<OnboardingRoomPicked>((e, emit) {
+      // An assignment only ever names a room that exists: a pick from a list
+      // the state has moved past is dropped rather than left pointing at
+      // nothing, where the write would quietly lose the light.
+      if (!state.setupRooms.any((r) => r.tempId == e.roomTempId)) return;
+      _assign(emit, e.ip, (a) => a.copyWith(roomTempId: e.roomTempId));
+    });
     on<OnboardingFixturePicked>(
       (e, emit) => _assign(emit, e.ip, (a) => a.copyWith(fixture: e.fixture)),
     );
@@ -118,7 +121,10 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     Emitter<OnboardingState> emit,
   ) async {
     if (!state.namesComplete || state.finishing) return;
-    emit(state.copyWith(finishing: true));
+    // The previous attempt's notice goes with it: a retry that is refused for
+    // the same reason must still read as a new notice to a listener watching
+    // for one to change.
+    emit(state.copyWith(finishing: true, clearNotice: true));
     var lights = [
       for (var f in state.kept)
         OnboardingLight(
