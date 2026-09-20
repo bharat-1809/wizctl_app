@@ -47,6 +47,11 @@ class AppScope {
   final toasts = ToastController();
   final flags = DebugFlagsHolder();
   final feedback = RecordingFeedbackService();
+
+  /// The subnet this device is on, as both [monitor] and `RunDiscovery` read
+  /// it: one object, so a screen's discovery and the off-network banner can
+  /// never disagree about which network the test is on.
+  late final FakeNetworkInfo networkInfo;
   late final NetworkMonitor monitor;
   late final DeviceCommandPipeline pipeline;
   late final RefreshStates refresh;
@@ -72,7 +77,8 @@ class AppScope {
         rssi: s.rssi,
       );
     }
-    monitor = NetworkMonitor(FakeNetworkInfo(subnet));
+    networkInfo = FakeNetworkInfo(subnet);
+    monitor = NetworkMonitor(networkInfo);
     resolver = TargetResolver(seed.lights);
     pipeline = DeviceCommandPipeline(
       gateway: gateway,
@@ -142,6 +148,24 @@ class AppScope {
   ApplyScene get applyScene =>
       ApplyScene(resolver: resolver, store: seed.store, pipeline: pipeline);
 
+  /// The discovery use cases a `DiscoveryBloc` takes (Task 14). `RunDiscovery`
+  /// reads [networkInfo], not [monitor], so it reports the same subnet the
+  /// scope was built with.
+  RunDiscovery get runDiscovery => RunDiscovery(
+    gateway: gateway,
+    lights: seed.lights,
+    store: seed.store,
+    network: networkInfo,
+    clock: clock,
+  );
+  SaveDiscoveredLight get saveDiscoveredLight => SaveDiscoveredLight(
+    lights: seed.lights,
+    store: seed.store,
+    ids: ids,
+    clock: clock,
+  );
+  LearnHomeSubnet get learnHomeSubnet => LearnHomeSubnet(homes: seed.homes);
+
   /// The management use cases a light's own screen owns (Task 12). Unlike
   /// the writes above these never reach a bulb, so they take the repository
   /// and the store rather than the pipeline.
@@ -149,6 +173,10 @@ class AppScope {
   RenameLight get renameLight => RenameLight(lights: seed.lights);
   ForgetLight get forgetLight =>
       ForgetLight(lights: seed.lights, store: seed.store);
+
+  /// Provided by type in [wrap], the way the shell provides it (Task 19): the
+  /// Save light sheet reads it straight off the context to make a first room.
+  AddRoom get addRoom => AddRoom(rooms: seed.rooms, ids: ids);
 
   /// The `ModesBlocFactory` the shell provides (Task 19), so a screen that
   /// opens the modes sheet finds one here too.
@@ -196,6 +224,7 @@ class AppScope {
         RepositoryProvider<SettingsRepository>.value(value: seed.settings),
         RepositoryProvider<LiveStateStore>.value(value: seed.store),
         RepositoryProvider<ModesBlocFactory>.value(value: modesBlocFor),
+        RepositoryProvider<AddRoom>.value(value: addRoom),
       ],
       child: child,
     ),

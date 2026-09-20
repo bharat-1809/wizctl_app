@@ -192,6 +192,55 @@ class Strings {
   static const fixtureStrip = 'Light strip';
   static const fixturePlug = 'Plug';
 
+  // Discovery (spec §10.8, §15). The screen's own title is [discoverLights],
+  // the line the primary key already carries — [all] may not hold a value
+  // twice, so there is no second "Discover lights" here.
+  static const discovery = 'Discovery';
+  static const localNetwork = 'Local network';
+  static const nothingFoundYet = 'Nothing found yet';
+  static const lightsAnswerLocally =
+      'Lights answer on your local network. Make sure they are powered on, then scan the subnet.';
+  static const sweepTheSubnet =
+      'Make sure the lights are powered on, then sweep the subnet one address at a time.';
+  static const discovering = 'Discovering';
+  static const broadcast = 'Broadcast';
+  static const sweepSubnet = 'Sweep subnet';
+  static const saved = 'Saved';
+  static const nameThisLight = 'Name this light';
+  static const room = 'Room';
+  static const saveLight = 'Save light';
+  static const tryAgain = 'Try again';
+  static const portBusyTitle = 'Could not open the discovery port';
+  static const portBusyBody =
+      'Another app is using UDP 38899. Close it, then try again.';
+  static const listeningForLights = 'Listening for lights';
+
+  /// A save that failed with no loading toast left to resolve, so there is no
+  /// alias on hand to name it by.
+  static const saveFailed = 'Could not save the light';
+
+  /// A device whose class no discovery reply named. `Light.className` writes
+  /// the same word for a saved light; this is the copy layer's own.
+  static const unknownClass = 'Unknown';
+
+  static String addedToHome(String ip) => '$ip added to this home';
+  static String saving(String alias) => 'Saving $alias';
+  static String aliasSaved(String alias) => '$alias saved';
+
+  /// The title of a failed save: it names the light rather than repeating the
+  /// failure, which is a raw error for anything the domain did not model and
+  /// belongs in the body.
+  static String couldNotSave(String alias) => 'Could not save $alias';
+  static String lightsAnswered(int n) => '${plural(n, 'light')} answered';
+  static String addresses(int probed, int total) =>
+      '$probed of $total addresses';
+  static String sweeping(String subnet) => 'Sweeping $subnet.0/24';
+  static String listeningOn(String subnet) => 'Listening on $subnet.0/24';
+  static String sweptSubnet(String subnet, int total) =>
+      'Swept $subnet.0/24 · $total addresses';
+  static String broadcastOn(String subnet) => 'Broadcast on $subnet.0/24';
+  static String ipAndClass(String ip, String cls) => '$ip · $cls';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -355,6 +404,24 @@ class Strings {
     fixtureCeiling,
     fixtureStrip,
     fixturePlug,
+    discovery,
+    localNetwork,
+    nothingFoundYet,
+    lightsAnswerLocally,
+    sweepTheSubnet,
+    discovering,
+    broadcast,
+    sweepSubnet,
+    saved,
+    nameThisLight,
+    room,
+    saveLight,
+    tryAgain,
+    portBusyTitle,
+    portBusyBody,
+    listeningForLights,
+    saveFailed,
+    unknownClass,
     blinkLight,
     glyphSofa,
     glyphBed,
