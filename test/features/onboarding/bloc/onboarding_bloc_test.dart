@@ -229,7 +229,11 @@ void main() {
         seed.store.of((await seed.lights.getByMac(done.home.id, 'rgb'))!.id),
         LiveState.initial,
       );
-      expect(bloc.state.finishing, isFalse);
+      expect(
+        bloc.state.finishing,
+        isTrue,
+        reason: 'the flow is over; Finish never runs twice',
+      );
     },
   );
 
@@ -260,7 +264,7 @@ void main() {
       var homes = await seed.homes.getAll();
       expect(homes, hasLength(1), reason: 'one home, not two');
       expect(await seed.lights.getByHome(homes.single.id), hasLength(2));
-      expect(bloc.state.finishing, isFalse);
+      expect(bloc.state.finishing, isTrue, reason: 'the flow is over');
       expect(bloc.state.notice, isA<OnboardingDone>());
     },
   );
@@ -281,6 +285,65 @@ void main() {
       expect(bloc.state.finishing, isFalse);
       expect(bloc.state.notice, const OnboardingError('A name is required.'));
       expect(await seed.homes.getAll(), isEmpty, reason: 'nothing was written');
+    },
+  );
+
+  blocTest<OnboardingBloc, OnboardingState>(
+    'a finish after one that succeeded writes nothing more',
+    build: build,
+    act: (bloc) async {
+      bloc
+        ..add(const OnboardingNameChanged('Kaverappa House'))
+        ..add(const OnboardingHomeCreated())
+        ..add(const OnboardingToNaming([_rgb, _plug], '192.168.1'))
+        ..add(
+          const OnboardingAliasChanged('192.168.1.126', 'Ceiling dome light'),
+        )
+        ..add(const OnboardingAliasChanged('192.168.1.140', 'Plug by the TV'))
+        ..add(const OnboardingFinished());
+      await Future<void>.delayed(_settled);
+      expect(bloc.state.notice, isA<OnboardingDone>());
+      bloc.add(const OnboardingFinished());
+    },
+    wait: _settled,
+    verify: (bloc) async {
+      var homes = await seed.homes.getAll();
+      expect(
+        homes,
+        hasLength(1),
+        reason:
+            'each run of the use case writes a home of its own, so one '
+            'home is one run',
+      );
+      expect(await seed.lights.getByHome(homes.single.id), hasLength(2));
+      expect((bloc.state.notice! as OnboardingDone).home.id, homes.single.id);
+      expect(bloc.state.finishing, isTrue);
+    },
+  );
+
+  blocTest<OnboardingBloc, OnboardingState>(
+    'a finish that fails outside the domain frees the button and says why',
+    build: build,
+    setUp: () => seed.lights.insertError = StateError('database closed'),
+    act: (bloc) => bloc
+      ..add(const OnboardingNameChanged('Kaverappa House'))
+      ..add(const OnboardingHomeCreated())
+      ..add(const OnboardingToNaming([_rgb, _plug], '192.168.1'))
+      ..add(const OnboardingAliasChanged('192.168.1.126', 'Ceiling dome light'))
+      ..add(const OnboardingAliasChanged('192.168.1.140', 'Plug by the TV'))
+      ..add(const OnboardingFinished()),
+    wait: _settled,
+    verify: (bloc) {
+      expect(
+        bloc.state.finishing,
+        isFalse,
+        reason: 'the flow is not stranded with Finish disabled',
+      );
+      expect(bloc.state.notice, isA<OnboardingError>());
+      expect(
+        (bloc.state.notice! as OnboardingError).message,
+        contains('database closed'),
+      );
     },
   );
 

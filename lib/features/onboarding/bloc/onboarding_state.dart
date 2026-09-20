@@ -55,6 +55,11 @@ class OnboardingState extends Equatable {
   final List<FoundDevice> kept;
   final String? subnet;
   final Map<String, Assignment> assignments;
+
+  /// A finish is in flight or has completed. It gates Finish both while the
+  /// write is running and after it succeeded, so the first run writes one home
+  /// however many times the button is pressed; a refused finish clears it
+  /// again so the user can try once more.
   final bool finishing;
   final OnboardingNotice? notice;
 

@@ -142,16 +142,23 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
           lights: lights,
         ),
       );
+      // [OnboardingState.finishing] stays true: the first run is over, so the
+      // guard above turns a repeat [OnboardingFinished] into a no-op rather
+      // than a second home.
       emit(
-        state.copyWith(
-          finishing: false,
-          notice: OnboardingDone(home, lights.length, roomCount),
-        ),
+        state.copyWith(notice: OnboardingDone(home, lights.length, roomCount)),
       );
     } on DomainException catch (e) {
+      // The domain's own line, already written for the user.
       emit(
         state.copyWith(finishing: false, notice: OnboardingError(e.message)),
       );
+    } catch (e) {
+      // Anything the domain did not model — a closed database, a platform
+      // channel that went away. Whatever it was, the flow must not be left
+      // stranded with Finish disabled over it, so it is reported like any
+      // other refusal and can be tried again.
+      emit(state.copyWith(finishing: false, notice: OnboardingError('$e')));
     }
   }
 }
