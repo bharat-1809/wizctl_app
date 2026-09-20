@@ -162,9 +162,18 @@ class _CliParityRowState extends State<_CliParityRow> {
 
   /// Copies the command and says so: spec §10.7 asks only that the tap copy,
   /// and a copy with no acknowledgement leaves the user nothing to go on.
+  ///
+  /// The platform channel can refuse — a headless session, a Linux build with
+  /// no clipboard service — and `Clipboard.setData` reports that by throwing on
+  /// its own future, which nothing else would catch.
   Future<void> _copy(String name) async {
     var toasts = context.read<ToastController>();
-    await Clipboard.setData(ClipboardData(text: Strings.cliCommand(name)));
+    try {
+      await Clipboard.setData(ClipboardData(text: Strings.cliCommand(name)));
+    } catch (_) {
+      toasts.push(tone: WizToastTone.error, title: Strings.couldNotCopy);
+      return;
+    }
     toasts.push(tone: WizToastTone.info, title: Strings.copied);
   }
 
@@ -174,19 +183,26 @@ class _CliParityRowState extends State<_CliParityRow> {
     return FutureBuilder<List<Light>>(
       future: _lights,
       builder: (context, snapshot) {
-        // A home with no lights yet: the whole-home target is what the CLI
-        // takes when nothing can be named.
+        // A home with no lights yet, and a read still in flight: the whole-home
+        // target is what the CLI takes when nothing can be named.
         var name = snapshot.data?.firstOrNull?.name ?? Strings.wholeHome;
+        // A read that failed knows nothing about this home's lights, so the row
+        // goes inert: it keeps the whole-home line, which is true of any home,
+        // and drops the chevron and the tap rather than offering to copy a
+        // command that claims to be about a light it could not name.
+        var readable = !snapshot.hasError;
         return WizListRow(
           icon: WizIcons.terminal,
           title: Strings.cliParity,
           meta: Strings.cliCommand(name),
-          trailing: WizIcon(
-            WizIcons.chevronRight,
-            size: SettingsRows.chevron,
-            color: wiz.colors.textTertiary,
-          ),
-          onTap: () => _copy(name),
+          trailing: readable
+              ? WizIcon(
+                  WizIcons.chevronRight,
+                  size: SettingsRows.chevron,
+                  color: wiz.colors.textTertiary,
+                )
+              : null,
+          onTap: readable ? () => _copy(name) : null,
         );
       },
     );

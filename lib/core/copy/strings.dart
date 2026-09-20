@@ -297,6 +297,7 @@ class Strings {
   static const widgetGalleryMeta = 'Every kit widget, live';
   static const renameHome = 'Rename home';
   static const copied = 'Copied to the clipboard';
+  static const couldNotCopy = 'Could not reach the clipboard';
   static const oneLightDidNotAnswer = 'One light did not answer';
 
   /// The command the desktop CLI-parity row copies.
@@ -535,6 +536,7 @@ class Strings {
     widgetGalleryMeta,
     renameHome,
     copied,
+    couldNotCopy,
     oneLightDidNotAnswer,
     blinkLight,
     glyphSofa,

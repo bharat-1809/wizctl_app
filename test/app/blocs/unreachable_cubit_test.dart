@@ -35,14 +35,18 @@ void main() {
 
   blocTest<UnreachableCubit, List<Light>>(
     'no active home means nothing',
-    build: () {
+    // The fixture this case wants has no active home, so the one the outer
+    // `setUp` made is disposed before it is replaced: every `SeedHome` built
+    // here is disposed exactly once, this one by the outer `tearDown`.
+    setUp: () async {
+      await seed.dispose();
       seed = SeedHome(active: false);
-      return UnreachableCubit(
-        lights: seed.lights,
-        store: seed.store,
-        settings: seed.settings,
-      );
     },
+    build: () => UnreachableCubit(
+      lights: seed.lights,
+      store: seed.store,
+      settings: seed.settings,
+    ),
     act: (cubit) => cubit.subscribe(),
     wait: _settled,
     verify: (cubit) => expect(cubit.state, isEmpty),
@@ -64,6 +68,12 @@ void main() {
       await Future<void>.delayed(_settled);
       expect(cubit.state.map((l) => l.name), ['Hallway']);
       await seed.settings.save(const AppSettings(activeHomeId: 'h2'));
+      await Future<void>.delayed(_settled);
+      expect(cubit.state, isEmpty, reason: "the Studio's one light answers");
+      // The other half of the amendment: h1's streams have to be *gone*, not
+      // merely outvoted. A light of the home that was left going silent must
+      // reach nobody — under `asyncExpand` this puts the dome back on screen.
+      seed.store.update('dome', (s) => s.copyWith(reachable: false));
     },
     wait: _settled,
     verify: (cubit) => expect(cubit.state, isEmpty),

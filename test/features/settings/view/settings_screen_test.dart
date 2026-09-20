@@ -1,10 +1,16 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/app/routes.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_list_row.dart';
 import 'package:wizctl_app/core/widgets/wiz_text_field.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
+import 'package:wizctl_app/domain/entities/entities.dart';
+import 'package:wizctl_app/domain/repositories/light_repository.dart';
 import 'package:wizctl_app/features/settings/view/settings_screen.dart';
 
 import '../../../support/app_scope.dart';
@@ -88,7 +94,9 @@ void main() {
         'Discovery finds nothing',
         'Widget gallery',
       ]);
-      expect(find.text('WizCtl 0.1.0 · wizctl 1.1.0'), findsOneWidget);
+      // The app half is the mock `setUpAll` installed; the package half is read
+      // from the package, so a `wizctl` bump does not break this.
+      expect(find.text(Strings.version('0.1.0', cliVersion)), findsOneWidget);
       expect(find.text('Config file'), findsNothing);
     });
   });
@@ -101,15 +109,45 @@ void main() {
         size: _phone,
       );
       await tester.pumpAndSettle();
-      // In tree order: Re-scan on launch, Sound & haptics, then the three
-      // prototype switches.
+      // Every one of the five, so a mis-wired index cannot pass by landing on
+      // a neighbour. In tree order: Re-scan on launch and Sound & haptics from
+      // `SettingsRows`, then the three prototype switches. Both persisted
+      // toggles start on (`AppSettings.defaults`) and the three flags start
+      // off (`DebugFlags.none`), so each tap flips a different value.
       var toggles = find.byType(WizToggle);
+      expect(toggles, findsNWidgets(5));
+
+      await tester.tap(toggles.at(0));
+      await tester.pumpAndSettle();
+      expect(scope.settingsCubit.state.rescanOnLaunch, isFalse);
+      expect((await scope.seed.settings.get()).rescanOnLaunch, isFalse);
+
       await tester.tap(toggles.at(1));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(scope.settingsCubit.state.feedbackEnabled, isFalse);
       expect(scope.feedback.enabled, isFalse);
+
       await tester.tap(toggles.at(2));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(scope.flags.value.offNetwork, isTrue);
+
+      await tester.tap(toggles.at(3));
+      await tester.pumpAndSettle();
+      expect(scope.flags.value.forceTimeout, isTrue);
+
+      await tester.tap(toggles.at(4));
+      await tester.pumpAndSettle();
+      expect(scope.flags.value.findNothing, isTrue);
+
+      // Nothing else moved on the way: each setter touched its own value only.
+      expect(
+        scope.settingsCubit.state.debugFlags,
+        const DebugFlags(
+          offNetwork: true,
+          forceTimeout: true,
+          findNothing: true,
+        ),
+      );
     });
   });
 
@@ -205,4 +243,99 @@ void main() {
       expect(find.text('wizctl on -t "Ceiling dome light"'), findsOneWidget);
     });
   });
+
+  testWidgets('a clipboard that refuses is a toast, not a crash', (
+    tester,
+  ) async {
+    await withSettings(tester, (scope) async {
+      var messenger = tester.binding.defaultBinaryMessenger;
+      // Only the clipboard refuses: `MaterialApp` drives the rest of this
+      // channel (the overlay style, the switcher description) and a handler
+      // that threw for everything would fail the test on those instead.
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          throw PlatformException(code: 'unavailable');
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      await pumpRouted(
+        tester,
+        scope.wrap(const SettingsScreen()),
+        size: _desktop,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('CLI parity'));
+      await tester.pumpAndSettle();
+      var toast = scope.toasts.toasts.single;
+      expect(toast.title, 'Could not reach the clipboard');
+      expect(toast.tone, WizToastTone.error);
+    });
+  });
+
+  testWidgets('a read that fails leaves the CLI row inert', (tester) async {
+    await withSettings(tester, (scope) async {
+      // Only the row's own read fails. The repository is overridden for the
+      // screen's subtree, so `HomesBloc` — which also reads by home, for its
+      // counts — keeps the working one it was built with and the rest of the
+      // screen still draws.
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          RepositoryProvider<LightRepository>.value(
+            value: _FailingLights(scope.seed.lights),
+            child: const SettingsScreen(),
+          ),
+        ),
+        size: _desktop,
+      );
+      await tester.pumpAndSettle();
+      // The whole-home line is true of any home, so it stays; the chevron and
+      // the tap go, rather than offering a command about a light it could not
+      // name.
+      expect(find.text('wizctl on -t "Whole home"'), findsOneWidget);
+      var row = tester.widget<WizListRow>(
+        find.ancestor(
+          of: find.text('CLI parity'),
+          matching: find.byType(WizListRow),
+        ),
+      );
+      expect(row.onTap, isNull);
+      expect(row.trailing, isNull);
+      expect(scope.toasts.toasts, isEmpty);
+    });
+  });
+}
+
+/// A [LightRepository] whose `getByHome` always fails, everything else
+/// delegated: the read the CLI-parity row makes, and only that one.
+class _FailingLights implements LightRepository {
+  final LightRepository _inner;
+  _FailingLights(this._inner);
+
+  @override
+  Future<List<Light>> getByHome(String homeId) async =>
+      throw StateError('database closed');
+
+  @override
+  Stream<List<Light>> watchByHome(String homeId) => _inner.watchByHome(homeId);
+  @override
+  Stream<List<Light>> watchByRoom(String roomId) => _inner.watchByRoom(roomId);
+  @override
+  Stream<Light?> watch(String id) => _inner.watch(id);
+  @override
+  Future<List<Light>> getByRoom(String roomId) => _inner.getByRoom(roomId);
+  @override
+  Future<Light?> get(String id) => _inner.get(id);
+  @override
+  Future<Light?> getByMac(String homeId, String mac) =>
+      _inner.getByMac(homeId, mac);
+  @override
+  Future<void> insert(Light light) => _inner.insert(light);
+  @override
+  Future<void> update(Light light) => _inner.update(light);
+  @override
+  Future<void> delete(String id) => _inner.delete(id);
 }
