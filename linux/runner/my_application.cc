@@ -57,7 +57,7 @@ static void my_application_activate(GApplication* application) {
   // Spec §17: the minimum window. The source of truth for the two numbers is
   // `WindowLimits` in lib/core/platform/window_limits.dart;
   // test/platform/platform_config_test.dart pins these lines to it.
-  GdkGeometry geometry;
+  GdkGeometry geometry = {};
   geometry.min_width = 720;
   geometry.min_height = 560;
   gtk_window_set_geometry_hints(window, nullptr, &geometry, GDK_HINT_MIN_SIZE);

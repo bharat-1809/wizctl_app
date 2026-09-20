@@ -17,6 +17,10 @@ void main() {
       plist,
       contains('<key>CFBundleDisplayName</key>\n\t<string>WizCtl</string>'),
     );
+    expect(
+      plist,
+      contains('<key>CFBundleName</key>\n\t<string>WizCtl</string>'),
+    );
     expect(plist, isNot(contains('UIBackgroundModes')));
   });
 
@@ -35,6 +39,13 @@ void main() {
     expect(
       config,
       contains('PRODUCT_BUNDLE_IDENTIFIER = com.dotstudios.wizctlApp'),
+    );
+    // The RunnerTests host is a literal, because `$(PRODUCT_NAME)` resolves
+    // to RunnerTests inside that target. Renaming the app without fixing it
+    // again leaves the test target pointing at a bundle that is not built.
+    expect(
+      _read('macos/Runner.xcodeproj/project.pbxproj'),
+      contains(r'TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WizCtl.app/'),
     );
     var window = _read('macos/Runner/MainFlutterWindow.swift');
     expect(window, contains('minSize'));
@@ -64,8 +75,23 @@ void main() {
     expect(_read('windows/runner/main.cpp'), contains('L"WizCtl"'));
     var win32 = _read('windows/runner/win32_window.cpp');
     expect(win32, contains('WM_GETMINMAXINFO'));
-    expect(win32, contains('${WindowLimits.minWidth.toInt()}'));
-    expect(win32, contains('${WindowLimits.minHeight.toInt()}'));
+    // The statements, not the comment above them: that comment names 720x560
+    // too, so a bare `contains('720')` would pass a runner that had lost the
+    // assignments.
+    expect(
+      win32,
+      contains(
+        'ptMinTrackSize.x = static_cast<LONG>'
+        '(${WindowLimits.minWidth.toInt()}',
+      ),
+    );
+    expect(
+      win32,
+      contains(
+        'ptMinTrackSize.y = static_cast<LONG>'
+        '(${WindowLimits.minHeight.toInt()}',
+      ),
+    );
     var linux = _read('linux/runner/my_application.cc');
     expect(linux, contains('"WizCtl"'));
     expect(linux, contains('gtk_window_set_geometry_hints'));
