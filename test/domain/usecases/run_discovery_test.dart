@@ -10,10 +10,12 @@ void main() {
   late FakeGateway gateway;
   late FakeLightRepository lights;
   late LiveStateStore store;
+  late FakeClock clock;
   late RunDiscovery run;
 
   setUp(() {
     gateway = FakeGateway();
+    clock = FakeClock();
     lights = FakeLightRepository()
       ..seed([
         Light(
@@ -34,7 +36,7 @@ void main() {
       lights: lights,
       store: store,
       network: FakeNetworkInfo('192.168.1'),
-      clock: FakeClock(),
+      clock: clock,
     );
   });
 
@@ -181,4 +183,43 @@ void main() {
     expect(updates.last, isA<DiscoveryFailed>());
     expect(gateway.probeCalls, isEmpty);
   });
+
+  test(
+    'with no home there is nothing to probe and nothing already saved',
+    () async {
+      gateway.broadcastResult = [
+        const DiscoveredLight(
+          ip: '192.168.1.126',
+          mac: 'a8bb50f1c204',
+          moduleName: 'ESP01_SHRGB1C_31',
+        ),
+      ];
+      gateway.states['192.168.1.126'] = const LightState(
+        isOn: true,
+        dimming: 40,
+      );
+      var updates = await RunDiscovery(
+        gateway: gateway,
+        lights: lights,
+        store: store,
+        network: FakeNetworkInfo('192.168.1'),
+        clock: clock,
+      )(mode: DiscoveryMode.quick).toList();
+      expect(gateway.probeCalls, isEmpty);
+      expect(
+        updates.first,
+        const PhaseChanged(
+          DiscoveryProgress(phase: DiscoveryPhase.broadcasting),
+        ),
+      );
+      var found = updates.whereType<DeviceFound>().single;
+      expect(
+        found.device.alreadySaved,
+        isFalse,
+        reason: 'a known MAC, but no home to know it',
+      );
+      expect(found.initial?.brightness, 40);
+      expect(updates.last, isA<DiscoveryFinished>());
+    },
+  );
 }

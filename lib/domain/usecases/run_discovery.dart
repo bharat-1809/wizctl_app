@@ -66,7 +66,8 @@ final class DiscoveryFailed extends DiscoveryUpdate {
   List<Object?> get props => [failure];
 }
 
-/// The discovery sequence (spec §5.7).
+/// The discovery sequence (spec §5.7). Without a [call] `homeId` (the
+/// first run) nothing is probed and nothing is already saved.
 class RunDiscovery {
   final DeviceGateway _gateway;
   final LightRepository _lights;
@@ -87,11 +88,13 @@ class RunDiscovery {
        _clock = clock; // ignore: prefer_initializing_formals
 
   Stream<DiscoveryUpdate> call({
-    required String homeId,
+    String? homeId,
     required DiscoveryMode mode,
     bool probeKnown = true,
   }) async* {
-    var known = await _lights.getByHome(homeId);
+    var known = homeId == null
+        ? const <Light>[]
+        : await _lights.getByHome(homeId);
     var knownByMac = {for (var l in known) l.mac: l};
     var byMac = <String, DiscoveredDevice>{};
     var failedRanges = <String>[];
