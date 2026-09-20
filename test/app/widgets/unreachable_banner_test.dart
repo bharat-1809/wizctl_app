@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/widgets/unreachable_banner.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/widgets/wiz_status_banner.dart';
 
 import '../../support/app_scope.dart';
@@ -57,6 +58,68 @@ void main() {
       // generator, so a change reaches the cubit a microtask hop or two after
       // the call, and the frame that drops the banner is the one after that.
       await tester.pumpAndSettle();
+      expect(find.byType(WizStatusBanner), findsNothing);
+    } finally {
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('given ids, it counts and names only those lights', (
+    tester,
+  ) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      // The living room answers; the silent light is the bedroom's hallway.
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          const UnreachableBanner(lightIds: {'dome', 'floor', 'strip'}),
+        ),
+      );
+      await tester.pump();
+      expect(
+        find.byType(WizStatusBanner),
+        findsNothing,
+        reason: 'the whole home has a silent light, but none of these three',
+      );
+    } finally {
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('given ids that include the silent one, it names it', (
+    tester,
+  ) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      scope.seed.store.update('dome', (s) => s.copyWith(reachable: false));
+      await pumpRouted(
+        tester,
+        scope.wrap(const UnreachableBanner(lightIds: {'bedside', 'hall'})),
+      );
+      await tester.pump();
+      expect(
+        find.text(Strings.oneLightDidNotAnswer),
+        findsOneWidget,
+        reason: "the dome is silent too, but it is not in this room's set",
+      );
+      expect(find.text(Strings.mayBeOffAtWallNamed('Hallway')), findsOneWidget);
+    } finally {
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('an empty id set is nothing to report', (tester) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      await pumpRouted(
+        tester,
+        scope.wrap(const UnreachableBanner(lightIds: {})),
+      );
+      await tester.pump();
       expect(find.byType(WizStatusBanner), findsNothing);
     } finally {
       await scope.dispose();

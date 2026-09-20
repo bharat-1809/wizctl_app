@@ -9,6 +9,7 @@ import 'package:wizctl_app/core/widgets/mode_row.dart';
 import 'package:wizctl_app/core/widgets/wiz_dial.dart';
 import 'package:wizctl_app/core/widgets/wiz_empty_state.dart';
 import 'package:wizctl_app/core/widgets/wiz_stat_tile.dart';
+import 'package:wizctl_app/core/widgets/wiz_status_banner.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
 import 'package:wizctl_app/features/desktop/widgets/grid_room_panel.dart';
@@ -317,6 +318,64 @@ void main() {
       );
       expect(find.text('0 / 2'), findsOneWidget);
       expect(find.text('1'), findsOneWidget, reason: 'the hallway is silent');
+    });
+  });
+
+  testWidgets("a room's grid names only its own silent lights", (tester) async {
+    await withScope(tester, (scope) async {
+      RoomBloc blocFor(String roomId) => RoomBloc(
+        roomId: roomId,
+        rooms: scope.seed.rooms,
+        lights: scope.seed.lights,
+        store: scope.seed.store,
+        setPower: scope.setPower,
+        setBrightness: scope.setBrightness,
+        setKelvin: scope.setKelvin,
+        sync: scope.sync,
+      )..add(const RoomSubscribed());
+
+      // The one silent light in the fixture is the bedroom's hallway.
+      var living = blocFor('living');
+      addTearDown(() => unawaited(living.close()));
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          BlocProvider.value(value: living, child: const GridScreen.room()),
+        ),
+        size: _desktop,
+      );
+      await settle(tester);
+      expect(
+        find.byType(WizStatusBanner),
+        findsNothing,
+        reason: 'the living room answers; the bedroom is not its business',
+      );
+
+      // A second silent light, in the living room this time: now the
+      // whole-home list holds two, and only the filter can keep the bedroom's
+      // banner from counting and naming the other room's.
+      scope.seed.store.update('dome', (st) => st.copyWith(reachable: false));
+      var bedroom = blocFor('bedroom');
+      addTearDown(() => unawaited(bedroom.close()));
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          BlocProvider.value(value: bedroom, child: const GridScreen.room()),
+        ),
+        size: _desktop,
+      );
+      await settle(tester);
+      expect(
+        find.text(Strings.oneLightDidNotAnswer),
+        findsOneWidget,
+        reason: 'one of the bedroom\'s lights, not two of the home\'s',
+      );
+      expect(find.text(Strings.mayBeOffAtWallNamed('Hallway')), findsOneWidget);
+      expect(
+        find.textContaining('Ceiling dome light'),
+        findsNothing,
+        reason: 'the living room\'s silent light is not named here',
+      );
     });
   });
 

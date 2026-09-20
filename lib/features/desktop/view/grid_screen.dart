@@ -192,11 +192,15 @@ class _RoomGrid extends StatelessWidget {
               total: state.lights.length,
               unreachable: unreachable,
             ),
-            // The banner names the whole home's silent lights, which is what
-            // the desktop prototype shows in every grid view; the gate is this
-            // room's own count, so a room that answers carries no banner
-            // about another one.
-            if (unreachable > 0) const UnreachableBanner(),
+            // Narrowed to this room's lights (P80), so the count and the
+            // name the banner reads out are its own and never another room's.
+            // The gate stays even though the aggregate and the filtered list
+            // agree: a banner that renders nothing still leaves
+            // `ScreenScroll`'s separator behind it.
+            if (unreachable > 0)
+              UnreachableBanner(
+                lightIds: {for (var live in state.lights) live.light.id},
+              ),
             if (state.isEmpty)
               WizEmptyState(
                 icon: WizIcons.lightbulb,
