@@ -216,6 +216,17 @@ void main() {
       await tester.tap(find.text('Living Room'));
       await settle(tester);
       expect(find.text('WHOLE ROOM'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(DesktopRail),
+          matching: find.text('Living Room'),
+        ),
+        findsOneWidget,
+        reason:
+            "the shell's bloc outlives a navigation, so the rail keeps its "
+            'rooms — and the room name on screen twice is the rail plus the '
+            "grid's own title",
+      );
       // The room's own bloc, read through the grid that is drawing it: the
       // claim below is that a resize swaps the widget and keeps this object.
       var before = BlocProvider.of<RoomBloc>(
