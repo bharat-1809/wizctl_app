@@ -241,10 +241,22 @@ class _WizCtlAppState extends State<WizCtlApp> {
               // The toast layer wraps the root navigator, so it paints above
               // every route — sheets included, which are root-navigator routes.
               builder: (context, child) => WizLayoutScope(
-                child: WizAppBackground(
-                  child: _ToastOverlay(
-                    toasts: services.toasts,
-                    child: child ?? const SizedBox.shrink(),
+                // A transparent `Material` at the window level (P90). The
+                // rail, the inspector column, the tab bar and the toast stack
+                // all sit outside the routed page's own `Scaffold`, and with
+                // no `Material` above them their text falls back to
+                // `WidgetsApp`'s error style — a yellow double underline under
+                // every label. `MaterialType.transparency` paints nothing,
+                // absorbs no hit tests and clips nothing, so all it
+                // contributes is the theme's ambient text style; the routed
+                // page's own Scaffold nests underneath it harmlessly.
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: WizAppBackground(
+                    child: _ToastOverlay(
+                      toasts: services.toasts,
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),

@@ -358,4 +358,52 @@ void main() {
       expect(find.text('RENAME'), findsOneWidget);
     });
   });
+
+  testWidgets('the window carries an ambient Material over the desktop rail', (
+    tester,
+  ) async {
+    await withApp(tester, size: _desktop, (_) async {
+      expect(find.byType(DesktopRail), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(DesktopRail),
+          matching: find.byType(Material),
+        ),
+        findsWidgets,
+        reason:
+            'the window wraps the router, so every non-routed subtree has '
+            "the theme's ambient text style (P90)",
+      );
+      expect(
+        DefaultTextStyle.of(tester.element(find.byType(DesktopRail)))
+            .style
+            .decoration,
+        anyOf(isNull, TextDecoration.none),
+        reason:
+            "without a Material the rail inherits WidgetsApp's error "
+            'style, which double-underlines every label',
+      );
+    });
+  });
+
+  testWidgets('the window carries an ambient Material over the tab bar', (
+    tester,
+  ) async {
+    await withApp(tester, (_) async {
+      expect(find.byType(WizTabBar<ShellBranch>), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(WizTabBar<ShellBranch>),
+          matching: find.byType(Material),
+        ),
+        findsWidgets,
+      );
+      expect(
+        DefaultTextStyle.of(tester.element(find.byType(WizTabBar<ShellBranch>)))
+            .style
+            .decoration,
+        anyOf(isNull, TextDecoration.none),
+      );
+    });
+  });
 }

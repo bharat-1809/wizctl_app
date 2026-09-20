@@ -506,6 +506,7 @@ ledger and in `lib/core/widgets/README.md`.
 
 ### Desktop and the responsive rules (§10.9, §14, §15)
 
+- §9/§10.9/§14: the window installs a transparent `Material` once, in the `MaterialApp.router` builder that installs `WizLayoutScope` (`lib/app/app.dart`). Only the routed page carries a `Scaffold`, so the rail, the inspector column, the tab bar and the toast stack are all outside one, and text with no ambient `Material` above it falls back to `WidgetsApp`'s error style — a yellow double underline under every rail and tab label. `MaterialType.transparency` paints nothing, absorbs no hit tests and clips nothing, so it contributes the theme's text style and nothing else. Pinned on the real app path in `test/app/app_test.dart`.
 - §10.9: the desktop rail is fed by a `HomeScreenBloc` of its own. The modes dialog's scene grid uses a minimum tile of 140 at 104 tall; the desktop Scenes tab uses 130 at 140 tall.
 - §10.9/§15: shells mount no banners. Every screen places its own `OffNetworkBanner` / `UnreachableBanner` inside its scroll, and the app root provides and subscribes `NetworkCubit` and `UnreachableCubit`.
 - §15: `UnreachableBanner` takes an optional `lightIds` filter (null = the whole home). The room grid passes its room's ids, so the banner counts and names only that room's silent lights, while the home grid and Settings keep the home-wide reading.
