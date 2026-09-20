@@ -318,6 +318,20 @@ class Strings {
   static String version(String app, String package) =>
       'WizCtl $app · wizctl $package';
 
+  // The shells (spec §9, §10.9). Two of the four tab labels are words
+  // [rooms] and [settings] already carry, and [all] may not hold a value
+  // twice, so `ShellBranch.tabs` reads those two from there.
+  static const tabHome = 'Home';
+  static const tabScenes = 'Scenes';
+
+  /// The window title with no home yet: the first run, before there is
+  /// anything to name it after.
+  static const windowSetup = 'wizctl · setup';
+
+  /// The window title, which on a desktop is what the window list shows.
+  /// Lower case: it is the command the CLI answers to, not a display name.
+  static String windowTitle(String home) => 'wizctl · $home';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -538,6 +552,9 @@ class Strings {
     copied,
     couldNotCopy,
     oneLightDidNotAnswer,
+    tabHome,
+    tabScenes,
+    windowSetup,
     blinkLight,
     glyphSofa,
     glyphBed,

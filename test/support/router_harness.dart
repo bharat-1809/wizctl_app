@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wizctl_app/app/router.dart';
 import 'package:wizctl_app/core/feedback/feedback_scope.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/layout/wiz_layout.dart';
 import 'package:wizctl_app/core/theme/wiz_theme.dart';
 
+import 'app_scope.dart';
 import 'wiz_test_app.dart';
 
 /// Pumps [home] at `/` inside a `GoRouter` whose other locations are
@@ -55,6 +57,50 @@ Future<GoRouter> pumpRouted(
   );
   if (wrap != null) app = wrap(app);
   await tester.pumpWidget(app);
+  return router;
+}
+
+/// Pumps the app's own router (Task 19) over [scope]'s fakes and providers, on
+/// a phone surface unless [size] says otherwise, and returns it so a test can
+/// drive it and read where it went.
+///
+/// Not `WizCtlApp`: this is the router, the shell and the route pages over the
+/// fixture's blocs, without the bootstrap graph. The homes listenable the
+/// router refreshes on is built and torn down here, as the app root does.
+///
+/// The caller still disposes [scope] inside its own test body — the active
+/// home arms a poll timer, which must be cancelled before the tester looks for
+/// pending timers.
+Future<GoRouter> pumpAppRouter(
+  WidgetTester tester,
+  AppScope scope, {
+  Size size = const Size(390, 844),
+}) async {
+  await setSurface(tester, size);
+  var listenable = HomesListenable(scope.homes);
+  addTearDown(listenable.dispose);
+  var router = buildRouter(
+    homes: scope.homes,
+    listenable: listenable,
+    motion: scope.motion,
+    pages: scope.pages,
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    scope.wrap(
+      FeedbackScope(
+        service: scope.feedback,
+        child: MaterialApp.router(
+          theme: buildWizThemeData(),
+          routerConfig: router,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(size: size),
+            child: WizLayoutScope(child: child ?? const SizedBox.shrink()),
+          ),
+        ),
+      ),
+    ),
+  );
   return router;
 }
 

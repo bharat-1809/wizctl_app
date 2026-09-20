@@ -12,7 +12,10 @@ import 'package:wizctl_app/app/blocs/network_cubit.dart';
 import 'package:wizctl_app/app/blocs/settings_cubit.dart';
 import 'package:wizctl_app/app/blocs/unreachable_cubit.dart';
 import 'package:wizctl_app/app/debug_flags_holder.dart';
+import 'package:wizctl_app/app/router_pages.dart';
+import 'package:wizctl_app/app/shell_deps.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
+import 'package:wizctl_app/core/theme/wiz_motion.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/domain/repositories/home_repository.dart';
@@ -211,6 +214,46 @@ class AppScope {
     setSpeed: setSpeed,
   );
 
+  /// The motion tokens the router builds its page transitions from — the same
+  /// object the theme installs, read without a context the way the shell reads
+  /// it (Task 19).
+  WizMotion get motion => WizMotion.standard;
+
+  /// What the route pages build their blocs from (Task 19), over this
+  /// fixture's fakes rather than an `AppDependencies`. Provided by [wrap] as
+  /// well, the way the shell provides it.
+  late final ShellDeps shellDeps = (
+    homes: seed.homes,
+    rooms: seed.rooms,
+    lights: seed.lights,
+    settings: seed.settings,
+    store: seed.store,
+    sync: sync,
+    setPower: setPower,
+    setBrightness: setBrightness,
+    setKelvin: setKelvin,
+    setSpeed: setSpeed,
+    setFixture: setFixture,
+    renameLight: renameLight,
+    forgetLight: forgetLight,
+    addRoom: addRoom,
+    renameRoom: RenameRoom(rooms: seed.rooms),
+    deleteRoom: DeleteRoom(rooms: seed.rooms, lights: seed.lights),
+    runDiscovery: runDiscovery,
+    saveDiscoveredLight: saveDiscoveredLight,
+    learnHomeSubnet: learnHomeSubnet,
+    finishOnboarding: finishOnboarding,
+    ids: ids,
+  );
+
+  /// The pages `buildRouter` takes: one per route, each building its screen's
+  /// bloc in that route's own subtree.
+  late final AppPages pages = AppPages(
+    deps: shellDeps,
+    modesBlocFor: modesBlocFor,
+    motion: motion,
+  );
+
   /// Subscribes the app-scope blocs and activates the seed's home, as the
   /// lifecycle driver does at start.
   Future<void> start() async {
@@ -247,6 +290,7 @@ class AppScope {
         RepositoryProvider<LiveStateStore>.value(value: seed.store),
         RepositoryProvider<ModesBlocFactory>.value(value: modesBlocFor),
         RepositoryProvider<AddRoom>.value(value: addRoom),
+        RepositoryProvider<ShellDeps>.value(value: shellDeps),
       ],
       child: child,
     ),
