@@ -51,6 +51,34 @@ class OnboardingScreen extends StatelessWidget {
             child: AnimatedSwitcher(
               duration: wiz.motion.screenEnter,
               switchInCurve: wiz.motion.tactile,
+              // The fade is `AnimatedSwitcher`'s own recipe, on the duration
+              // and curve above; reduced motion shortens those the way it does
+              // every `AnimationController`, and this wrapper follows whatever
+              // they become rather than deciding anything itself.
+              transitionBuilder: (child, animation) => AnimatedBuilder(
+                animation: animation,
+                child: FadeTransition(opacity: animation, child: child),
+                // The switcher stacks the step that is leaving under the one
+                // arriving and, by default, leaves both hit-testable for the
+                // whole cross-fade — so a tap aimed at the new step can land
+                // on whatever the old one had at those coordinates. That is a
+                // real mis-press, not only a test hazard (P77). Only the child
+                // whose own animation has finished takes pointers, so the
+                // 300 ms belongs to neither step.
+                //
+                // Gated in this builder rather than in the transition itself:
+                // `AnimatedSwitcher` builds each child's transition once and
+                // caches the widget, so a status read out there would keep the
+                // value it was born with for ever. Read against the animation
+                // it means the arriving step is shut from the frame it
+                // appears, and the leaving step from the fade's first tick —
+                // one frame after the switch, which is as early as a cached
+                // subtree can be told anything.
+                builder: (context, faded) => IgnorePointer(
+                  ignoring: animation.status != AnimationStatus.completed,
+                  child: faded,
+                ),
+              ),
               // Identity by step, so the switcher cross-fades between them
               // instead of rebuilding one subtree in place.
               child: KeyedSubtree(key: ValueKey(step), child: body),

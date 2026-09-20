@@ -59,6 +59,12 @@ const Duration _settled = Duration(milliseconds: 500);
 /// and the skeletons on show.
 const Duration _slowRead = Duration(seconds: 1);
 
+/// One frame at 60 Hz. A step change is presented before the cross-fade it
+/// starts has ticked, and the step that is leaving keeps the cached
+/// hit-testing it was last built with until it has — so "into the fade" is
+/// this much after the frame that began it (see `OnboardingScreen`'s note).
+const Duration _oneFrame = Duration(milliseconds: 16);
+
 /// How long the fake repository holds the first light's write open: long
 /// enough that several bounded pumps land while the finish is still in
 /// flight. Every test that sets it pumps it out again before returning, so no
@@ -429,6 +435,44 @@ void main() {
         isTrue,
         reason: 'a refused finish can be tried again',
       );
+    });
+  });
+
+  testWidgets('a step still fading in takes no taps', (tester) async {
+    await withOnboarding(tester, (scope, onboarding, discovery) async {
+      await pumpRouted(
+        tester,
+        screen(scope, onboarding, discovery),
+        targets: [AppRoutes.home],
+        size: _phone,
+      );
+      await nameHomeAndScan(tester);
+      await tester.tap(find.text('SAVE 2 LIGHTS'));
+      await settleStep(tester);
+      await tester.enterText(find.byType(WizTextField).at(0), _alias);
+      await tester.enterText(find.byType(WizTextField).at(1), 'Plug by the TV');
+      await tester.pump();
+      expect(keyEnabled(tester, 'FINISH SETUP'), isTrue);
+      await tester.tap(find.bySemanticsLabel('Back'));
+      // Into the fade: step 3 is still mounted, stacked behind the shorter
+      // step 2, whose content reaches nowhere near its FINISH key — so
+      // without the gate a tap there writes the home the user just left.
+      await tester.pump();
+      await tester.pump(_oneFrame);
+      expect(find.text('FINISH SETUP'), findsOneWidget);
+      await tester.tapAt(tester.getCenter(find.text('FINISH SETUP')));
+      await tester.pump();
+      expect(
+        onboarding.state.finishing,
+        isFalse,
+        reason: 'the step fading out took no tap',
+      );
+      expect(await scope.seed.homes.getAll(), isEmpty);
+      await settleStep(tester);
+      // And the step that arrived takes them once it has.
+      await tester.tap(find.text('SAVE 2 LIGHTS'));
+      await settleStep(tester);
+      expect(onboarding.state.step, OnboardingStep.nameLights);
     });
   });
 

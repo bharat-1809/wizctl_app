@@ -57,6 +57,11 @@ class _DiscoveringStepState extends State<DiscoveringStep> {
         var counted = sweeping && progress != null && progress.isDeterminate
             ? progress
             : null;
+        // Which run the rows on show came from: a sweep can say how many
+        // addresses it walked, a broadcast only which network it went out on.
+        // The phase of the last progress report decides, never `sweptOnce`,
+        // which latches for the step's life (P74).
+        var sweptJustNow = progress?.phase == DiscoveryPhase.sweeping;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -102,15 +107,10 @@ class _DiscoveringStepState extends State<DiscoveringStep> {
               WizStatusBanner(
                 status: WizStatus.success,
                 title: Strings.lightsAnswered(state.found.length),
-                // What the run that just happened was: a sweep can say how
-                // many addresses it walked, a broadcast only which network it
-                // went out on. The phase of the last progress report decides,
-                // never `sweptOnce`, which latches for the step's life (P74).
                 body: subnet == null
                     ? Strings.localNetwork
-                    : progress != null &&
-                          progress.phase == DiscoveryPhase.sweeping
-                    ? Strings.sweptSubnet(subnet, progress.total)
+                    : sweptJustNow
+                    ? Strings.sweptSubnet(subnet, progress?.total ?? 0)
                     : Strings.broadcastOn(subnet),
                 action: const WizBadge(
                   label: Strings.live,
@@ -132,8 +132,11 @@ class _DiscoveringStepState extends State<DiscoveringStep> {
                 variant: WizButtonVariant.primary,
                 fullWidth: true,
                 enabled: state.keptCount > 0,
+                // The rows the user kept, as the state's own getter reports
+                // them: the bloc filters again on the way in, so this reads
+                // the way the event's contract does.
                 onPressed: () =>
-                    onboarding.add(OnboardingToNaming(state.found, subnet)),
+                    onboarding.add(OnboardingToNaming(state.kept, subnet)),
               ),
               SizedBox(height: wiz.space.s4),
               WizButton(
