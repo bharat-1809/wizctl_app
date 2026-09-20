@@ -10,8 +10,13 @@ import '../blocs/unreachable_cubit.dart';
 import '../routes.dart';
 
 /// "One light did not answer", or the count with the first one named, and
-/// Rescan (spec §15). Nothing at all when every light answers, so screens can
-/// place it unconditionally, the way `OffNetworkBanner` is placed.
+/// Rescan (spec §15). It renders nothing at all when every light answers.
+///
+/// Both grids still gate it on their own unreachable count, for
+/// `OffNetworkBanner`'s reason: a child that renders nothing keeps its slot in
+/// `ScreenScroll`'s list, and the separator after it leaves a 16-pt gap.
+/// Settings is the one ungated placement — its list is short, its rows are
+/// built eagerly and there is no count on hand to gate with.
 ///
 /// A condition, not an event: it has no dismissal. It goes when the lights
 /// answer, and Rescan opens discovery rather than resending anything, because

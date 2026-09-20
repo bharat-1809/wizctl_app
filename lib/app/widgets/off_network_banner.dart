@@ -9,8 +9,15 @@ import '../blocs/network_cubit.dart';
 import '../blocs/network_state.dart';
 
 /// The wrong-network condition (spec §15): a banner while it lasts, and the
-/// "Still on …" toast when a retry changes nothing. Nothing at all on the
-/// home network, so screens can place it unconditionally.
+/// "Still on …" toast when a retry changes nothing. On the home network it
+/// renders nothing at all.
+///
+/// It is nonetheless placed behind a gate — `if (offNetwork)` — at all six call
+/// sites (Home, Room, Light, Discovery and the two grids), because a child that
+/// renders nothing still takes a slot in `ScreenScroll`'s list, and the
+/// separator after that slot stays: an empty banner leaves a 16-pt gap in the
+/// scroll. The gate reads `NetworkCubit` on the screen, which is the same
+/// condition the banner reads for itself.
 class OffNetworkBanner extends StatelessWidget {
   const OffNetworkBanner({super.key});
 
