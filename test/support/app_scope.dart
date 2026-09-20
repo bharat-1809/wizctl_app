@@ -10,6 +10,7 @@ import 'package:wizctl_app/app/blocs/homes_event.dart';
 import 'package:wizctl_app/app/blocs/inspector_cubit.dart';
 import 'package:wizctl_app/app/blocs/network_cubit.dart';
 import 'package:wizctl_app/app/blocs/settings_cubit.dart';
+import 'package:wizctl_app/app/blocs/unreachable_cubit.dart';
 import 'package:wizctl_app/app/debug_flags_holder.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
@@ -61,6 +62,7 @@ class AppScope {
   late final NetworkCubit network;
   late final BlinkCubit blink;
   late final SettingsCubit settingsCubit;
+  late final UnreachableCubit unreachable;
   late final InspectorCubit inspector;
 
   AppScope(this.seed, {String? subnet = '192.168.1'}) {
@@ -129,6 +131,11 @@ class AppScope {
       settings: seed.settings,
       feedback: feedback,
       debugFlags: flags,
+    );
+    unreachable = UnreachableCubit(
+      lights: seed.lights,
+      store: seed.store,
+      settings: seed.settings,
     );
     inspector = InspectorCubit();
   }
@@ -211,6 +218,7 @@ class AppScope {
     homes.add(const HomesSubscribed());
     network.subscribe();
     settingsCubit.subscribe();
+    unreachable.subscribe();
     sync.activateHome((await seed.settings.get()).activeHomeId);
   }
 
@@ -220,6 +228,7 @@ class AppScope {
       BlocProvider<NetworkCubit>.value(value: network),
       BlocProvider<BlinkCubit>.value(value: blink),
       BlocProvider<SettingsCubit>.value(value: settingsCubit),
+      BlocProvider<UnreachableCubit>.value(value: unreachable),
       BlocProvider<InspectorCubit>.value(value: inspector),
     ],
     // The repositories and the store by type, the way the shell provides them
@@ -260,6 +269,7 @@ class AppScope {
     await network.close();
     await blink.close();
     await settingsCubit.close();
+    await unreachable.close();
     await inspector.close();
     sync.dispose();
     pipeline.dispose();

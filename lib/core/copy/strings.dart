@@ -269,6 +269,54 @@ class Strings {
   static String lightsInRooms(int lights, int rooms) =>
       '${plural(lights, 'light')} in ${plural(rooms, 'room')}';
 
+  // Settings (spec §10.7, §18) and the unreachable banner (spec §15). The
+  // home-name row's meta is [homeName], the words the first run's field label
+  // already carries — [all] may not hold a value twice, and there is no
+  // "Save home" either: the rename sheet's key is [save].
+  static const settings = 'Settings';
+  static const homeLivesOnDevice = 'This home lives on this device';
+  static const homeLivesOnMachine = 'This home lives on this machine';
+  static const discoveryMeta = 'Broadcast, then unicast sweep';
+  static const configFile = 'Config file';
+  static const configFilePath = '~/.config/wizctl/config.json';
+  static const configFileNote =
+      'Aliases and rooms are exported here for the CLI';
+  static const cliParity = 'CLI parity';
+  static const rescanOnLaunch = 'Re-scan on launch';
+  static const soundAndHaptics = 'Sound & haptics';
+  static const clicksAndVibration = 'Clicks and vibration on every control';
+  static const clicksOnly = 'Clicks on every control';
+  static const prototypeSwitches = 'Prototype switches';
+  static const wrongNetwork = 'Wrong network';
+  static const showOffline = 'Show the offline state';
+  static const forceTimeout = 'Force command timeout';
+  static const forceTimeoutMeta = 'Every write fails after 1.1s';
+  static const findsNothing = 'Discovery finds nothing';
+  static const findsNothingMeta = 'Scan returns zero lights';
+  static const widgetGallery = 'Widget gallery';
+  static const widgetGalleryMeta = 'Every kit widget, live';
+  static const renameHome = 'Rename home';
+  static const copied = 'Copied to the clipboard';
+  static const oneLightDidNotAnswer = 'One light did not answer';
+
+  /// The command the desktop CLI-parity row copies.
+  static String cliCommand(String name) => 'wizctl on -t "$name"';
+
+  /// Two lights or more. One is [oneLightDidNotAnswer], which reads as a
+  /// sentence rather than as "1 light did not answer".
+  static String lightsDidNotAnswer(int n) =>
+      '${plural(n, 'light')} did not answer';
+
+  /// The unreachable banner names the first light that is silent;
+  /// [mayBeOffAtWall] is the same line on a screen that has already named it.
+  static String mayBeOffAtWallNamed(String name) =>
+      '$name may be switched off at the wall, or the router changed its address.';
+
+  /// The About caption: the app's own version, then the version of the
+  /// `wizctl` package that talks to the bulbs.
+  static String version(String app, String package) =>
+      'WizCtl $app · wizctl $package';
+
   // Semantics.
   static const blinkLight = 'Blink this light';
 
@@ -464,6 +512,30 @@ class Strings {
     plugPlaceholder,
     bulbPlaceholder,
     keepLight,
+    settings,
+    homeLivesOnDevice,
+    homeLivesOnMachine,
+    discoveryMeta,
+    configFile,
+    configFilePath,
+    configFileNote,
+    cliParity,
+    rescanOnLaunch,
+    soundAndHaptics,
+    clicksAndVibration,
+    clicksOnly,
+    prototypeSwitches,
+    wrongNetwork,
+    showOffline,
+    forceTimeout,
+    forceTimeoutMeta,
+    findsNothing,
+    findsNothingMeta,
+    widgetGallery,
+    widgetGalleryMeta,
+    renameHome,
+    copied,
+    oneLightDidNotAnswer,
     blinkLight,
     glyphSofa,
     glyphBed,
