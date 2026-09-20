@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/blocs/settings_cubit.dart';
 import 'package:wizctl_app/app/blocs/settings_state.dart';
@@ -7,6 +8,25 @@ import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
 
 import '../../support/fakes.dart';
+
+/// Counts the listeners the cubit registers on the flags holder, so a second
+/// `subscribe()` cannot quietly add another.
+class _CountingFlags extends DebugFlagsHolder {
+  int added = 0;
+  int removed = 0;
+
+  @override
+  void addListener(VoidCallback listener) {
+    added++;
+    super.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    removed++;
+    super.removeListener(listener);
+  }
+}
 
 void main() {
   late FakeSettingsRepository settings;
@@ -21,6 +41,29 @@ void main() {
     feedback = RecordingFeedbackService();
     flags = DebugFlagsHolder();
   });
+
+  test(
+    'subscribing twice registers one flags listener, removed on close',
+    () async {
+      var counting = _CountingFlags();
+      var cubit = SettingsCubit(
+        settings: settings,
+        feedback: feedback,
+        debugFlags: counting,
+      );
+      cubit.subscribe();
+      cubit.subscribe();
+      expect(counting.added, 1);
+      await cubit.close();
+      expect(
+        counting.removed,
+        1,
+        reason:
+            'a second listener would outlive the cubit, emitting on a '
+            'closed one',
+      );
+    },
+  );
 
   test('the initial state comes from the snapshot when given', () {
     var cubit = SettingsCubit(

@@ -29,8 +29,12 @@ class SettingsCubit extends Cubit<SettingsState> {
          SettingsState.from(initial ?? AppSettings.defaults, debugFlags.value),
        );
 
+  /// Idempotent in both halves. The flags listener used to sit outside the
+  /// `??=`, so a second call registered another one: `close()` removes one, and
+  /// the survivor emits on a closed cubit.
   void subscribe() {
-    _subscription ??= _settings.watch().listen(
+    if (_subscription != null) return;
+    _subscription = _settings.watch().listen(
       (s) => emit(
         state.copyWith(
           feedbackEnabled: s.feedbackEnabled,
