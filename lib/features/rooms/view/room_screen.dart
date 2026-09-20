@@ -8,6 +8,7 @@ import 'package:wizctl/wizctl.dart';
 import '../../../app/blocs/network_cubit.dart';
 import '../../../app/navigation.dart';
 import '../../../app/routes.dart';
+import '../../../app/widgets/leave_when_gone.dart';
 import '../../../app/widgets/off_network_banner.dart';
 import '../../../app/widgets/screen_scroll.dart';
 import '../../../core/copy/strings.dart';
@@ -38,21 +39,20 @@ class RoomScreen extends StatelessWidget {
     var offNetwork = context.select<NetworkCubit, bool>(
       (c) => c.state.offNetwork,
     );
-    return BlocListener<RoomBloc, RoomState>(
-      // A room deleted while its screen is open — or an id from a deep link
-      // that no longer names one — leaves nothing to draw, and the blank body
-      // below carries no bar and so no Back. The screen leaves instead of
-      // stranding the reader in it. `gone` is one-shot, but the guard keeps
-      // the listener from firing twice if that ever changes.
-      listenWhen: (prev, cur) =>
-          prev.status != RoomStatus.gone && cur.status == RoomStatus.gone,
-      listener: (context, state) => popOr(context, AppRoutes.rooms),
+    // A room deleted while its screen is open — or an id from a deep link that
+    // no longer names one — leaves nothing to draw, and the blank body below
+    // carries no bar and so no Back. The screen leaves instead of stranding
+    // the reader in it, and `LeaveWhenGone` also covers the id that is already
+    // gone before this widget is mounted, which a `BlocListener` never sees.
+    return LeaveWhenGone<RoomBloc, RoomState>(
+      isGone: (state) => state.status == RoomStatus.gone,
+      parent: (_) => AppRoutes.rooms,
       child: BlocBuilder<RoomBloc, RoomState>(
         builder: (context, state) {
           var bloc = context.read<RoomBloc>();
           var room = state.room;
           // Blank while the first read is in flight; `gone` is on its way out
-          // through the listener above and shows this for the one frame it
+          // through [LeaveWhenGone] above and shows this for the one frame it
           // takes.
           if (state.status != RoomStatus.ready || room == null) {
             return const ScreenScroll(children: []);

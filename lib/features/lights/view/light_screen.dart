@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/blocs/network_cubit.dart';
 import '../../../app/navigation.dart';
+import '../../../app/widgets/leave_when_gone.dart';
 import '../../../app/widgets/off_network_banner.dart';
 import '../../../app/widgets/screen_scroll.dart';
 import '../../../core/copy/strings.dart';
@@ -37,13 +38,19 @@ class LightScreen extends StatelessWidget {
     var offNetwork = context.select<NetworkCubit, bool>(
       (c) => c.state.offNetwork,
     );
-    return _LeaveWhenGone(
+    return LeaveWhenGone<LightBloc, LightState>(
+      isGone: (state) => state.status == LightStatus.gone,
+      parent: (state) => lightParent(state.light?.roomId),
+      // A forget announces itself with a `LightForgottenNotice` on the very
+      // state that carries `gone`, and `LightNoticeListener` is the one that
+      // toasts and leaves for it (P83).
+      standDown: (state) => state.notice is LightForgottenNotice,
       child: BlocBuilder<LightBloc, LightState>(
         builder: (context, state) {
           var bloc = context.read<LightBloc>();
           var light = state.light;
           // Blank while the first read is in flight; `gone` is on its way out
-          // through [_LeaveWhenGone] above and shows this for the one frame
+          // through [LeaveWhenGone] above and shows this for the one frame
           // it takes.
           if (state.status != LightStatus.ready || light == null) {
             return const ScreenScroll(children: []);
@@ -110,51 +117,4 @@ class LightScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Leaves the screen when its light has gone (P63), exactly once.
-///
-/// A `BlocListener` on its own is not enough. A stale route, or a deep link to
-/// an id that no longer names a light, reaches [LightStatus.gone] before this
-/// widget is mounted, and a listener never fires for the state a bloc is
-/// already in — the reader would be stranded in the blank body, which has no
-/// bar and so no Back. The state on hand is therefore checked once after the
-/// first frame, which is the earliest point a route may be replaced.
-///
-/// A forget announces itself with a [LightForgottenNotice] on the very state
-/// that carries `gone`, and `LightNoticeListener` is the one that toasts and
-/// leaves for it. This widget stands down for that state — but still takes
-/// [_LeaveWhenGoneState._left], so that between the two of them a forget
-/// navigates once even if another `gone` were ever to follow.
-class _LeaveWhenGone extends StatefulWidget {
-  final Widget child;
-  const _LeaveWhenGone({required this.child});
-
-  @override
-  State<_LeaveWhenGone> createState() => _LeaveWhenGoneState();
-}
-
-class _LeaveWhenGoneState extends State<_LeaveWhenGone> {
-  bool _left = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _onState(context.read<LightBloc>().state);
-    });
-  }
-
-  void _onState(LightState state) {
-    if (_left || state.status != LightStatus.gone) return;
-    _left = true;
-    if (state.notice is LightForgottenNotice) return;
-    popOr(context, lightParent(state.light?.roomId));
-  }
-
-  @override
-  Widget build(BuildContext context) => BlocListener<LightBloc, LightState>(
-    listener: (context, state) => _onState(state),
-    child: widget.child,
-  );
 }

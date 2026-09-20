@@ -27,6 +27,10 @@ import '../../../support/seed.dart';
 /// which `WizLayoutScope` would classify as medium.
 const Size _phone = Size(390, 844);
 
+/// One screen fade with room for the load-in stagger. Bounded, never
+/// `pumpAndSettle`: a lit card breathes and the poll timer ticks for ever.
+const Duration _settled = Duration(milliseconds: 600);
+
 void main() {
   Widget screen(AppScope scope, RoomBloc bloc) =>
       scope.wrap(BlocProvider.value(value: bloc, child: const RoomScreen()));
@@ -257,6 +261,39 @@ void main() {
         AppRoutes.rooms,
         reason: 'the blank body has no bar and so no Back of its own',
       );
+    });
+  });
+
+  testWidgets('an id that is already gone at mount leaves exactly once', (
+    tester,
+  ) async {
+    await withRoom(tester, 'nope', (scope, bloc) async {
+      var router = await pumpRouted(
+        tester,
+        screen(scope, bloc),
+        targets: [AppRoutes.rooms],
+        size: _phone,
+      );
+      await tester.pump();
+      await tester.pump(_settled);
+      expect(
+        currentLocation(router),
+        AppRoutes.rooms,
+        reason:
+            'a stale route or a deep link reaches gone before the screen '
+            'is mounted, and a listener never fires for the state a bloc is '
+            'already in',
+      );
+      // The post-frame leave lands inside `pumpRouted`'s own first frame,
+      // before any listener can be attached, so what is counted from here is
+      // the *second* leave the one-shot must not make. The provider, not
+      // `routerDelegate`: the delegate coalesces two identical `go`s in one
+      // frame into one rebuild (the light screen's forget test says the same).
+      var navigations = 0;
+      router.routeInformationProvider.addListener(() => navigations++);
+      await tester.pump(_settled);
+      await tester.pump(_settled);
+      expect(navigations, 0, reason: 'it left once');
     });
   });
 
