@@ -29,6 +29,20 @@ final class HomeRoomPowerToggled extends HomeScreenEvent {
   List<Object?> get props => [roomId, on];
 }
 
+/// One light's switch on the desktop "All lights" grid (spec §10.9).
+///
+/// Prefixed `Home…`, like [HomeRoomPowerToggled]: `RoomBloc` owns
+/// `RoomLightPowerToggled` and `LightBloc` the unprefixed `LightPowerToggled`,
+/// so a view holding two of these blocs can import both event libraries
+/// without a prefix.
+final class HomeLightPowerToggled extends HomeScreenEvent {
+  final String lightId;
+  final bool on;
+  const HomeLightPowerToggled(this.lightId, this.on);
+  @override
+  List<Object?> get props => [lightId, on];
+}
+
 /// Pull to refresh.
 final class HomeRefreshRequested extends HomeScreenEvent {
   /// Completed once the refresh has ended, so a pull can hold its loader for

@@ -176,6 +176,25 @@ void main() {
   );
 
   blocTest<HomeScreenBloc, HomeScreenState>(
+    'one light\'s power on the desktop grid reaches that light only',
+    build: build,
+    act: (bloc) async {
+      bloc.add(const HomeScreenSubscribed());
+      await Future<void>.delayed(wait);
+      bloc.add(const HomeLightPowerToggled('strip', true));
+    },
+    wait: wait,
+    verify: (bloc) {
+      expect(gateway.sends.map((s) => s.$1), ['192.168.1.111']);
+      expect(gateway.sends.single.$2.state, isTrue);
+      expect(
+        bloc.state.lights.firstWhere((l) => l.light.id == 'strip').state.isOn,
+        isTrue,
+      );
+    },
+  );
+
+  blocTest<HomeScreenBloc, HomeScreenState>(
     'a refresh request reads every light now',
     // A coordinator whose tick cannot fire inside this test: every read it
     // records is one the event asked for, so the assertions below fail if

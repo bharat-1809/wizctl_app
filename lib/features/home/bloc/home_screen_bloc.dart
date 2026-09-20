@@ -46,6 +46,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     on<HomeScreenSubscribed>(_onSubscribed);
     on<AllPowerToggled>(_onAllPower);
     on<HomeRoomPowerToggled>(_onRoomPower);
+    on<HomeLightPowerToggled>(_onLightPower);
     on<HomeRefreshRequested>(_onRefresh);
   }
 
@@ -131,6 +132,11 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     HomeRoomPowerToggled event,
     Emitter<HomeScreenState> emit,
   ) => _setPower(RoomTarget(event.roomId), event.on);
+
+  Future<void> _onLightPower(
+    HomeLightPowerToggled event,
+    Emitter<HomeScreenState> emit,
+  ) => _setPower(LightTarget(event.lightId), event.on);
 
   /// Reads every light of the home now, and tells the requester when that has
   /// finished.
