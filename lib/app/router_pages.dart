@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/motion/reduced_motion.dart';
 import '../core/motion/wiz_fade_page.dart';
 import '../core/theme/wiz_motion.dart';
 import '../domain/entities/entities.dart';
@@ -64,19 +65,30 @@ class AppPages {
   ///
   /// [scaffold] is false for the one screen that builds its own, so that no
   /// page ends up with two.
-  Page<void> _fade(GoRouterState state, Widget child, {bool scaffold = true}) =>
-      wizFadePage<void>(
-        key: state.pageKey,
-        motion: motion,
-        child: scaffold
-            ? Scaffold(backgroundColor: Colors.transparent, body: child)
-            : child,
-      );
+  ///
+  /// [context] is the route builder's own, which sits under the app's
+  /// `MediaQuery`: it is what lets the page read the platform's "reduce
+  /// motion" switch, which a page cannot do for itself — its durations are
+  /// fixed when it is built, above the navigator that will drive them.
+  Page<void> _fade(
+    BuildContext context,
+    GoRouterState state,
+    Widget child, {
+    bool scaffold = true,
+  }) => wizFadePage<void>(
+    key: state.pageKey,
+    motion: motion,
+    reduced: wizReducedMotion(context),
+    child: scaffold
+        ? Scaffold(backgroundColor: Colors.transparent, body: child)
+        : child,
+  );
 
   /// The first run (spec §10.1). Its two blocs live and die with this route:
   /// once a home exists the redirect makes `/setup` unreachable, and a bloc
   /// kept across that redirect would still be reporting a finished setup.
   Page<void> setup(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     MultiBlocProvider(
       providers: [
@@ -101,6 +113,7 @@ class AppPages {
   );
 
   Page<void> home(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     BlocProvider(
       create: (_) => HomeScreenBloc(
@@ -117,6 +130,7 @@ class AppPages {
   );
 
   Page<void> rooms(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     BlocProvider(
       create: (_) => RoomsListBloc(
@@ -133,6 +147,7 @@ class AppPages {
   );
 
   Page<void> room(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     BlocProvider(
       create: (_) => RoomBloc(
@@ -153,6 +168,7 @@ class AppPages {
   /// with the light selected into the inspector — [LightPage] picks the
   /// reading, so one bloc serves both and a resize keeps it.
   Page<void> light(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     BlocProvider(
       create: (_) => LightBloc(
@@ -174,6 +190,7 @@ class AppPages {
   );
 
   Page<void> modes(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     _ForActiveHome(
       builder: (context, active) {
@@ -192,9 +209,10 @@ class AppPages {
   /// Settings has no bloc of its own: it reads the app-scope cubits the root
   /// provides (spec §10.7).
   Page<void> settings(BuildContext context, GoRouterState state) =>
-      _fade(state, const SettingsScreen());
+      _fade(context, state, const SettingsScreen());
 
   Page<void> discover(BuildContext context, GoRouterState state) => _fade(
+    context,
     state,
     _ForActiveHome(
       builder: (context, homeId) => BlocProvider(
@@ -214,7 +232,7 @@ class AppPages {
   /// The one page without the shared scaffold: `GalleryScreen` builds its own
   /// (Plan 2), and the back key floats over it in the same stack.
   Page<void> gallery(BuildContext context, GoRouterState state) =>
-      _fade(state, const GalleryPage(), scaffold: false);
+      _fade(context, state, const GalleryPage(), scaffold: false);
 }
 
 /// Builds for the home that is active now, and rebuilds when that changes.

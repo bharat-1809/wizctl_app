@@ -71,10 +71,16 @@ Future<GoRouter> pumpRouted(
 /// The caller still disposes [scope] inside its own test body — the active
 /// home arms a poll timer, which must be cancelled before the tester looks for
 /// pending timers.
+///
+/// [wrap] goes *inside* the app's builder, around the router: a wrapper that
+/// overrides `MediaQuery` — [reducedMotion] — needs the harness's own data
+/// above it to copy from, and the route builders have to sit underneath it for
+/// a page to read the switch as it is built.
 Future<GoRouter> pumpAppRouter(
   WidgetTester tester,
   AppScope scope, {
   Size size = const Size(390, 844),
+  Widget Function(Widget child)? wrap,
 }) async {
   await setSurface(tester, size);
   var listenable = HomesListenable(scope.homes);
@@ -93,10 +99,16 @@ Future<GoRouter> pumpAppRouter(
         child: MaterialApp.router(
           theme: buildWizThemeData(),
           routerConfig: router,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(size: size),
-            child: WizLayoutScope(child: child ?? const SizedBox.shrink()),
-          ),
+          builder: (context, child) {
+            Widget body = WizLayoutScope(
+              child: child ?? const SizedBox.shrink(),
+            );
+            if (wrap != null) body = wrap(body);
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(size: size),
+              child: body,
+            );
+          },
         ),
       ),
     ),
