@@ -42,8 +42,29 @@ class HomeScreen extends StatelessWidget {
       builder: (context, state) {
         var home = state.home;
         var bloc = context.read<HomeScreenBloc>();
-        if (state.status != HomeScreenStatus.ready || home == null) {
+        // The two conditions are split deliberately (P97). `loading` stays
+        // blank, so nothing flashes on the way in; but a home that exists with
+        // none active — what a `FinishOnboarding` that failed between the home
+        // insert and the `activeHomeId` write leaves — must still reach the
+        // Homes sheet, because on a phone this key and the desktop rail are
+        // the only two `showHomesSheet` call sites.
+        if (state.status == HomeScreenStatus.loading) {
           return const ScreenScroll(children: []);
+        }
+        if (home == null) {
+          return ScreenScroll(
+            children: [
+              WizTopBar(
+                title: Strings.noHomeSelected,
+                subtitle: Strings.openHomesToPick,
+                leading: WizIconKey(
+                  icon: WizIcons.house,
+                  semanticsLabel: Strings.homes,
+                  onPressed: () => showHomesSheet(context),
+                ),
+              ),
+            ],
+          );
         }
         return ScreenScroll(
           // Awaited, not fired and forgotten: the filament has to stay up for

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/routes.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/core/widgets/room_card.dart';
 import 'package:wizctl_app/core/widgets/wiz_filament_bar.dart';
 import 'package:wizctl_app/core/widgets/wiz_status_banner.dart';
@@ -71,6 +73,26 @@ void main() {
       });
     },
   );
+
+  testWidgets('a home that exists with none active still reaches the Homes '
+      'sheet', (tester) async {
+    await withHome(tester, (scope, bloc) async {
+      // What a `FinishOnboarding` that failed between the home insert and the
+      // `activeHomeId` write leaves behind: `hasHome` is true, so the redirect
+      // sends the user to `/home`, and on a phone this key and the desktop
+      // rail are the only two `showHomesSheet` call sites (P97).
+      await scope.seed.settings.save(const AppSettings());
+      await pumpRouted(tester, screen(scope, bloc));
+      await tester.pump();
+      expect(find.text('Kaverappa House'), findsNothing);
+      expect(find.text(Strings.noHomeSelected), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel(Strings.homes));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text(Strings.homes), findsWidgets);
+      expect(find.text(Strings.newHome.toUpperCase()), findsOneWidget);
+    });
+  });
 
   testWidgets('taps navigate: a room card, the discover key', (tester) async {
     await withHome(tester, (scope, bloc) async {

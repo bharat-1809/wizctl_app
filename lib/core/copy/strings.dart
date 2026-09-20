@@ -63,6 +63,11 @@ class Strings {
   static const allOn = 'All on';
   static const allOff = 'All off';
   static const homes = 'Homes';
+
+  /// Home with no active home: a `FinishOnboarding` that failed between the
+  /// home insert and the `activeHomeId` write leaves the app here (P97).
+  static const noHomeSelected = 'No home selected';
+  static const openHomesToPick = 'Open Homes to choose one or add one.';
   static const newHome = 'New home';
   static const newHomePlaceholder = 'Studio';
   static const addHome = 'Add home';
@@ -471,6 +476,8 @@ class Strings {
     allOn,
     allOff,
     homes,
+    noHomeSelected,
+    openHomesToPick,
     newHome,
     newHomePlaceholder,
     addHome,
