@@ -18,6 +18,13 @@ import '../theme/wiz_motion.dart';
 /// unchanged, and a fade with no duration is a snap. It is the durations
 /// rather than the transition that go, so a route still reports the
 /// `isAnimating`, `didPush` and `didPop` a navigator expects of it.
+///
+/// [reduced] is sampled here, when the page is constructed, and a route takes
+/// its durations from the page that created it — so flipping the platform
+/// switch retimes the *next* route, not the one on show. That is the right
+/// way round for a setting nobody changes mid-navigation, and it is why the
+/// flag is a parameter rather than a read: there is no later frame on which a
+/// page could change its mind.
 CustomTransitionPage<T> wizFadePage<T>({
   required LocalKey key,
   required Widget child,

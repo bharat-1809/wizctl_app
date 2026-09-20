@@ -33,15 +33,20 @@ It reports `pressed` to its builder, which is how a widget flips its own
 shadow spec — the sink and the scale are the pressable's, the shape under
 them is the widget's.
 
-The cue fires on pointer down, of the kind the widget was built with:
-`WizButton` plays `confirm` for a primary cap, `reject` for a danger cap
-and `press` for secondary and ghost; `WizPressable` itself defaults to
-`press`. A control whose cue belongs to something other than the touch
-passes `feedback: null` and plays its own: a toggle plays
+The cue fires on pointer down, of the kind the widget handed its pressable:
+`WizButton` gives `confirm` for a primary cap, `reject` for a danger cap and
+`press` for secondary and ghost; a chip gives `tick`; a scene tile gives
+`tick` unselected and `press` selected; a power key gives `power` turning on
+and `toggleOff` turning off; and `WizPressable` itself defaults to `press`.
+
+A control whose cue belongs to something other than the touch passes
+`feedback: null` and plays its own instead. A toggle plays
 `toggleOn`/`toggleOff` on the commit, so a drag that comes home again is
-silent; a power key plays `power` turning on and `toggleOff` turning off;
-dials, sliders and the colour wheel play `detent` on each notch crossed;
-tabs, rail items, segments, chips and an unselected scene tile play `tick`.
+silent. Tabs, rail items and segments play `tick` on the change, so a tap on
+the one already current is silent. The drag instruments — dial, slider,
+colour wheel — are not pressables at all, and play `detent` on each notch
+crossed.
+
 A disabled key plays nothing — the pressable returns before the cue — so
 `reject` is only ever a refusal *after* a press, never "you pressed
 something you could not press".
@@ -95,10 +100,16 @@ reads as a switch through the toggled flags (`hasToggledState`,
 ## Reduced motion
 
 See `lib/core/motion/reduced_motion.dart` for the policy. In short: no
-staggers, no loops, no timed transitions; state changes still animate on
-their tokens. Every loop, stagger and transition asks
-`wizReducedMotion(context)` for itself — nothing shortens a duration on a
-widget's behalf.
+staggers, no loops, no timed transitions; state changes still move rather
+than jump.
+
+The division of labour is the part to remember. Flutter runs an ordinary
+controller's `forward`/`reverse`/`animateTo` at 5 % of its duration while the
+platform flag is on, so a state change — every one of them an implicit
+widget here — collapses to about a frame on its own, and asks for nothing.
+`repeat()` is *not* scaled, and nor is a duration that has to be exactly
+zero, so every loop, every stagger and the page and step transitions ask
+`wizReducedMotion(context)` for themselves.
 
 ## Sizes
 

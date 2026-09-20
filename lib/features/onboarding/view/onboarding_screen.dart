@@ -52,10 +52,11 @@ class OnboardingScreen extends StatelessWidget {
             child: AnimatedSwitcher(
               // A step change is a screen transition, which reduced motion
               // spends no time on (see `reduced_motion.dart`). Read here
-              // rather than left to the framework: nothing shortens a
-              // duration on the switch's behalf — `wizReducedMotion` is a
-              // read every animation makes for itself — and a switcher given
-              // 300 ms would take them however the platform were set.
+              // rather than left to the framework: the switcher's controller
+              // is an ordinary one, so the flag alone would shorten this to
+              // 5 % of 300 ms — 15 ms, one frame of cross-fade, which is not
+              // the "no time" the spec asks for. It also has to be exactly
+              // zero for the gate below, which waits on `completed`.
               duration: wizReducedMotion(context)
                   ? Duration.zero
                   : wiz.motion.screenEnter,
