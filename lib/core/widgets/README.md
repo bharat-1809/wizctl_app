@@ -43,9 +43,15 @@ A control whose cue belongs to something other than the touch passes
 `feedback: null` and plays its own instead. A toggle plays
 `toggleOn`/`toggleOff` on the commit, so a drag that comes home again is
 silent. Tabs, rail items and segments play `tick` on the change, so a tap on
-the one already current is silent. The drag instruments — dial, slider,
-colour wheel — are not pressables at all, and play `detent` on each notch
-crossed.
+the one already current is silent. And there is a third shape: `LightCard`
+passes `feedback: null` to stay silent altogether, because its own key would
+fire at the arena's 100 ms tap-down — which a finger resting on the brightness
+rail reaches before the drag recogniser claims it — so the card played `press`
+twice and sank under the handle.
+
+The drag instruments — dial, slider, colour wheel — are not pressables at all.
+They play `press` themselves when the drag starts, and `detent` on each notch
+crossed after that.
 
 A disabled key plays nothing — the pressable returns before the cue — so
 `reject` is only ever a refusal *after* a press, never "you pressed
@@ -105,8 +111,13 @@ than jump.
 
 The division of labour is the part to remember. Flutter runs an ordinary
 controller's `forward`/`reverse`/`animateTo` at 5 % of its duration while the
-platform flag is on, so a state change — every one of them an implicit
-widget here — collapses to about a frame on its own, and asks for nothing.
+platform flag is on, so a state change — each one on an ordinary controller,
+implicit or explicit, and none of them handed
+`AnimationBehavior.preserve` — collapses to about a frame on its own, and asks
+for nothing. (Most are implicit; the explicit controllers live in `wiz_glow`,
+`fixture_hero`, `wiz_badge`, `wiz_filament_bar`, `wiz_spinner` and
+`wiz_skeleton`, of which `WizGlow`'s is the one driving a state change rather
+than a loop.)
 `repeat()` is *not* scaled, and nor is a duration that has to be exactly
 zero, so every loop, every stagger and the page and step transitions ask
 `wizReducedMotion(context)` for themselves.

@@ -23,11 +23,18 @@ import 'package:flutter/widgets.dart';
 /// run at **5 %** of the stated duration while the platform flag is on
 /// (`animation_controller.dart`, `_animateToInternal`: "run at 5% of the
 /// normal duration to limit most animations to a single frame"). Every state
-/// change in the kit is an implicit widget — `AnimatedScale`,
-/// `AnimatedSwitcher`, `TweenAnimationBuilder` and the rest — which cannot be
-/// handed `AnimationBehavior.preserve` and is not handed it anywhere here, so
-/// all of them already collapse to about one frame on a device with the
-/// switch on. That is the last clause above, and it needs no code of ours.
+/// change in the kit runs on an ordinary controller, implicit or explicit.
+/// Most are implicit — `AnimatedScale`, `AnimatedSwitcher`,
+/// `TweenAnimationBuilder` and the rest, which cannot be handed
+/// `AnimationBehavior.preserve` at all — and six kit files hold explicit ones:
+/// `wiz_glow.dart`, `fixture_hero.dart`, `wiz_badge.dart`,
+/// `wiz_filament_bar.dart`, `wiz_spinner.dart` and `wiz_skeleton.dart`.
+/// `WizGlow` is the state change among them (`forward`/`reverse` when `lit`
+/// flips); the other five drive loops, which the next paragraph covers. None
+/// of the six is handed `AnimationBehavior.preserve`, so every state change
+/// here — implicit or not — already collapses to about one frame on a device
+/// with the switch on. That is the last clause above, and it needs no code of
+/// ours.
 ///
 /// `repeat()` is **not** scaled: a repeating animation keeps its period by
 /// design, so that a widget which ignores the flag cannot flash. A loop
