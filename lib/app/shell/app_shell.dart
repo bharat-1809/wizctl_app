@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/layout/wiz_layout.dart';
 import '../../features/home/widgets/homes_notice_listener.dart';
 import '../widgets/blink_notice_listener.dart';
 import 'compact_shell.dart';
+import 'desktop_shell.dart';
 
-/// One shell builder for every width (spec §9): the branch navigator is the
-/// same object whichever chrome wraps it, so the route and its blocs survive a
-/// resize. Task 20 adds the desktop chrome for the wider classes by switching
-/// on `context.layout.widthClass` here; until then every width gets the phone
-/// chrome.
+/// One shell builder for every width (spec §9): the phone's floating tab bar on
+/// a compact window, the desktop's rail from medium up. The branch navigator is
+/// the same object whichever chrome wraps it, and each branch holds a global
+/// navigator key, so a resize across the boundary keeps the route and every
+/// route bloc.
 ///
 /// The two app-scope listeners are mounted here, once, rather than on each
 /// screen: a home created from the Homes sheet toasts and goes to discovery
@@ -23,8 +25,13 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var compact = context.layout.widthClass.isCompact;
     return HomesNoticeListener(
-      child: BlinkNoticeListener(child: CompactShell(shell: shell)),
+      child: BlinkNoticeListener(
+        child: compact
+            ? CompactShell(shell: shell)
+            : DesktopShell(shell: shell),
+      ),
     );
   }
 }

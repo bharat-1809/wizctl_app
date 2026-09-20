@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/app/app.dart';
 import 'package:wizctl_app/app/bootstrap.dart';
 import 'package:wizctl_app/app/dependencies.dart';
+import 'package:wizctl_app/app/shell/desktop_rail.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
@@ -14,8 +16,10 @@ import 'package:wizctl_app/core/widgets/wiz_toast_layer.dart';
 import 'package:wizctl_app/data/db/app_database.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/features/discovery/view/discovery_screen.dart';
+import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
 import 'package:wizctl_app/features/home/view/home_screen.dart';
 import 'package:wizctl_app/features/onboarding/view/onboarding_screen.dart';
+import 'package:wizctl_app/features/rooms/bloc/room_bloc.dart';
 import 'package:wizctl_app/features/rooms/view/room_screen.dart';
 import 'package:wizctl_app/features/rooms/view/rooms_screen.dart';
 
@@ -25,6 +29,10 @@ import '../support/wiz_test_app.dart';
 /// The phone (spec §9, §10): 390 wide is the compact width class the shell's
 /// tab bar and every screen here are written for.
 const Size _phone = Size(390, 844);
+
+/// A desktop window: from medium up the shell draws the rail instead of the
+/// tab bar, and `/home` and a room draw the grid instead of the phone screens.
+const Size _desktop = Size(1200, 800);
 
 /// One screen fade (300 ms) with room for the load-in staggers.
 const Duration _frame = Duration(milliseconds: 600);
@@ -104,10 +112,11 @@ void main() {
     WidgetTester tester,
     Future<void> Function() body, {
     bool withHome = true,
+    Size size = _phone,
   }) async {
     var services = await _services(tester, FakeGateway(), withHome: withHome);
     try {
-      await setSurface(tester, _phone);
+      await setSurface(tester, size);
       await tester.pumpWidget(WizCtlApp(services: services));
       await settle(tester);
       await body();
@@ -192,6 +201,42 @@ void main() {
           matching: find.byType(Navigator),
         ),
         findsNothing,
+      );
+    });
+  });
+
+  testWidgets('a wide window gets the rail and the grid; shrinking it keeps '
+      'the route and the bloc', (tester) async {
+    await withApp(tester, size: _desktop, () async {
+      expect(find.byType(DesktopRail), findsOneWidget);
+      expect(find.byType(GridScreen), findsOneWidget);
+      expect(find.byType(HomeScreen), findsNothing);
+      expect(find.byType(WizTabBar<ShellBranch>), findsNothing);
+
+      await tester.tap(find.text('Living Room'));
+      await settle(tester);
+      expect(find.text('WHOLE ROOM'), findsOneWidget);
+      // The room's own bloc, read through the grid that is drawing it: the
+      // claim below is that a resize swaps the widget and keeps this object.
+      var before = BlocProvider.of<RoomBloc>(
+        tester.element(find.byType(GridScreen)),
+      );
+
+      await setSurface(tester, _phone);
+      await settle(tester);
+      expect(find.byType(DesktopRail), findsNothing);
+      expect(find.byType(WizTabBar<ShellBranch>), findsOneWidget);
+      expect(
+        find.byType(RoomScreen),
+        findsOneWidget,
+        reason: 'same route, phone chrome',
+      );
+      expect(
+        BlocProvider.of<RoomBloc>(tester.element(find.byType(RoomScreen))),
+        same(before),
+        reason:
+            "the branch's navigator is global-keyed, so its pages — and "
+            'the blocs they provide — are reparented, not rebuilt',
       );
     });
   });

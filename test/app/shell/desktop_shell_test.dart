@@ -1,0 +1,86 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:wizctl_app/app/blocs/homes_event.dart';
+import 'package:wizctl_app/app/routes.dart';
+import 'package:wizctl_app/app/shell/desktop_rail.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/core/layout/wiz_breakpoints.dart';
+import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
+
+import '../../support/app_scope.dart';
+import '../../support/router_harness.dart';
+import '../../support/seed.dart';
+
+/// The narrowest window that gets the desktop chrome: one pixel over
+/// `WizBreakpoints.compactMax`, which is where the medium class begins. The
+/// rail is collapsed to 72 here, so the content column is only 649 wide — a
+/// second `WizLayoutScope` around it would measure that as compact and swap
+/// the phone's rows back in.
+const Size _narrowestDesktop = Size(WizBreakpoints.compactMax + 1, 800);
+
+/// Two bounded pumps: the route page and its bloc's first emission each need a
+/// frame, and `pumpAndSettle` never returns with a poll timer running.
+Future<void> settle(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 600));
+  await tester.pump(const Duration(milliseconds: 600));
+}
+
+void main() {
+  testWidgets('Settings in the desktop shell keeps its CLI rows at the '
+      'narrowest desktop width', (tester) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      var router = await pumpAppRouter(tester, scope, size: _narrowestDesktop);
+      await settle(tester);
+      expect(
+        find.byType(DesktopRail),
+        findsOneWidget,
+        reason: 'medium is a desktop class',
+      );
+
+      router.go(AppRoutes.settings);
+      await settle(tester);
+      expect(find.text(Strings.configFile), findsOneWidget);
+      expect(find.text(Strings.configFilePath), findsOneWidget);
+      expect(
+        find.text(Strings.discoveryMeta),
+        findsNothing,
+        reason: "the phone's Discovery row belongs to the compact class only",
+      );
+      expect(find.text(Strings.homeLivesOnMachine), findsOneWidget);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester);
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('switching home clears the light the inspector held', (
+    tester,
+  ) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      await pumpAppRouter(tester, scope, size: const Size(1200, 800));
+      await settle(tester);
+      expect(find.byType(GridScreen), findsOneWidget);
+
+      await tester.tap(find.text('Bedside bulb'));
+      await settle(tester);
+      expect(scope.inspector.state, 'bedside');
+
+      scope.homes.add(const HomeSwitched('h2'));
+      await settle(tester);
+      expect(
+        scope.inspector.state,
+        isNull,
+        reason: 'a light of the home just left names nothing in the new one',
+      );
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester);
+      await scope.dispose();
+    }
+  });
+}
