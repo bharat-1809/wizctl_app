@@ -502,6 +502,7 @@ ledger and in `lib/core/widgets/README.md`.
 ### Accessibility (§10.2, §10.3, §11)
 
 - §10.2/§10.3: pull-to-refresh is gesture-only. `RefreshIndicator.noSpinner` exposes no semantics action, and neither Home nor Room carries another refresh key, so a screen-reader or switch-control user has no explicit "read now" on either screen; the app's polling still refreshes state on its tick. **An open accessibility item, not fixed in this plan.**
+- §11.2: an unreachable `LightCard` shows its switch at the light's **last-known** `on`, disabled and under the 0.55 unreachable opacity (P92). §11.2 asks only for the opacity, and a switch forced off would contradict the "4 of 6 on" tile beside it, the room cards and the inspector — which reads as a bug, not as "unknown". `on && !unreachable` still drives the emission and the glow, which is where "not answering" is shown.
 - §11: §11.2 describes `WizTopBar`'s slots but not its semantics, and the bar's semantics needed fixing — every screen puts the bar inside `ScreenScroll`, whose lazy-list items are semantics boundaries, which merged the whole bar into one button. What it reads as now is kit behaviour and is written down in `lib/core/widgets/README.md` under "Hosted-control semantics", not here.
 
 ### Desktop and the responsive rules (§10.9, §14, §15)

@@ -295,6 +295,41 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('an unreachable card that was on still shows its switch on', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      wizTestApp(
+        SizedBox(
+          width: 350,
+          child: LightCard(
+            name: 'Hallway',
+            meta: '192.168.1.118',
+            icon: WizIcons.lightbulb,
+            on: true,
+            unreachable: true,
+            brightness: 50,
+            onToggle: (_) {},
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    // P92: the switch reads the light's LAST-KNOWN `on`, dimmed by the
+    // unreachable opacity, so it agrees with the "4 of 6 on" tile beside it
+    // and with the room cards. Only the emission and the glow read
+    // `on && !unreachable`.
+    var children = childrenOf(tester.getSemantics(find.text('Hallway')));
+    expect(children, hasLength(1));
+    expect(
+      children.single,
+      isSemantics(hasEnabledState: true, isEnabled: false, isToggled: true),
+    );
+    handle.dispose();
+  });
+
   testWidgets('dragging the rail reports the end of the change', (
     tester,
   ) async {
