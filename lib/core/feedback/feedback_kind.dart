@@ -24,6 +24,9 @@ enum FeedbackKind {
   /// Save or apply succeeded.
   confirm,
 
-  /// Something failed, is unreachable, or a disabled key was pressed.
+  /// Something failed or was refused after a press: a write that did not
+  /// land, a name that was blank, a sheet that would not take the input. A
+  /// disabled key is silent — the pressable never fires on one — so this is
+  /// never "you pressed something you could not press".
   reject,
 }

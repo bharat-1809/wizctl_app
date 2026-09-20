@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/layout/wiz_layout.dart';
+import '../../../core/motion/reduced_motion.dart';
 import '../../../core/theme/wiz_theme.dart';
 import '../bloc/onboarding_bloc.dart';
 import '../bloc/onboarding_state.dart';
@@ -49,12 +50,18 @@ class OnboardingScreen extends StatelessWidget {
               wiz.space.s8,
             ),
             child: AnimatedSwitcher(
-              duration: wiz.motion.screenEnter,
+              // A step change is a screen transition, which reduced motion
+              // spends no time on (see `reduced_motion.dart`). Read here
+              // rather than left to the framework: nothing shortens a
+              // duration on the switch's behalf — `wizReducedMotion` is a
+              // read every animation makes for itself — and a switcher given
+              // 300 ms would take them however the platform were set.
+              duration: wizReducedMotion(context)
+                  ? Duration.zero
+                  : wiz.motion.screenEnter,
               switchInCurve: wiz.motion.tactile,
               // The fade is `AnimatedSwitcher`'s own recipe, on the duration
-              // and curve above; reduced motion shortens those the way it does
-              // every `AnimationController`, and this wrapper follows whatever
-              // they become rather than deciding anything itself.
+              // and curve above.
               transitionBuilder: (child, animation) => AnimatedBuilder(
                 animation: animation,
                 child: FadeTransition(opacity: animation, child: child),
