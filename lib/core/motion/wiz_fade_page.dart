@@ -6,7 +6,7 @@ import '../theme/wiz_motion.dart';
 /// Screen enter: opacity only, over `screenEnter` on the tactile curve
 /// (spec §12, "screen enter 300 opacity only"; §9, "Screen transitions are
 /// a 300 ms opacity fade"). Nothing slides, and a pop fades back out over
-/// the same 300 ms rather than snapping.
+/// the same 300 ms rather than snapping — unless [reduced] says otherwise.
 ///
 /// Takes its [motion] rather than reading `context.wiz`: a router builds
 /// its pages where the theme's tokens are not in scope. [reduced] is the
