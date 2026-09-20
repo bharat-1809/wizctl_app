@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/blocs/homes_event.dart';
 import 'package:wizctl_app/app/routes.dart';
@@ -12,9 +11,6 @@ import 'package:wizctl_app/core/widgets/wiz_text_field.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
 import 'package:wizctl_app/features/desktop/view/inspector_body.dart';
 import 'package:wizctl_app/features/desktop/view/inspector_panel.dart';
-import 'package:wizctl_app/features/desktop/widgets/inspector_facts.dart';
-import 'package:wizctl_app/features/lights/bloc/light_bloc.dart';
-import 'package:wizctl_app/features/lights/bloc/light_event.dart';
 
 import '../../support/app_scope.dart';
 import '../../support/router_harness.dart';
@@ -164,12 +160,35 @@ void main() {
         reason: 'the medium class shows the inspector as a dialog',
       );
 
-      // The body's own bloc rather than a tap on FORGET: the sheet caps at 86 %
-      // of the window, so that key is below the fold here, and what is under
-      // test is the contract — the light goes, and the dialog goes with it
-      // rather than staying up over controls that no longer reach anything.
-      BlocProvider.of<LightBloc>(tester.element(find.byType(InspectorFacts)))
-          .add(const LightForgotten());
+      // The whole user path, not a dispatch on the bloc: the sheet caps at
+      // 86 % of an 800-tall window, so the Forget key starts below the fold and
+      // the first thing a reader does is scroll for it. Dragged from the name
+      // at the top, which is the one thing up there that is not a control —
+      // scoped to the sheet, since the grid card behind the scrim carries the
+      // same name.
+      await tester.drag(
+        find.descendant(
+          of: find.byType(WizSheetRoute),
+          matching: find.text('Shelf strip'),
+        ),
+        const Offset(0, -500),
+      );
+      await settle(tester);
+      await tester.tap(find.text('FORGET'));
+      await settle(tester);
+      expect(
+        find.byType(WizSheetRoute),
+        findsNWidgets(2),
+        reason: 'the confirmation is a second sheet over the inspector',
+      );
+      // By its title, not by order: both sheets on screen now hold a key
+      // labelled FORGET.
+      var confirm = find.byWidgetPredicate(
+        (w) => w is WizSheetRoute && w.title == 'Forget Shelf strip?',
+      );
+      await tester.tap(
+        find.descendant(of: confirm, matching: find.text('FORGET')),
+      );
       await settle(tester);
       expect(find.byType(WizSheetRoute), findsNothing);
       expect(scope.inspector.state, isNull);

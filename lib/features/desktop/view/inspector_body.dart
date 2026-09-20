@@ -175,6 +175,9 @@ class _InspectorContent extends StatelessWidget {
               ],
               SizedBox(height: wiz.space.s6),
               Row(
+                // Centred, not top-aligned: `WizCtl_Desktop.dc.html` line 377
+                // is `display:flex;gap:12px;align-items:center`, which sets the
+                // 88 key against the middle of the taller two-tile column.
                 children: [
                   WizPowerKey(
                     on: state.live.isOn,

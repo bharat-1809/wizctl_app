@@ -23,6 +23,12 @@ class InspectorFacts extends StatelessWidget {
       builder: (context, state) {
         var light = state.light;
         if (light == null) return const SizedBox.shrink();
+        // Tertiary, not the phone panel's secondary: `WizCtl_Desktop.dc.html`
+        // lines 404-405 paint both mono lines
+        // `font-family:var(--font-mono);font-size:11.5px;color:var(--text-tertiary)`.
+        // The phone's `DevicePanel` runs a label column beside its values and
+        // needs the two to differ; this panel is a caps header over two lines
+        // that all sit back at the same weight.
         var mono = wiz.typography.mono.copyWith(color: wiz.colors.textTertiary);
         return WizPanel(
           variant: WizPanelVariant.flat,

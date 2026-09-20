@@ -24,10 +24,9 @@ Future<void> showInspectorDialog(
   required String lightId,
 }) async {
   var inspector = context.read<InspectorCubit>();
-  // True while the sheet's route is up. [InspectorBody] clears the selection
-  // when its light goes, which on a medium window is also the cue to close —
-  // but a dismissal clears the selection too, from the line below, and a pop
-  // then would take whatever is underneath with it.
+  // Cleared the moment the sheet's future completes, which is what stops the
+  // clear at the end of this function — a dismissal's own tidying up — from
+  // reading as a light that went and asking for a second pop.
   var open = true;
   await showWizSheet<void>(
     context,
@@ -40,7 +39,16 @@ Future<void> showInspectorDialog(
       // navigator route, whose overlay need not sit under whatever provided it.
       bloc: inspector,
       listenWhen: (a, b) => open && a == lightId && b != lightId,
-      listener: (context, _) => Navigator.of(context).pop(),
+      // Only while this sheet is the route on top. The flag above closes when
+      // the future completes, but a pop merely *starts* the exit animation and
+      // the body goes on listening for the length of it — a home switch, or the
+      // light disappearing inside that window, would otherwise pop the route
+      // underneath this one.
+      listener: (context, _) {
+        if (ModalRoute.of(context)?.isCurrent ?? false) {
+          Navigator.of(context).pop();
+        }
+      },
       child: InspectorBody(key: ValueKey(lightId), lightId: lightId),
     ),
   );
