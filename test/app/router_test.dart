@@ -16,20 +16,6 @@ import '../support/app_scope.dart';
 import '../support/router_harness.dart';
 import '../support/seed.dart';
 
-/// One screen fade (300 ms) and the frame that follows it, so a redirect has
-/// landed and nothing is mid-transition. Bounded, not `pumpAndSettle`: an
-/// active home arms the poll timer and the screens animate on.
-const Duration _settled = Duration(milliseconds: 400);
-
-/// Two bounded pumps: a `go` reaches the navigator through an asynchronous
-/// hop, so the first frame still draws the page that is leaving — and until
-/// its fade is over the page underneath is offstage, where finders do not
-/// look.
-Future<void> settle(WidgetTester tester) async {
-  await tester.pump(_settled);
-  await tester.pump(_settled);
-}
-
 /// The gallery's own settling: it mounts every kit section behind a load-in
 /// stagger, so its timers take longer to drain than a screen's. Two pumps,
 /// because until the fade has finished the page underneath is offstage, where

@@ -155,7 +155,10 @@ There are no golden tests — visuals are reviewed on a device.
 Conventions the harness expects, learned the hard way:
 
 - Pump **twice** after every `go` or `push`: once for the route's page, once for
-  the lazily created bloc's first emission.
+  the lazily created bloc's first emission. `settle(tester)` in
+  `test/support/router_harness.dart` is that pair, bounded at one screen fade
+  with room for a load-in stagger; never `pumpAndSettle`, which with a
+  breathing card or a poll timer never returns.
 - Count navigations on `router.routeInformationProvider`, never on the
   delegate — the delegate coalesces two identical `go`s in one frame.
 - Reset flutter_test's outbound mock handlers in a `tearDown`; 3.47.2 does not

@@ -34,6 +34,7 @@ import 'package:wizctl_app/features/rooms/view/room_screen.dart';
 import 'package:wizctl_app/features/rooms/view/rooms_screen.dart';
 
 import '../support/fakes.dart';
+import '../support/router_harness.dart';
 import '../support/wiz_test_app.dart';
 
 /// The phone (spec §9, §10): 390 wide is the compact width class the shell's
@@ -48,20 +49,6 @@ const Size _desktop = Size(1200, 800);
 /// and there is no room for the inspector column, so a selection opens the
 /// inspector as a dialog instead.
 const Size _medium = Size(900, 700);
-
-/// One screen fade (300 ms) with room for the load-in staggers.
-const Duration _frame = Duration(milliseconds: 600);
-
-/// Two bounded pumps: the first lands the navigation and starts the fade, and
-/// until the fade has finished the page that is leaving is still on top and
-/// opaque, which leaves the one underneath offstage where finders do not look.
-///
-/// Bounded throughout: a lit card breathes, the filament sweeps and the live
-/// badge pulses for ever, so `pumpAndSettle` would time out.
-Future<void> settle(WidgetTester tester) async {
-  await tester.pump(_frame);
-  await tester.pump(_frame);
-}
 
 /// The whole graph over an in-memory database, with one home, one room and one
 /// light when [withHome] — what a second launch finds — and nothing at all

@@ -10,6 +10,24 @@ import 'package:wizctl_app/core/theme/wiz_theme.dart';
 import 'app_scope.dart';
 import 'wiz_test_app.dart';
 
+/// One screen fade (spec §9's 300 ms) with room for a screen's load-in
+/// staggers, which is what every pump here is measured against.
+const Duration settled = Duration(milliseconds: 600);
+
+/// Two bounded pumps, which is what a navigation costs: a `go` reaches the
+/// navigator through an asynchronous hop, so the first frame still draws the
+/// page that is leaving — and until its fade is over that page is still on top
+/// and opaque, which leaves the page underneath offstage where finders do not
+/// look. An onboarding step change needs the same two.
+///
+/// Bounded, never `pumpAndSettle`: a lit card breathes, the filament sweeps,
+/// the live badge pulses and the poll timer ticks for ever, so settling never
+/// comes.
+Future<void> settle(WidgetTester tester) async {
+  await tester.pump(settled);
+  await tester.pump(settled);
+}
+
 /// Pumps [home] at `/` inside a `GoRouter` whose other locations are
 /// [targets], each showing its own path as text, and returns the router so
 /// a test can read where a tap went:

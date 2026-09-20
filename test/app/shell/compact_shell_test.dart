@@ -14,20 +14,6 @@ import '../../support/app_scope.dart';
 import '../../support/router_harness.dart';
 import '../../support/seed.dart';
 
-/// One screen fade (300 ms) and the frames after it, so a branch switch, a
-/// redirect or a screen's own leave has landed. Bounded, not `pumpAndSettle`:
-/// the cards breathe and the poll timer ticks for ever.
-const Duration _settled = Duration(milliseconds: 400);
-
-/// Two bounded pumps, the way an onboarding step change needs two (Task 17):
-/// the first frame lands the navigation and starts the fade, and until the
-/// fade has finished the page that is leaving is still on top and opaque —
-/// which leaves the page underneath offstage, where finders do not look.
-Future<void> settle(WidgetTester tester) async {
-  await tester.pump(_settled);
-  await tester.pump(_settled);
-}
-
 void main() {
   test('the tab bar shows on every branch but discovery', () {
     for (var b in ShellBranch.values) {
