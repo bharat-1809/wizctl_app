@@ -15,7 +15,13 @@ import '../../../support/router_harness.dart';
 import '../../../support/seed.dart';
 import '../../../support/wiz_test_app.dart';
 
-/// The phone (P58): the width class the steps are written for.
+/// The phone (P58): 390 wide is the width class the steps are written for.
+///
+/// The height is the phone's 844 stretched (P69), as the screen test's is: a
+/// step draws more than one screenful, and `tester.tap` on something below the
+/// surface's bottom edge lands on whatever is at those coordinates instead of
+/// on the target — so the taller surface is what keeps the primary key
+/// reachable when this test drives step 1 to step 2.
 const Size _phone = Size(390, 2000);
 
 void main() {

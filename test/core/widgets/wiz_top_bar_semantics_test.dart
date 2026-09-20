@@ -17,18 +17,24 @@ const double _barWidth = 360;
 /// inside the item merges into that one node unless the bar keeps its own
 /// children explicit. Bare in a column the bar separates on its own, which is
 /// why this test scrolls: the bug only shows where the screens live (P67).
-Widget _bar({Widget? trailing}) => ListView(
+Widget _bar({
+  String? subtitle = 'Living Room',
+  bool back = true,
+  Widget? trailing,
+}) => ListView(
   children: [
     SizedBox(
       width: _barWidth,
       child: WizTopBar(
         title: 'Shelf strip',
-        subtitle: 'Living Room',
-        leading: WizIconKey(
-          icon: WizIcons.chevronLeft,
-          semanticsLabel: 'Back',
-          onPressed: () {},
-        ),
+        subtitle: subtitle,
+        leading: back
+            ? WizIconKey(
+                icon: WizIcons.chevronLeft,
+                semanticsLabel: 'Back',
+                onPressed: () {},
+              )
+            : null,
         trailing: trailing,
       ),
     ),
@@ -84,6 +90,23 @@ void main() {
       // escaped P67 on its own. It is here so the kit fix keeps it that way.
       expect(find.semantics.byLabel('Back'), findsOne);
       expect(find.semantics.byLabel('Shelf strip power'), findsOne);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets('a bar with no controls and no sub-line is just its title', (
+    tester,
+  ) async {
+    var handle = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(wizTestApp(_bar(back: false, subtitle: null)));
+
+      // The plainest bar the screens use — a tab's heading. Nothing to reach,
+      // so nothing is a control, and the container the kit fix adds must not
+      // invent a stop or split a title that has nothing under it.
+      expect(find.semantics.byLabel('Back'), findsNothing);
+      expect(find.semantics.byLabel('Shelf strip'), findsOne);
     } finally {
       handle.dispose();
     }
