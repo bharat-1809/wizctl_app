@@ -55,9 +55,14 @@ const Duration _settled = Duration(milliseconds: 500);
 /// the scanning view on show.
 const Duration _slowRead = Duration(seconds: 1);
 
-/// How long the fake repository holds a save open: twice [_settled], so a
-/// `pump(_settled)` after the key lands while the row is still in flight.
-const Duration _slowInsert = Duration(seconds: 1);
+/// How long the fake repository holds a save open: long enough that several
+/// bounded pumps land while the row is still in flight. Every test that sets
+/// it pumps it out again before returning, so no timer outlives the test.
+const Duration _slowInsert = Duration(seconds: 5);
+
+/// The addresses a /24 sweep walks, as the gateway reports them — the count
+/// the found banner names after a sweep.
+const int _subnetAddresses = 254;
 
 void main() {
   Widget screen(AppScope scope, DiscoveryBloc bloc) => scope.wrap(
@@ -204,6 +209,44 @@ void main() {
     );
   });
 
+  testWidgets('the found banner names the run that just happened', (
+    tester,
+  ) async {
+    await withDiscovery(
+      tester,
+      (scope, bloc) async {
+        await pumpRouted(tester, screen(scope, bloc), size: _phone);
+        await discover(tester);
+        expect(find.text('Broadcast on 192.168.1.0/24'), findsOneWidget);
+        await tester.tap(find.text('SWEEP SUBNET'));
+        await tester.pump(_settled);
+        expect(
+          find.text('Swept 192.168.1.0/24 · $_subnetAddresses addresses'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('SCAN AGAIN'));
+        await tester.pump(_settled);
+        expect(
+          find.text('Broadcast on 192.168.1.0/24'),
+          findsOneWidget,
+          // P74: `sweptOnce` latches, so keying the banner on it would leave
+          // this rescan claiming to have swept 0 addresses.
+          reason: 'a quick rescan after a sweep is not a sweep',
+        );
+      },
+      script: (scope) => scope.gateway.sweepEvents = [
+        const ScanProgress(
+          addressesProbed: _subnetAddresses,
+          addressCount: _subnetAddresses,
+          fraction: 1,
+          subnet: '192.168.1',
+        ),
+        const ScanFound(_rgb),
+        const ScanDone([]),
+      ],
+    );
+  });
+
   testWidgets('a run that fails is the try-again empty state', (tester) async {
     await withDiscovery(
       tester,
@@ -273,8 +316,11 @@ void main() {
       );
       await tester.enterText(find.byType(WizTextField), 'Reading lamp');
       await tester.pump();
+      // No pump between the chip and the key, deliberately: the chip sets its
+      // notifier at once but the footer rebuilds on the next frame, so a key
+      // that read the room its own build closed over would still save the
+      // first room. This pins the press-time read.
       await tester.tap(find.text('Kitchen'));
-      await tester.pump();
       scope.seed.lights.insertLatency = _slowInsert;
       await tester.tap(find.text('SAVE LIGHT'));
       await tester.pump(_settled);
@@ -332,6 +378,38 @@ void main() {
       script: (scope) =>
           scope.seed.lights.insertError = StateError('database closed'),
     );
+  });
+
+  testWidgets('a save in flight when the screen leaves takes its toast with '
+      'it', (tester) async {
+    await withDiscovery(tester, (scope, bloc) async {
+      await pumpRouted(
+        tester,
+        screen(scope, bloc),
+        targets: [AppRoutes.home],
+        size: _phone,
+      );
+      await discover(tester);
+      await tester.tap(find.text('SAVE'));
+      await tester.pump(_settled);
+      await tester.enterText(find.byType(WizTextField), 'Reading lamp');
+      await tester.pump();
+      await tester.tap(find.text('SAVE LIGHT'));
+      await tester.pump(_settled);
+      expect(scope.toasts.toasts.single.tone, WizToastTone.loading);
+      await tester.tap(find.bySemanticsLabel('Back'));
+      // Two frames: the first runs the leaving route's transition out, the
+      // second is where the navigator finalizes it and the subtree unmounts.
+      await tester.pump(_settled);
+      await tester.pump(_settled);
+      expect(
+        scope.toasts.toasts,
+        isEmpty,
+        reason: 'a loading toast waits to be resolved and never times out',
+      );
+      // Drain the write the screen walked away from.
+      await tester.pump(_slowInsert);
+    }, script: (scope) => scope.seed.lights.insertLatency = _slowInsert);
   });
 
   testWidgets('on a desktop the bar is titled Discovery with a Rescan key', (

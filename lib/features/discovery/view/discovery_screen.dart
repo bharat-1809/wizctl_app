@@ -72,14 +72,22 @@ class DiscoveryScreen extends StatelessWidget {
         // Where the devices came from: a sweep can say how many addresses it
         // walked, a broadcast only which network it went out on, and a run
         // nothing reported a subnet for neither.
+        //
+        // The phase of the last progress report is what decides, not
+        // `state.sweptOnce` (P74): that flag latches for the screen's life, so
+        // keying on it would have every quick rescan after one sweep claim to
+        // have swept — and a quick run's progress carries no address count, so
+        // it would claim it as "· 0 addresses". `sweptOnce` keeps its other
+        // job, which is whether the empty state still offers the sweep.
         String foundOn;
         if (subnet == null) {
           foundOn = Strings.localNetwork;
-        } else if (state.sweptOnce) {
-          // The sweep's last progress report. Both the real gateway and the
-          // fault-injecting one count the /24's addresses, so there is no
+        } else if (progress != null &&
+            progress.phase == DiscoveryPhase.sweeping) {
+          // The count is the sweep's own; both the real gateway and the
+          // fault-injecting one report the /24's addresses, so there is no
           // literal here.
-          foundOn = Strings.sweptSubnet(subnet, progress?.total ?? 0);
+          foundOn = Strings.sweptSubnet(subnet, progress.total);
         } else {
           foundOn = Strings.broadcastOn(subnet);
         }

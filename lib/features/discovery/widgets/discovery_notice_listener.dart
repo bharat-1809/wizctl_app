@@ -29,6 +29,31 @@ class _DiscoveryNoticeListenerState extends State<DiscoveryNoticeListener> {
   /// saved, with the alias the user gave it.
   final Map<String, ({String id, String alias})> _saving = {};
 
+  /// The controller to clean up against, taken while the element is still
+  /// active: an inherited lookup from [dispose] is too late, because the
+  /// element is already defunct by then.
+  ToastController? _toasts;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _toasts = context.read<ToastController>();
+  }
+
+  @override
+  void dispose() {
+    // A save still in flight when the screen leaves would strand its loading
+    // toast: a loading toast never times out — it waits to be resolved — and
+    // the controller is app-scoped, so it would sit on every screen after
+    // this one. The write itself is not cancelled; it simply has nobody left
+    // to report to.
+    for (var save in _saving.values) {
+      _toasts?.dismiss(save.id);
+    }
+    _saving.clear();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<DiscoveryBloc, DiscoveryState>(
