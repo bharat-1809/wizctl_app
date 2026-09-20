@@ -144,7 +144,7 @@ fvm dart format --output=none --set-exit-if-changed lib test
 fvm flutter test
 ```
 
-**719 tests**, all offline: no test reaches a real light or the LAN. The one
+**734 tests**, all offline: no test reaches a real light or the LAN. The one
 that exercises the device gateway for real answers it with `FakeBulb`, a
 loopback UDP socket in `test/support/fake_bulb.dart`; everything else stops at a
 fake. Bloc tests drive real use cases over the fakes in `test/support`
@@ -176,6 +176,11 @@ Conventions the harness expects, learned the hard way:
   above it would not be seen.
 - Any test that builds `AppDependencies` sets
   `driftRuntimeOptions.dontWarnAboutMultipleDatabases = true`.
+- A test that measures **text width** — an overflow check, a fit — loads the
+  real face first (`FontLoader` over the `assets/fonts` asset, as
+  `settings_screen_test.dart` does). `flutter_test`'s fallback font draws every
+  glyph as a square of the font size, so widths measured against it are roughly
+  double and mean nothing.
 
 One limit worth knowing: `reducedMotion(...)` overrides `MediaQuery` only, so a
 widget test never sees the 5 % duration scaling the platform flag applies to
