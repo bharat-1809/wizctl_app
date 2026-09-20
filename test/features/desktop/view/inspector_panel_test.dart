@@ -156,6 +156,36 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a silent bulb with no white channel: the danger badge, one dial and the '
+    'note',
+    (tester) async {
+      await withScope(tester, (scope) async {
+        // Without this the bulb answers and the light reads as reachable:
+        // unlike `RoomBloc`, `LightBloc` reads its own light as it opens
+        // (spec §5.8), and `AppScope` scripts every seeded light into the fake
+        // gateway.
+        scope.gateway.failing['192.168.1.118'] = const UnreachableFailure(
+          '192.168.1.118',
+          'no route to host',
+        );
+        scope.inspector.select('hall');
+        await pumpRouted(tester, panelInShell(scope), size: _expanded);
+        await tester.pump(_settled);
+        var badge = tester.widget<WizBadge>(find.byType(WizBadge));
+        expect(badge.label, 'No reply');
+        expect(badge.tone, WizBadgeTone.danger);
+        expect(
+          find.byType(WizDial),
+          findsOneWidget,
+          reason: 'a dimmable white has no temperature to tune',
+        );
+        expect(find.text(Strings.dimsNoWhite), findsOneWidget);
+        expect(find.widgetWithText(WizStatTile, 'BRIGHTNESS'), findsOneWidget);
+      });
+    },
+  );
+
   testWidgets('a plug: the power tile, the socket note and no dials', (
     tester,
   ) async {
