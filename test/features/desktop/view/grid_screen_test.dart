@@ -192,6 +192,50 @@ void main() {
     });
   });
 
+  testWidgets('the bar\'s Add room key opens the sheet and saves a room', (
+    tester,
+  ) async {
+    await withScope(tester, (scope) async {
+      var bloc = HomeScreenBloc(
+        homes: scope.seed.homes,
+        rooms: scope.seed.rooms,
+        lights: scope.seed.lights,
+        store: scope.seed.store,
+        settings: scope.seed.settings,
+        setPower: scope.setPower,
+        sync: scope.sync,
+      )..add(const HomeScreenSubscribed());
+      addTearDown(() => unawaited(bloc.close()));
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          BlocProvider.value(value: bloc, child: const GridScreen.allLights()),
+        ),
+        size: _desktop,
+      );
+      await settle(tester);
+
+      // The key is built above the `BlocBuilder`, so its callbacks close over
+      // the screen's own context: this is what proves that context can still
+      // reach `HomesBloc`, `AddRoom`, the toasts and a navigator.
+      await tester.tap(find.text('ADD ROOM'));
+      await settle(tester);
+      expect(find.text(Strings.roomName.toUpperCase()), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'Study');
+      await settle(tester);
+      await tester.tap(find.text(Strings.saveRoom.toUpperCase()));
+      await settle(tester);
+      expect(
+        (await scope.seed.rooms.getByHome('h1')).map((r) => r.name),
+        contains('Study'),
+      );
+      var toast = scope.toasts.toasts.single;
+      expect(toast.title, Strings.roomSaved);
+      expect(toast.body, Strings.roomIsEmpty('Study'));
+    });
+  });
+
   testWidgets('a room: the whole-room panel, the switch, the room\'s cards', (
     tester,
   ) async {
