@@ -68,12 +68,6 @@ class AppPages {
     child: Scaffold(backgroundColor: Colors.transparent, body: child),
   );
 
-  /// The active home, for the pages whose bloc is built per home. The redirect
-  /// keeps every one of them behind a home, so this is null only for a frame
-  /// while one is being switched.
-  String? _activeHome(BuildContext context) =>
-      context.read<HomesBloc>().state.activeHomeId;
-
   /// The first run (spec §10.1). Its two blocs live and die with this route:
   /// once a home exists the redirect makes `/setup` unreachable, and a bloc
   /// kept across that redirect would still be reporting a finished setup.
@@ -173,17 +167,21 @@ class AppPages {
     ),
   );
 
-  Page<void> modes(BuildContext context, GoRouterState state) {
-    var homeId = _activeHome(context) ?? '';
-    return _fade(
-      state,
-      BlocProvider(
-        create: (_) =>
-            modesBlocFor(WholeHomeTarget(homeId))..add(const ModesSubscribed()),
-        child: ModesNoticeListener(child: ModesScreen(homeId: homeId)),
-      ),
-    );
-  }
+  Page<void> modes(BuildContext context, GoRouterState state) => _fade(
+    state,
+    _ForActiveHome(
+      builder: (context, active) {
+        var homeId = active ?? '';
+        return BlocProvider(
+          key: ValueKey(homeId),
+          create: (_) =>
+              modesBlocFor(WholeHomeTarget(homeId))
+                ..add(const ModesSubscribed()),
+          child: ModesNoticeListener(child: ModesScreen(homeId: homeId)),
+        );
+      },
+    ),
+  );
 
   /// Settings has no bloc of its own: it reads the app-scope cubits the root
   /// provides (spec §10.7).
@@ -192,18 +190,42 @@ class AppPages {
 
   Page<void> discover(BuildContext context, GoRouterState state) => _fade(
     state,
-    BlocProvider(
-      create: (_) => DiscoveryBloc(
-        homeId: _activeHome(context),
-        runDiscovery: deps.runDiscovery,
-        saveDiscoveredLight: deps.saveDiscoveredLight,
-        learnHomeSubnet: deps.learnHomeSubnet,
-        sync: deps.sync,
+    _ForActiveHome(
+      builder: (context, homeId) => BlocProvider(
+        key: ValueKey(homeId),
+        create: (_) => DiscoveryBloc(
+          homeId: homeId,
+          runDiscovery: deps.runDiscovery,
+          saveDiscoveredLight: deps.saveDiscoveredLight,
+          learnHomeSubnet: deps.learnHomeSubnet,
+          sync: deps.sync,
+        ),
+        child: const DiscoveryNoticeListener(child: DiscoveryScreen()),
       ),
-      child: const DiscoveryNoticeListener(child: DiscoveryScreen()),
     ),
   );
 
   Page<void> gallery(BuildContext context, GoRouterState state) =>
       _fade(state, const GalleryPage());
+}
+
+/// Builds for the home that is active now, and rebuilds when that changes.
+///
+/// The pages whose bloc belongs to one home — the Scenes tab and discovery —
+/// are branches of the shell, so they stay mounted while the user is
+/// elsewhere. Reading the home once where the page is built would leave a bloc
+/// applying scenes to, or saving lights into, the home the user has just left.
+/// Watching it here rebuilds those pages wherever the switch happens, and the
+/// `ValueKey` on the provider below is what disposes the old bloc and builds
+/// one for the new home.
+class _ForActiveHome extends StatelessWidget {
+  final Widget Function(BuildContext context, String? homeId) builder;
+
+  const _ForActiveHome({required this.builder});
+
+  @override
+  Widget build(BuildContext context) => builder(
+    context,
+    context.select<HomesBloc, String?>((bloc) => bloc.state.activeHomeId),
+  );
 }

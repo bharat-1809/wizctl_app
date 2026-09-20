@@ -1,10 +1,14 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/blocs/homes_event.dart';
 import 'package:wizctl_app/app/gallery_page.dart';
 import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/features/home/view/home_screen.dart';
+import 'package:wizctl_app/features/modes/bloc/light_modes_bloc.dart';
+import 'package:wizctl_app/features/modes/view/modes_screen.dart';
 
 import '../support/app_scope.dart';
 import '../support/router_harness.dart';
@@ -85,6 +89,35 @@ void main() {
         currentLocation(router),
         AppRoutes.home,
         reason: 'the first run is over; its screen must not come back',
+      );
+    } finally {
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('switching home re-targets the Scenes tab at the new one', (
+    tester,
+  ) async {
+    var scope = AppScope(SeedHome());
+    try {
+      await scope.start();
+      await tester.pump();
+      var router = await pumpAppRouter(tester, scope);
+      router.go(AppRoutes.modes);
+      await tester.pump(_settled);
+      await tester.pump(_settled);
+      expect(tester.widget<ModesScreen>(find.byType(ModesScreen)).homeId, 'h1');
+
+      scope.homes.add(const HomeSwitched('h2'));
+      await tester.pump(_settled);
+      await tester.pump(_settled);
+      expect(tester.widget<ModesScreen>(find.byType(ModesScreen)).homeId, 'h2');
+      expect(
+        BlocProvider.of<LightModesBloc>(
+          tester.element(find.byType(ModesScreen)),
+        ).state.target,
+        const WholeHomeTarget('h2'),
+        reason: 'the tab must not apply scenes to the home that was left',
       );
     } finally {
       await scope.dispose();
