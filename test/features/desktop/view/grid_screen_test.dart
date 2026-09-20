@@ -11,6 +11,7 @@ import 'package:wizctl_app/core/widgets/wiz_empty_state.dart';
 import 'package:wizctl_app/core/widgets/wiz_stat_tile.dart';
 import 'package:wizctl_app/core/widgets/wiz_toggle.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
+import 'package:wizctl_app/features/desktop/widgets/grid_room_panel.dart';
 import 'package:wizctl_app/features/home/bloc/home_screen_bloc.dart';
 import 'package:wizctl_app/features/home/bloc/home_screen_event.dart';
 import 'package:wizctl_app/features/rooms/bloc/room_bloc.dart';
@@ -114,6 +115,44 @@ void main() {
     });
   });
 
+  testWidgets('a home with no lights draws the bar and the tiles, no cards', (
+    tester,
+  ) async {
+    await withScope(tester, (scope) async {
+      for (var light in scope.seed.all) {
+        await scope.seed.lights.delete(light.id);
+      }
+      var bloc = HomeScreenBloc(
+        homes: scope.seed.homes,
+        rooms: scope.seed.rooms,
+        lights: scope.seed.lights,
+        store: scope.seed.store,
+        settings: scope.seed.settings,
+        setPower: scope.setPower,
+        sync: scope.sync,
+      )..add(const HomeScreenSubscribed());
+      addTearDown(() => unawaited(bloc.close()));
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          BlocProvider.value(value: bloc, child: const GridScreen.allLights()),
+        ),
+        size: _desktop,
+      );
+      await settle(tester);
+
+      expect(find.text('0 lights · 0 on'), findsOneWidget);
+      expect(find.text('0 / 0'), findsOneWidget);
+      expect(find.byType(LightCard), findsNothing);
+      expect(
+        find.text(Strings.oneLightDidNotAnswer),
+        findsNothing,
+        reason: 'nothing to be silent',
+      );
+      expect(find.text('ADD ROOM'), findsOneWidget);
+    });
+  });
+
   testWidgets('a light\'s switch on the grid writes that light only', (
     tester,
   ) async {
@@ -193,6 +232,47 @@ void main() {
       await tester.tap(find.bySemanticsLabel(Strings.roomPower('Living Room')));
       await settle(tester);
       expect(scope.gateway.sends, hasLength(3));
+    });
+  });
+
+  testWidgets('the panel\'s right column carries the colour-temperature note', (
+    tester,
+  ) async {
+    await withScope(tester, (scope) async {
+      var bloc = RoomBloc(
+        roomId: 'bedroom',
+        rooms: scope.seed.rooms,
+        lights: scope.seed.lights,
+        store: scope.seed.store,
+        setPower: scope.setPower,
+        setBrightness: scope.setBrightness,
+        setKelvin: scope.setKelvin,
+        sync: scope.sync,
+      )..add(const RoomSubscribed());
+      addTearDown(() => unawaited(bloc.close()));
+      await pumpRouted(
+        tester,
+        scope.wrap(
+          BlocProvider.value(value: bloc, child: const GridScreen.room()),
+        ),
+        size: _desktop,
+      );
+      await settle(tester);
+
+      var note = find.text('Colour temp reaches 1 of 2 bulbs.');
+      expect(note, findsOneWidget);
+      expect(
+        find.ancestor(of: note, matching: find.byType(GridRoomPanel)),
+        findsOneWidget,
+        reason: 'the desktop reads the note under the mode row, not the dials',
+      );
+      expect(
+        tester.getCenter(note).dx,
+        greaterThan(tester.getCenter(find.byType(WizDial).first).dx),
+        reason: 'the right column',
+      );
+      expect(find.text('0 / 2'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget, reason: 'the hallway is silent');
     });
   });
 
