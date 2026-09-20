@@ -55,6 +55,9 @@ GoRouter buildRouter({
     redirect: (context, state) {
       var hasHome = homes.state.hasHome;
       var location = state.matchedLocation;
+      // The gallery is a developer tool rather than a place in the app, and it
+      // needs no home, so the first run does not stand in front of it.
+      if (kDebugMode && location == AppRoutes.gallery) return null;
       if (!hasHome && location != AppRoutes.setup) return AppRoutes.setup;
       if (hasHome && location == AppRoutes.setup) return AppRoutes.home;
       return null;

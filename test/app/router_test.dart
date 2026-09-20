@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/app/blocs/homes_event.dart';
+import 'package:wizctl_app/app/gallery_page.dart';
 import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
+import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/features/home/view/home_screen.dart';
 
 import '../support/app_scope.dart';
 import '../support/router_harness.dart';
@@ -11,6 +14,15 @@ import '../support/seed.dart';
 /// landed and nothing is mid-transition. Bounded, not `pumpAndSettle`: an
 /// active home arms the poll timer and the screens animate on.
 const Duration _settled = Duration(milliseconds: 400);
+
+/// The gallery's own settling: it mounts every kit section behind a load-in
+/// stagger, so its timers take longer to drain than a screen's. Two pumps,
+/// because until the fade has finished the page underneath is offstage, where
+/// finders do not look.
+Future<void> settleGallery(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 1500));
+  await tester.pump(const Duration(milliseconds: 1500));
+}
 
 void main() {
   test('branches map to paths and back', () {
@@ -74,6 +86,30 @@ void main() {
         AppRoutes.home,
         reason: 'the first run is over; its screen must not come back',
       );
+    } finally {
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('the debug gallery is a route of its own, with a way back', (
+    tester,
+  ) async {
+    var scope = AppScope(SeedHome());
+    try {
+      await scope.start();
+      await tester.pump();
+      var router = await pumpAppRouter(tester, scope);
+
+      // What the Settings row does (spec §18): pushed over whatever is on
+      // show, rather than a branch of its own.
+      router.push(AppRoutes.gallery);
+      await settleGallery(tester);
+      expect(find.byType(GalleryPage), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel(Strings.back));
+      await settleGallery(tester);
+      expect(find.byType(GalleryPage), findsNothing);
+      expect(find.byType(HomeScreen), findsOneWidget);
     } finally {
       await scope.dispose();
     }
