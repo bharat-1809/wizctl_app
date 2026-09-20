@@ -13,8 +13,7 @@ import '../features/home/bloc/home_screen_event.dart';
 import '../features/home/view/home_page.dart';
 import '../features/lights/bloc/light_bloc.dart';
 import '../features/lights/bloc/light_event.dart';
-import '../features/lights/view/light_screen.dart';
-import '../features/lights/widgets/light_notice_listener.dart';
+import '../features/lights/view/light_page.dart';
 import '../features/modes/bloc/light_modes_event.dart';
 import '../features/modes/modes_bloc_factory.dart';
 import '../features/modes/view/modes_screen.dart';
@@ -150,8 +149,9 @@ class AppPages {
     ),
   );
 
-  /// On a phone the detail screen; Task 21 adds the desktop reading, where
-  /// the light is selected into the inspector over its room.
+  /// On a phone the detail screen; on a desktop window the light's own room,
+  /// with the light selected into the inspector — [LightPage] picks the
+  /// reading, so one bloc serves both and a resize keeps it.
   Page<void> light(BuildContext context, GoRouterState state) => _fade(
     state,
     BlocProvider(
@@ -169,7 +169,7 @@ class AppPages {
         forgetLight: deps.forgetLight,
         sync: deps.sync,
       )..add(const LightSubscribed()),
-      child: const LightNoticeListener(child: LightScreen()),
+      child: const LightPage(),
     ),
   );
 

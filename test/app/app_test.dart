@@ -4,11 +4,13 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/app/app.dart';
 import 'package:wizctl_app/app/bootstrap.dart';
 import 'package:wizctl_app/app/blocs/inspector_cubit.dart';
 import 'package:wizctl_app/app/dependencies.dart';
+import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/shell/desktop_rail.dart';
 import 'package:wizctl_app/app/shell/rail_item.dart';
 import 'package:wizctl_app/app/shell/shell_branch.dart';
@@ -123,7 +125,7 @@ void main() {
   /// `runAsync`, off the fake clock.
   Future<void> withApp(
     WidgetTester tester,
-    Future<void> Function() body, {
+    Future<void> Function(AppServices services) body, {
     bool withHome = true,
     Size size = _phone,
   }) async {
@@ -132,7 +134,7 @@ void main() {
       await setSurface(tester, size);
       await tester.pumpWidget(WizCtlApp(services: services));
       await settle(tester);
-      await body();
+      await body(services);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(tester);
@@ -142,7 +144,7 @@ void main() {
   }
 
   testWidgets('a fresh install opens on setup with no tab bar', (tester) async {
-    await withApp(tester, withHome: false, () async {
+    await withApp(tester, withHome: false, (_) async {
       expect(find.byType(OnboardingScreen), findsOneWidget);
       expect(find.byType(WizTabBar<ShellBranch>), findsNothing);
       expect(find.text(Strings.nameThisHome), findsOneWidget);
@@ -152,7 +154,7 @@ void main() {
   testWidgets('a fresh install titles the window for the setup it is on', (
     tester,
   ) async {
-    await withApp(tester, withHome: false, () async {
+    await withApp(tester, withHome: false, (_) async {
       expect(
         tester.widget<Title>(find.byType(Title)).title,
         Strings.windowSetup,
@@ -163,7 +165,7 @@ void main() {
   testWidgets('with a home: home, the tabs, a room and back, then discovery', (
     tester,
   ) async {
-    await withApp(tester, () async {
+    await withApp(tester, (_) async {
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.text('Kaverappa House'), findsOneWidget);
       expect(find.byType(WizTabBar<ShellBranch>), findsOneWidget);
@@ -201,7 +203,7 @@ void main() {
   });
 
   testWidgets('the toast stack sits above the root navigator', (tester) async {
-    await withApp(tester, () async {
+    await withApp(tester, (_) async {
       // Structural rather than a paint check: the layer is installed by
       // `MaterialApp.builder`, which wraps the router's own navigator, so it
       // paints over every route — and the kit's sheets are root-navigator
@@ -220,7 +222,7 @@ void main() {
 
   testWidgets('a wide window gets the rail and the grid; shrinking it keeps '
       'the route and the bloc', (tester) async {
-    await withApp(tester, size: _desktop, () async {
+    await withApp(tester, size: _desktop, (_) async {
       expect(find.byType(DesktopRail), findsOneWidget);
       expect(find.byType(GridScreen), findsOneWidget);
       expect(find.byType(HomeScreen), findsNothing);
@@ -274,7 +276,7 @@ void main() {
   });
 
   testWidgets('the window title follows the home', (tester) async {
-    await withApp(tester, () async {
+    await withApp(tester, (_) async {
       expect(
         tester.widget<Title>(find.byType(Title)).title,
         Strings.windowTitle('Kaverappa House'),
@@ -284,7 +286,7 @@ void main() {
 
   testWidgets('a medium window collapses the rail and opens the inspector as '
       'a dialog', (tester) async {
-    await withApp(tester, size: _medium, () async {
+    await withApp(tester, size: _medium, (_) async {
       expect(
         tester.widget<DesktopRail>(find.byType(DesktopRail)).collapsed,
         isTrue,
@@ -320,6 +322,32 @@ void main() {
         isNull,
         reason: 'closing the dialog clears the selection it was opened for',
       );
+    });
+  });
+
+  testWidgets("a light's route on a wide window shows its room with the light "
+      'selected', (tester) async {
+    await withApp(tester, size: _desktop, (services) async {
+      // The one light the graph was seeded with. Read through `runAsync`, like
+      // the writes that made it: the database answers off real async.
+      var lights = (await tester.runAsync(
+        () => services.deps.lights.getByHome(services.homes.single.id),
+      ))!;
+      GoRouter.of(tester.element(find.byType(GridScreen)))
+          .go(AppRoutes.light(lights.single.id));
+      // Four frames, not the usual two: the page, then its `LightBloc`'s first
+      // emission — which is what names the room to draw — then the selection
+      // reaching the column after that frame, then the column's own bloc's
+      // first emission.
+      await settle(tester);
+      await settle(tester);
+      expect(find.text('WHOLE ROOM'), findsOneWidget, reason: 'the room grid');
+      expect(
+        find.byType(InspectorBody),
+        findsOneWidget,
+        reason: 'the route selected the light into the inspector column',
+      );
+      expect(find.text('RENAME'), findsOneWidget);
     });
   });
 }
