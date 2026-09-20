@@ -157,6 +157,18 @@ class FakeLightRepository implements LightRepository {
   /// with — the light stays, and no watcher is told it has gone.
   DomainException? deleteError;
 
+  /// How long [insert] takes to finish *after* it has told its watchers about
+  /// the light — the window in which a screen is still showing a save as in
+  /// flight. Zero by default. [update] writes through [insert], so this holds
+  /// an update open too.
+  Duration insertLatency = Duration.zero;
+
+  /// What [insert] throws instead of storing the light. Null by default, so a
+  /// save succeeds. It is an `Object`, not a `DomainException`, so a test can
+  /// also model a failure the domain never modelled — a closed database, a
+  /// platform channel that went away — and check that the screen copes.
+  Object? insertError;
+
   void seed(List<Light> lights) {
     for (var l in lights) {
       _lights[l.id] = l;
@@ -203,8 +215,13 @@ class FakeLightRepository implements LightRepository {
       .firstOrNull;
   @override
   Future<void> insert(Light light) async {
+    var error = insertError;
+    if (error != null) throw error;
     _lights[light.id] = light;
     _changes.add(null);
+    if (insertLatency > Duration.zero) {
+      await Future<void>.delayed(insertLatency);
+    }
   }
 
   @override

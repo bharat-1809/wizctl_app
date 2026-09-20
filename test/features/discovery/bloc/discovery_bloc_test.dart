@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
+import 'package:wizctl_app/domain/repositories/home_repository.dart';
 import 'package:wizctl_app/domain/services/sync_coordinator.dart';
 import 'package:wizctl_app/domain/usecases/usecases.dart';
 import 'package:wizctl_app/features/discovery/bloc/discovery_bloc.dart';
@@ -32,6 +33,20 @@ class _RecordingSync extends SyncCoordinator {
   }
 }
 
+/// A gateway whose broadcast fails with something the domain never modelled,
+/// the way a platform channel that has gone away would.
+class _BrokenGateway extends FakeGateway {
+  @override
+  Future<List<DiscoveredLight>> broadcast() async =>
+      throw StateError('the socket went away');
+}
+
+/// Homes that cannot be written to, the way a closed database cannot.
+class _UnwritableHomes extends FakeHomeRepository {
+  @override
+  Future<void> update(Home home) async => throw StateError('database closed');
+}
+
 const _rgb = DiscoveredLight(
   ip: '192.168.1.126',
   mac: 'newrgb',
@@ -54,26 +69,29 @@ void main() {
   late _RecordingSync sync;
   late FakeClock clock;
 
-  DiscoveryBloc build({String? homeId = 'h1', bool onboarding = false}) =>
-      DiscoveryBloc(
-        homeId: homeId,
-        onboarding: onboarding,
-        runDiscovery: RunDiscovery(
-          gateway: gateway,
-          lights: seed.lights,
-          store: seed.store,
-          network: FakeNetworkInfo('192.168.1'),
-          clock: clock,
-        ),
-        saveDiscoveredLight: SaveDiscoveredLight(
-          lights: seed.lights,
-          store: seed.store,
-          ids: SequenceIds(),
-          clock: clock,
-        ),
-        learnHomeSubnet: LearnHomeSubnet(homes: seed.homes),
-        sync: sync,
-      );
+  DiscoveryBloc build({
+    String? homeId = 'h1',
+    bool onboarding = false,
+    HomeRepository? homes,
+  }) => DiscoveryBloc(
+    homeId: homeId,
+    onboarding: onboarding,
+    runDiscovery: RunDiscovery(
+      gateway: gateway,
+      lights: seed.lights,
+      store: seed.store,
+      network: FakeNetworkInfo('192.168.1'),
+      clock: clock,
+    ),
+    saveDiscoveredLight: SaveDiscoveredLight(
+      lights: seed.lights,
+      store: seed.store,
+      ids: SequenceIds(),
+      clock: clock,
+    ),
+    learnHomeSubnet: LearnHomeSubnet(homes: homes ?? seed.homes),
+    sync: sync,
+  );
 
   setUp(() {
     seed = SeedHome();
@@ -114,6 +132,10 @@ void main() {
   /// A read slow enough that the three scripted bulbs land one at a time,
   /// so a test can act between the first row and the end of the run.
   const slowRead = Duration(milliseconds: 30);
+
+  /// A repository write slow enough to be caught in flight, so a test can see
+  /// a row's save on the state rather than only its result.
+  const slowWrite = Duration(milliseconds: 40);
 
   /// The lights `SeedHome` puts in `h1`; the probe phase counts them.
   const knownInHome = 6;
@@ -208,6 +230,10 @@ void main() {
           subnet: '192.168.1',
         ),
         const ScanFound(_rgb),
+        const ScanFailed(
+          addressRange: '192.168.1.200-192.168.1.254',
+          error: 'socket closed mid-chunk',
+        ),
         const ScanProgress(
           addressesProbed: 254,
           addressCount: 254,
@@ -239,6 +265,11 @@ void main() {
       expect(bloc.state.found, hasLength(1));
       expect(bloc.state.progress?.total, 254);
       expect(bloc.state.progress?.probed, 254);
+      expect(
+        bloc.state.failedRanges,
+        ['192.168.1.200-192.168.1.254'],
+        reason: 'a chunk that failed does not abort the sweep, but is reported',
+      );
     },
   );
 
@@ -359,6 +390,85 @@ void main() {
   );
 
   blocTest<DiscoveryBloc, DiscoveryState>(
+    'a save in flight is on the state, keyed by address, and drains',
+    build: build,
+    setUp: () => seed.lights.insertLatency = slowWrite,
+    act: (bloc) async {
+      bloc.add(const DiscoveryStarted());
+      await Future<void>.delayed(wait);
+      bloc.add(
+        const DiscoverySaveRequested(
+          ip: '192.168.1.131',
+          alias: 'Hall plug',
+          roomId: 'bedroom',
+          fixture: Fixture.bulb,
+        ),
+      );
+      await Future<void>.delayed(slowWrite ~/ 2);
+      expect(bloc.state.saving, {
+        '192.168.1.131': 'Hall plug',
+      }, reason: 'the row names its alias while the write is still running');
+    },
+    wait: slowWrite,
+    verify: (bloc) {
+      expect(bloc.state.saving, isEmpty);
+      expect(
+        bloc.state.notice,
+        const LightSavedNotice('Hall plug', '192.168.1.131'),
+      );
+    },
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
+    'a save that fails outside the domain still frees the row',
+    build: build,
+    setUp: () => seed.lights.insertError = StateError('database closed'),
+    act: (bloc) async {
+      bloc.add(const DiscoveryStarted());
+      await Future<void>.delayed(wait);
+      bloc.add(
+        const DiscoverySaveRequested(
+          ip: '192.168.1.131',
+          alias: 'Hall plug',
+          roomId: 'bedroom',
+          fixture: Fixture.bulb,
+        ),
+      );
+    },
+    wait: wait,
+    verify: (bloc) {
+      expect(bloc.state.saving, isEmpty, reason: 'no row is left spinning');
+      expect(bloc.state.notice, isA<SaveFailedNotice>());
+      expect(
+        (bloc.state.notice! as SaveFailedNotice).message,
+        contains('database closed'),
+      );
+      expect(
+        bloc.state.found[1].device.alreadySaved,
+        isFalse,
+        reason: 'nothing was written, so the row can be tried again',
+      );
+    },
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
+    'a run that throws something the domain never modelled is the error view',
+    build: build,
+    setUp: () => gateway = _BrokenGateway(),
+    act: (bloc) => bloc.add(const DiscoveryStarted()),
+    wait: wait,
+    verify: (bloc) {
+      expect(bloc.state.view, DiscoveryView.error);
+      expect(
+        bloc.state.failure,
+        isA<UnreachableFailure>(),
+        reason: 'the view keys its copy on the failure type (P71)',
+      );
+      expect(sync.calls.last, 'resume');
+    },
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
     'a home without a subnet learns it from a run that found a light',
     build: () => build(homeId: 'h2'),
     act: (bloc) => bloc.add(const DiscoveryStarted()),
@@ -385,6 +495,20 @@ void main() {
   );
 
   blocTest<DiscoveryBloc, DiscoveryState>(
+    'a subnet the home cannot be taught is not the user\'s problem',
+    // An unhandled error from the unawaited learn would fail this test in
+    // bloc_test's guarded zone, whatever the assertions below say.
+    build: () =>
+        build(homeId: 'h2', homes: _UnwritableHomes()..seed([seed.studio])),
+    act: (bloc) => bloc.add(const DiscoveryStarted()),
+    wait: wait,
+    verify: (bloc) {
+      expect(bloc.state.view, DiscoveryView.found);
+      expect(bloc.state.notice, isNull, reason: 'learning is best effort');
+    },
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
     'cancelling mid-run leaves the scan and resumes polling once',
     build: build,
     setUp: () => gateway.readLatency = stalledRead,
@@ -402,6 +526,37 @@ void main() {
         reason: 'the first read had not landed when it was cancelled',
       );
       expect(sync.calls, ['pause', 'resume']);
+    },
+  );
+
+  blocTest<DiscoveryBloc, DiscoveryState>(
+    'a start right after a cancel keeps the pause the new run needs',
+    build: build,
+    setUp: () => gateway.readLatency = stalledRead,
+    act: (bloc) async {
+      bloc.add(const DiscoveryStarted());
+      await Future<void>.delayed(wait);
+      bloc.add(const DiscoveryCancelled());
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        bloc.state.view,
+        DiscoveryView.idle,
+        reason: 'the cancel answers at once, not when the open read lands',
+      );
+      // The read the first run is still stuck on keeps its old latency; the
+      // second run reads at once.
+      gateway.readLatency = Duration.zero;
+      bloc.add(const DiscoveryStarted());
+    },
+    wait: stalledRead * 2,
+    verify: (bloc) {
+      expect(bloc.state.view, DiscoveryView.found);
+      expect(bloc.state.found, hasLength(3), reason: "the second run's rows");
+      expect(gateway.probeCalls, hasLength(2));
+      expect(sync.calls, [
+        'pause',
+        'resume',
+      ], reason: 'the cancel did not resume polling under the new run');
     },
   );
 

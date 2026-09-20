@@ -115,13 +115,21 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
     _sync.resumeAfterDiscovery();
   }
 
+  /// Stops the run the user is looking at.
+  ///
+  /// The view answers **first**, before the stream is wound down: cancelling
+  /// an `async*` generator that is mid-read does not complete until that read
+  /// does, and the user should not go on waiting for a bulb they have just
+  /// stopped waiting for. `progress` is left where it stopped.
+  ///
+  /// Polling resumes only if no new run has been installed while the cancel
+  /// was in flight. A `DiscoveryStarted` or `DiscoverySweepRequested` that
+  /// arrives during the await takes over the pause from here, and resuming
+  /// would let the poll tick into a scan that is still going.
   Future<void> _onCancelled(
     DiscoveryCancelled event,
     Emitter<DiscoveryState> emit,
   ) async {
-    await _subscription?.cancel();
-    _subscription = null;
-    _resumePolling();
     if (state.isScanning) {
       emit(
         state.copyWith(
@@ -129,6 +137,10 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
         ),
       );
     }
+    var running = _subscription;
+    _subscription = null;
+    await running?.cancel();
+    if (_subscription == null) _resumePolling();
   }
 
   void _onUpdate(DiscoveryUpdateReceived event, Emitter<DiscoveryState> emit) {
@@ -181,7 +193,7 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
         // `LearnHomeSubnet` never overwrites, so one empty scan on a guest
         // network would otherwise latch the wrong subnet for good.
         if (home != null && subnet != null && devices.isNotEmpty) {
-          unawaited(_learn(home, subnet));
+          unawaited(_learnQuietly(home, subnet));
         }
       case DiscoveryFailed(:var failure):
         emit(state.copyWith(view: DiscoveryView.error, failure: failure));
@@ -198,6 +210,19 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
           view: state.found.isEmpty ? DiscoveryView.empty : DiscoveryView.found,
         ),
       );
+    }
+  }
+
+  /// Teaching the home its subnet is best effort: the run has already given
+  /// the user what they asked for, and a write that fails has nothing to say
+  /// to them. Swallowed here rather than left to `unawaited`, where it would
+  /// surface as an unhandled asynchronous error and take the app with it.
+  Future<void> _learnQuietly(String homeId, String subnet) async {
+    try {
+      await _learn(homeId, subnet);
+    } catch (_) {
+      // The home simply has not learned its subnet yet; the next run tries
+      // again. There is no notice, because there is nothing to act on.
     }
   }
 
@@ -239,6 +264,8 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
     // the run has since dropped is not saved either.
     if (home == null || row == null) return;
     emit(state.copyWith(saving: {...state.saving, event.ip: event.alias}));
+    var saved = false;
+    DiscoveryNotice notice;
     try {
       await _save(
         homeId: home,
@@ -248,32 +275,41 @@ class DiscoveryBloc extends Bloc<DiscoveryEvent, DiscoveryState> {
         fixture: event.fixture,
         initial: row.initial,
       );
-      emit(
-        state.copyWith(
-          found: [
-            for (var f in state.found)
-              f.device.ip == event.ip
-                  ? f.copyWith(device: f.device.copyWith(alreadySaved: true))
-                  : f,
-          ],
-          saving: {...state.saving}..remove(event.ip),
-          notice: LightSavedNotice(event.alias, event.ip),
-        ),
-      );
+      saved = true;
+      notice = LightSavedNotice(event.alias, event.ip);
     } on DomainException catch (e) {
-      emit(
-        state.copyWith(
-          saving: {...state.saving}..remove(event.ip),
-          notice: SaveFailedNotice(e.message),
-        ),
-      );
+      // The domain's own line, already written for the user.
+      notice = SaveFailedNotice(e.message);
+    } catch (e) {
+      // Anything the domain did not model — a closed database, a platform
+      // channel that went away. Whatever it was, the row must not be left
+      // spinning over it, so it is reported like any other refused save.
+      notice = SaveFailedNotice('$e');
     }
+    // One exit for both outcomes: the address always leaves [saving], and
+    // [found] is only rebuilt when there is a mark to add.
+    emit(
+      state.copyWith(
+        found: saved ? _marked(event.ip) : null,
+        saving: {...state.saving}..remove(event.ip),
+        notice: notice,
+      ),
+    );
   }
+
+  /// The rows, with the one at [ip] marked as belonging to this home.
+  List<FoundDevice> _marked(String ip) => [
+    for (var f in state.found)
+      f.device.ip == ip
+          ? f.copyWith(device: f.device.copyWith(alreadySaved: true))
+          : f,
+  ];
 
   @override
   Future<void> close() async {
-    await _subscription?.cancel();
+    var running = _subscription;
     _subscription = null;
+    await running?.cancel();
     _resumePolling();
     return super.close();
   }
