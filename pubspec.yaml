@@ -7,6 +7,10 @@ environment:
   sdk: ^3.13.2
 
 dependencies:
+  # The iOS audio session for the feedback clicks (spec §13). `flutter_soloud`
+  # does not own the platform session, so the app sets the ambient category
+  # itself in `lib/core/feedback/audio_session_config.dart`.
+  audio_session: ^0.2.2
   bloc: ^9.2.1
   drift: ^2.34.4
   drift_flutter: ^0.3.1

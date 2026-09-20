@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
 import 'audio_player_port.dart';
+import 'audio_session_config.dart';
 
 /// The `flutter_soloud` backend (spec §13, "Playback: `flutter_soloud`,
 /// sources loaded from memory, polyphonic"). No files, no decoding at play
@@ -10,9 +11,10 @@ import 'audio_player_port.dart';
 ///
 /// Not unit-tested: every call reaches native code through FFI. It is kept
 /// thin for that reason — the rest of the feedback layer talks to
-/// [AudioPlayerPort] and is tested against a fake. The iOS ambient audio
-/// session of spec §13 is not set here: `flutter_soloud` does not own the
-/// platform audio session, so that belongs to the app shell.
+/// [AudioPlayerPort] and is tested against a fake. `flutter_soloud` does not
+/// own the platform audio session, so the iOS ambient session of spec §13 is
+/// the app's to set: [_start] calls [configureAudioSession] before the engine
+/// opens its audio unit.
 class SoLoudPlayer implements AudioPlayerPort {
   final Map<String, AudioSource> _sources = {};
 
@@ -36,6 +38,10 @@ class SoLoudPlayer implements AudioPlayerPort {
 
   Future<void> _start() async {
     if (SoLoud.instance.isInitialized) return;
+    // Spec §13: the ambient category is the app's to set, and it has to be in
+    // place before the engine opens its audio unit. Off iOS this is a no-op,
+    // and it never throws.
+    await configureAudioSession();
     await SoLoud.instance.init();
     _ownsEngine = true;
   }
