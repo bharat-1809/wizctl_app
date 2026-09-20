@@ -6,7 +6,9 @@ import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/app/shell/desktop_rail.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/layout/wiz_breakpoints.dart';
+import 'package:wizctl_app/core/widgets/wiz_button.dart';
 import 'package:wizctl_app/core/widgets/wiz_sheet_route.dart';
+import 'package:wizctl_app/core/widgets/wiz_text_field.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
 import 'package:wizctl_app/features/desktop/view/inspector_body.dart';
 import 'package:wizctl_app/features/desktop/view/inspector_panel.dart';
@@ -28,6 +30,11 @@ const Size _narrowestDesktop = Size(WizBreakpoints.compactMax + 1, 800);
 
 /// An expanded window: wide enough for the inspector column.
 const Size _expanded = Size(1200, 800);
+
+/// A medium window, tall enough that the dialog's 86 % cap clears the whole
+/// inspector body — the Rename key included, which a real 700-tall window
+/// leaves below the fold.
+const Size _mediumTall = Size(900, 1400);
 
 /// Two bounded pumps: the route page and its bloc's first emission each need a
 /// frame, and `pumpAndSettle` never returns with a poll timer running.
@@ -171,6 +178,65 @@ void main() {
         'Shelf strip forgotten',
         reason: 'navigate: false skips the leave, never the toast',
       );
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester);
+      await scope.dispose();
+    }
+  });
+
+  testWidgets('a rename inside the medium dialog renames the one heading it '
+      'has', (tester) async {
+    var scope = AppScope(SeedHome());
+    await scope.start();
+    try {
+      await pumpAppRouter(tester, scope, size: _mediumTall);
+      await settle(tester);
+      scope.inspector.select('dome');
+      await settle(tester);
+      expect(
+        tester.widget<WizSheetRoute>(find.byType(WizSheetRoute)).title,
+        Strings.inspector,
+        reason: 'the sheet is titled for the panel, not for the light (P82)',
+      );
+      expect(
+        find.descendant(
+          of: find.byType(WizSheetRoute),
+          matching: find.text('Ceiling dome light'),
+        ),
+        findsOneWidget,
+        reason: "the body's own heading is the one place the name is shown",
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(WizSheetRoute),
+          matching: find.text('RENAME'),
+        ),
+      );
+      await settle(tester);
+      await tester.enterText(find.byType(WizTextField), 'Dome');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(WizButton, 'SAVE ALIAS'));
+      await settle(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(WizSheetRoute),
+          matching: find.text('Dome'),
+        ),
+        findsOneWidget,
+        reason:
+            'the heading follows the bloc, and there is no title to go '
+            'stale beside it',
+      );
+      expect(
+        find.text('Dome'),
+        findsNWidgets(2),
+        reason:
+            'the other is the grid card behind the scrim, which followed too',
+      );
+      expect(find.text('Ceiling dome light'), findsNothing);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(tester);

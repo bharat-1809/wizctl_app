@@ -309,8 +309,16 @@ void main() {
       );
       expect(
         tester.widget<WizSheetRoute>(find.byType(WizSheetRoute)).title,
-        'Ceiling dome light',
-        reason: "the sheet is titled with the light's own name",
+        Strings.inspector,
+        reason: 'the sheet is titled for the panel, not for the light (P82)',
+      );
+      expect(
+        find.descendant(
+          of: find.byType(WizSheetRoute),
+          matching: find.text('Ceiling dome light'),
+        ),
+        findsOneWidget,
+        reason: "so the body's live heading is the one place the name is shown",
       );
 
       await tester.tapAt(const Offset(10, 10));

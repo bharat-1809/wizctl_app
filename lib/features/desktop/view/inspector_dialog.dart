@@ -2,29 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/blocs/inspector_cubit.dart';
+import '../../../core/copy/strings.dart';
 import '../../../core/widgets/wiz_sheet.dart';
-import '../../../domain/repositories/light_repository.dart';
 import 'inspector_body.dart';
 
 /// On a medium window there is no room for the inspector column, so a selection
 /// opens the light as a dialog instead (spec §10.9). Closing it clears the
 /// selection, so the card it was opened from stops reading as selected.
 ///
-/// The light's name is read here, before the sheet is pushed, because the sheet
-/// wants it as its title and the body's own bloc does not exist until the sheet
-/// is on screen (`showTargetSheet` reads the repository the same way). An id
-/// that names nothing opens nothing and takes the stale selection with it.
+/// The sheet is titled for the panel rather than for the light (P82). The body
+/// already carries the light's name as its own heading, live off its bloc, so a
+/// title read from the repository would both say the name twice and go on saying
+/// the old one after a rename inside the dialog.
+///
+/// An id that names nothing needs no guard here: the body's bloc reports it gone
+/// as it subscribes, which clears the selection, which is what the listener
+/// below closes on — so a stale selection still goes, and without a repository
+/// read to catch it first.
 Future<void> showInspectorDialog(
   BuildContext context, {
   required String lightId,
 }) async {
   var inspector = context.read<InspectorCubit>();
-  var light = await context.read<LightRepository>().get(lightId);
-  if (!context.mounted) return;
-  if (light == null) {
-    inspector.clear();
-    return;
-  }
   // True while the sheet's route is up. [InspectorBody] clears the selection
   // when its light goes, which on a medium window is also the cue to close —
   // but a dismissal clears the selection too, from the line below, and a pop
@@ -32,7 +31,7 @@ Future<void> showInspectorDialog(
   var open = true;
   await showWizSheet<void>(
     context,
-    title: light.name,
+    title: Strings.inspector,
     // The body is a scroll view of its own, so it takes the sheet's bounded
     // height rather than being wrapped in a second one.
     scrollable: false,

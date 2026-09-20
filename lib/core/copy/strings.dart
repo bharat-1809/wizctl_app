@@ -359,6 +359,11 @@ class Strings {
   static String railFooter(int on) => '$on on · udp $wizPort';
 
   // The desktop inspector (spec §10.9).
+  ///
+  /// The medium window's dialog is titled for the panel, not for the light in
+  /// it (P82): the body carries the light's live name as its own heading, so a
+  /// title naming it too would say it twice and go stale on a rename.
+  static const inspector = 'Inspector';
   static const noLightSelected = 'No light selected';
   static const pickALight = 'Pick a light on the left to control it.';
 
@@ -598,6 +603,7 @@ class Strings {
     railHouse,
     noRoom,
     createRoomToGroup,
+    inspector,
     noLightSelected,
     pickALight,
     scene,
