@@ -1,10 +1,13 @@
-import 'package:drift/drift.dart';
+// Shown rather than imported whole: drift's `isNull` column expression and
+// `flutter_test`'s null matcher share the name.
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/app/app.dart';
 import 'package:wizctl_app/app/bootstrap.dart';
+import 'package:wizctl_app/app/blocs/inspector_cubit.dart';
 import 'package:wizctl_app/app/dependencies.dart';
 import 'package:wizctl_app/app/shell/desktop_rail.dart';
 import 'package:wizctl_app/app/shell/rail_item.dart';
@@ -13,12 +16,15 @@ import 'package:wizctl_app/core/copy/strings.dart';
 import 'package:wizctl_app/core/feedback/feedback_service.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_rail.dart';
+import 'package:wizctl_app/core/widgets/wiz_sheet_route.dart';
 import 'package:wizctl_app/core/widgets/wiz_tab_bar.dart';
 import 'package:wizctl_app/core/widgets/wiz_toast_layer.dart';
 import 'package:wizctl_app/data/db/app_database.dart';
 import 'package:wizctl_app/domain/entities/entities.dart';
 import 'package:wizctl_app/features/discovery/view/discovery_screen.dart';
 import 'package:wizctl_app/features/desktop/view/grid_screen.dart';
+import 'package:wizctl_app/features/desktop/view/inspector_body.dart';
+import 'package:wizctl_app/features/desktop/view/inspector_panel.dart';
 import 'package:wizctl_app/features/home/view/home_screen.dart';
 import 'package:wizctl_app/features/onboarding/view/onboarding_screen.dart';
 import 'package:wizctl_app/features/rooms/bloc/room_bloc.dart';
@@ -35,6 +41,11 @@ const Size _phone = Size(390, 844);
 /// A desktop window: from medium up the shell draws the rail instead of the
 /// tab bar, and `/home` and a room draw the grid instead of the phone screens.
 const Size _desktop = Size(1200, 800);
+
+/// A medium window (spec §14, 720–1100): the rail collapses to its glyphs
+/// and there is no room for the inspector column, so a selection opens the
+/// inspector as a dialog instead.
+const Size _medium = Size(900, 700);
 
 /// One screen fade (300 ms) with room for the load-in staggers.
 const Duration _frame = Duration(milliseconds: 600);
@@ -267,6 +278,47 @@ void main() {
       expect(
         tester.widget<Title>(find.byType(Title)).title,
         Strings.windowTitle('Kaverappa House'),
+      );
+    });
+  });
+
+  testWidgets('a medium window collapses the rail and opens the inspector as '
+      'a dialog', (tester) async {
+    await withApp(tester, size: _medium, () async {
+      expect(
+        tester.widget<DesktopRail>(find.byType(DesktopRail)).collapsed,
+        isTrue,
+      );
+      expect(
+        find.byType(InspectorPanel),
+        findsNothing,
+        reason: 'a medium window is too narrow for the third column',
+      );
+
+      await tester.tap(find.text('Ceiling dome light'));
+      await settle(tester);
+      expect(
+        find.descendant(
+          of: find.byType(WizSheetRoute),
+          matching: find.byType(InspectorBody),
+        ),
+        findsOneWidget,
+        reason: 'selecting a card opens the inspector as a dialog instead',
+      );
+      expect(
+        tester.widget<WizSheetRoute>(find.byType(WizSheetRoute)).title,
+        'Ceiling dome light',
+        reason: "the sheet is titled with the light's own name",
+      );
+
+      await tester.tapAt(const Offset(10, 10));
+      await settle(tester);
+      expect(find.byType(InspectorBody), findsNothing);
+      expect(
+        BlocProvider.of<InspectorCubit>(tester.element(find.byType(GridScreen)))
+            .state,
+        isNull,
+        reason: 'closing the dialog clears the selection it was opened for',
       );
     });
   });

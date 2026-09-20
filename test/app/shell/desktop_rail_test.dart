@@ -36,7 +36,11 @@ void main() {
     expect(
       DesktopRail.itemFor(AppRoutes.light('dome')),
       isNull,
-      reason: 'Task 21 lights the room through the inspector',
+      reason:
+          'a light is a selection, not a rail destination. Opened from a room '
+          "it is pushed inside the Rooms branch, which leaves the branch's own "
+          '/rooms/<id> on the match list and so keeps the room lit; reached '
+          'straight, /lights/<id> lights nothing at all',
     );
     expect(DesktopRail.itemFor(AppRoutes.modes), const ScenesRailItem());
     expect(DesktopRail.itemFor(AppRoutes.discover), const DiscoveryRailItem());
