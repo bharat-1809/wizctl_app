@@ -8,7 +8,6 @@ import '../../../core/widgets/toast_controller.dart';
 import '../bloc/light_bloc.dart';
 import '../bloc/light_event.dart';
 import '../bloc/light_state.dart';
-import '../view/light_screen.dart';
 
 /// Acts on [LightBloc] notices: a forgotten light toasts and leaves the
 /// screen; an error toasts.
@@ -39,7 +38,7 @@ class LightNoticeListener extends StatelessWidget {
             );
             popOr(
               context,
-              lightScreenParent(context.read<LightBloc>().state.light?.roomId),
+              lightParent(context.read<LightBloc>().state.light?.roomId),
             );
           case LightError(:var message):
             toasts.push(tone: WizToastTone.error, title: message);

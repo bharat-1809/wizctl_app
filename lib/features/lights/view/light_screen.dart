@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/blocs/network_cubit.dart';
 import '../../../app/navigation.dart';
-import '../../../app/routes.dart';
 import '../../../app/widgets/off_network_banner.dart';
 import '../../../app/widgets/screen_scroll.dart';
 import '../../../core/copy/strings.dart';
@@ -24,13 +23,6 @@ import '../widgets/light_dials_panel.dart';
 import '../widgets/light_hero.dart';
 import '../widgets/light_modes_panel.dart';
 import '../widgets/light_stat_tiles.dart';
-
-/// Where this screen goes when it has to leave and there is nothing beneath
-/// it to pop to: the light's own room, or Home when the light itself is
-/// unknown (P65). Back, a light that has gone and the forgotten notice all
-/// leave through the same door, so it is written once.
-String lightScreenParent(String? roomId) =>
-    roomId == null ? AppRoutes.home : AppRoutes.room(roomId);
 
 /// A light on a phone (spec §10.4).
 class LightScreen extends StatelessWidget {
@@ -79,8 +71,7 @@ class LightScreen extends StatelessWidget {
                   leading: WizIconKey(
                     icon: WizIcons.chevronLeft,
                     semanticsLabel: Strings.back,
-                    onPressed: () =>
-                        popOr(context, lightScreenParent(light.roomId)),
+                    onPressed: () => popOr(context, lightParent(light.roomId)),
                   ),
                   trailing: WizBadge(
                     label: reachable ? Strings.live : Strings.noReply,
@@ -170,7 +161,7 @@ class _LeaveWhenGoneState extends State<_LeaveWhenGone> {
     if (_left || state.status != LightStatus.gone) return;
     _left = true;
     if (state.notice is LightForgottenNotice) return;
-    popOr(context, lightScreenParent(state.light?.roomId));
+    popOr(context, lightParent(state.light?.roomId));
   }
 
   @override

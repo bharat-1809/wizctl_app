@@ -56,4 +56,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(currentLocation(router), AppRoutes.rooms);
   });
+
+  test("a light's parent is its room, or home when it has none", () {
+    expect(lightParent('living'), AppRoutes.room('living'));
+    expect(
+      lightParent(null),
+      AppRoutes.home,
+      reason: 'an id that names no light has no room to go back to either',
+    );
+  });
 }
