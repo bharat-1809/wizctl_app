@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/copy/strings.dart';
 import '../../core/theme/wiz_theme.dart';
 import '../../core/theme/wiz_type.dart';
 
@@ -9,8 +10,10 @@ import '../../core/theme/wiz_type.dart';
 class GalleryWordmark extends StatelessWidget {
   const GalleryWordmark({super.key});
 
-  /// `design/reference/_ds_bundle.js:3483`, "WIZCTL".
-  static const String wordmark = 'WIZCTL';
+  /// `design/reference/_ds_bundle.js:3483`, "WIZCTL". The word itself is
+  /// copy, so it comes from [Strings]; the constant stays because the
+  /// gallery's own tests name the mark through it.
+  static const String wordmark = Strings.wordmark;
 
   /// The sample home the prototype's sidebar names (`:3488`).
   static const String sampleHome = 'Kaverappa House';
