@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:wizctl/wizctl.dart';
 import 'package:wizctl_app/app/routes.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
+import 'package:wizctl_app/core/theme/wiz_type.dart';
 import 'package:wizctl_app/core/widgets/toast_controller.dart';
 import 'package:wizctl_app/core/widgets/wiz_list_row.dart';
 import 'package:wizctl_app/core/widgets/wiz_text_field.dart';
@@ -27,7 +31,18 @@ const Size _phone = Size(390, 2000);
 /// the Discovery row.
 const Size _desktop = Size(1200, 800);
 
+/// The UI face (`WizType.familyUi`), loaded from the asset the app ships so
+/// that a width measured here is a width on the device. `flutter_test`
+/// otherwise substitutes a font whose every glyph is a square of the font size.
+Future<void> _loadUiFont() async {
+  var bytes = File('assets/fonts/HankenGrotesk-Regular.ttf').readAsBytesSync();
+  await (FontLoader(
+    WizType.familyUi,
+  )..addFont(Future.value(ByteData.sublistView(bytes)))).load();
+}
+
 void main() {
+  setUpAll(_loadUiFont);
   setUpAll(() {
     PackageInfo.setMockInitialValues(
       appName: 'WizCtl',
@@ -76,9 +91,24 @@ void main() {
         'Re-scan on launch',
         'Sound & haptics',
       ]);
+      expect(find.text(Strings.clicksAndVibration), findsOneWidget);
+      // A real overflow check, not another `find.text` (P93): `WizListRow`'s
+      // meta is single-line by design (P78) and ellipsises, so a finder proves
+      // the string is there and nothing about whether the user can read it.
+      // A real overflow check, not another `find.text` (P93): `WizListRow`'s
+      // meta is single-line by design (P78) and ellipsises, so a finder proves
+      // the string is present and nothing about whether the user can read it.
+      // It needs the real UI face: `flutter_test`'s fallback draws every glyph
+      // as a square of the font size, which makes 13-pt text about twice as
+      // wide as HankenGrotesk really is.
       expect(
-        find.text('Clicks and vibration on every control'),
-        findsOneWidget,
+        tester
+            .renderObject<RenderParagraph>(
+              find.text(Strings.clicksAndVibration),
+            )
+            .didExceedMaxLines,
+        isFalse,
+        reason: 'the meta has to fit a 390-pt row at scale 1.0 uncut',
       );
       expect(
         find.text(

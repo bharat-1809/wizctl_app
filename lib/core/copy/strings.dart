@@ -299,7 +299,11 @@ class Strings {
   static const cliParity = 'CLI parity';
   static const rescanOnLaunch = 'Re-scan on launch';
   static const soundAndHaptics = 'Sound & haptics';
-  static const clicksAndVibration = 'Clicks and vibration on every control';
+
+  /// Shortened to fit a 390-pt `WizListRow` at scale 1.0 without ellipsis (P93):
+  /// the row's meta is single-line by design (P78), and "on every control" did
+  /// not fit. "Control" is kept, so the two variants read as one sentence.
+  static const clicksAndVibration = 'Clicks and vibration, every control';
   static const clicksOnly = 'Clicks on every control';
   static const prototypeSwitches = 'Prototype switches';
   static const wrongNetwork = 'Wrong network';
