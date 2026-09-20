@@ -35,7 +35,7 @@ The Flutter version is pinned in `.fvmrc` (3.47.2), so prefix commands with
 ```bash
 fvm flutter pub get
 fvm flutter run -d macos
-fvm flutter run -d ios         # or a device id from `fvm flutter devices`
+fvm flutter run -d iphone      # or a device id from `fvm flutter devices`
 ```
 
 A debug build carries three extra things, all behind `kDebugMode` and absent
@@ -66,10 +66,11 @@ domain's interfaces, and `features` draw the screens.
   device gateway over `package:wizctl`, the CLI config exporter and the
   network-info reader.
 - **`lib/features`** — one folder per screen area, each with `bloc/`, `view/`
-  and `widgets/`. A bloc stays pure: no `flutter/widgets.dart` or
-  `material.dart`, no `flutter_bloc`, no `go_router`, no `lib/data` and no
-  widget kit, and never another bloc. `test/features/layering_test.dart`
-  scans the source and fails on any of those imports.
+  and `widgets/`. A bloc stays pure: no `flutter/widgets.dart`,
+  `material.dart` or `cupertino.dart`, no `flutter_bloc`, no `go_router`, no
+  `lib/data` and no widget kit — `test/features/layering_test.dart` scans the
+  source and fails on any of those imports — and, by convention, never another
+  bloc.
 - **One-shot effects** are a `notice` field on a bloc's state, cleared by a
   `…NoticeCleared` event once the view has acted on it; blocs never call the
   toast controller or the router themselves.
