@@ -142,6 +142,14 @@ class AppScope {
   ApplyScene get applyScene =>
       ApplyScene(resolver: resolver, store: seed.store, pipeline: pipeline);
 
+  /// The management use cases a light's own screen owns (Task 12). Unlike
+  /// the writes above these never reach a bulb, so they take the repository
+  /// and the store rather than the pipeline.
+  SetFixture get setFixture => SetFixture(lights: seed.lights);
+  RenameLight get renameLight => RenameLight(lights: seed.lights);
+  ForgetLight get forgetLight =>
+      ForgetLight(lights: seed.lights, store: seed.store);
+
   /// The `ModesBlocFactory` the shell provides (Task 19), so a screen that
   /// opens the modes sheet finds one here too.
   LightModesBloc modesBlocFor(ModeTarget target) => LightModesBloc(
