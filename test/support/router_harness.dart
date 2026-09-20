@@ -30,8 +30,9 @@ Future<void> settle(WidgetTester tester) async {
 
 /// Pumps [home] at `/` inside a `GoRouter` whose other locations are
 /// [targets], each showing its own path as text, and returns the router so
-/// a test can read where a tap went:
-/// `router.routerDelegate.currentConfiguration.uri.toString()`.
+/// a test can read where a tap went: `currentLocation(router)`, which unlike
+/// `routerDelegate.currentConfiguration.uri` also reports a pushed page and a
+/// shell branch as where the router is (P61).
 ///
 /// [wrap] installs providers around the whole app (blocs, a toast
 /// controller).
