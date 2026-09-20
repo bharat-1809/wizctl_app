@@ -54,6 +54,10 @@ void main() {
         ),
         findsNothing,
       );
+      // Three nodes, not four: the bar's own words are one stop, so a screen
+      // reader hears "Shelf strip, Living Room" and moves on rather than
+      // stopping twice on what is one heading. Only the controls are separate.
+      expect(find.semantics.byLabel('Shelf strip\nLiving Room'), findsOne);
     } finally {
       handle.dispose();
     }

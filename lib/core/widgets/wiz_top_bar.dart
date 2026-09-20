@@ -51,35 +51,46 @@ class WizTopBar extends StatelessWidget {
         child: Row(
           children: [
             if (leading != null) ...[leading!, SizedBox(width: gap)],
+            // The bar's words are one stop, not two: the sub-line qualifies
+            // the title ("Living Room · Tunable White" under a light's name),
+            // and a reader that halted on each separately would announce one
+            // heading as two. `explicitChildNodes` above would otherwise give
+            // each `Text` a node of its own, so the container is what keeps
+            // them together while still holding them apart from the controls.
             Expanded(
-              child: Column(
-                // Without this the titles take every pixel of a bounded
-                // height offered from above — a `Center`, a sized box — and
-                // the bar measures that instead of its own [minHeight].
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: wiz.typography.title.copyWith(color: c.textPrimary),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (subtitle != null)
-                    Padding(
-                      // TopBar.jsx `marginTop: 2` under the title.
-                      padding: EdgeInsets.only(top: wiz.space.s1),
-                      child: Text(
-                        subtitle!,
-                        style: wiz.typography.bodySm.copyWith(
-                          color: c.textTertiary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              child: Semantics(
+                container: true,
+                child: Column(
+                  // Without this the titles take every pixel of a bounded
+                  // height offered from above — a `Center`, a sized box — and
+                  // the bar measures that instead of its own [minHeight].
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: wiz.typography.title.copyWith(
+                        color: c.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                ],
+                    if (subtitle != null)
+                      Padding(
+                        // TopBar.jsx `marginTop: 2` under the title.
+                        padding: EdgeInsets.only(top: wiz.space.s1),
+                        child: Text(
+                          subtitle!,
+                          style: wiz.typography.bodySm.copyWith(
+                            color: c.textTertiary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             if (trailing != null) ...[SizedBox(width: gap), trailing!],
