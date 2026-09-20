@@ -8,6 +8,11 @@ class MainFlutterWindow: NSWindow {
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
 
+    // Spec §17: the medium layout needs at least this much window. The
+    // source of truth is `WindowLimits` in lib/core/platform/window_limits.dart;
+    // test/platform/platform_config_test.dart pins this line to it.
+    self.minSize = NSSize(width: 720, height: 560)
+
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()
