@@ -45,14 +45,22 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "wizctl_app");
+    gtk_header_bar_set_title(header_bar, "WizCtl");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "wizctl_app");
+    gtk_window_set_title(window, "WizCtl");
   }
 
   gtk_window_set_default_size(window, 1280, 720);
+
+  // Spec §17: the minimum window. The source of truth for the two numbers is
+  // `WindowLimits` in lib/core/platform/window_limits.dart;
+  // test/platform/platform_config_test.dart pins these lines to it.
+  GdkGeometry geometry = {};
+  geometry.min_width = 720;
+  geometry.min_height = 560;
+  gtk_window_set_geometry_hints(window, nullptr, &geometry, GDK_HINT_MIN_SIZE);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

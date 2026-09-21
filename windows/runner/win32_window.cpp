@@ -216,6 +216,19 @@ Win32Window::MessageHandler(HWND hwnd,
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;
+
+    case WM_GETMINMAXINFO: {
+      // Spec §17: 720x560 logical, scaled to the monitor's DPI the same way
+      // Create() scales the initial size. The source of truth for the two
+      // numbers is `WindowLimits` in lib/core/platform/window_limits.dart;
+      // test/platform/platform_config_test.dart pins these lines to it.
+      MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(lparam);
+      HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+      double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+      info->ptMinTrackSize.x = static_cast<LONG>(720 * scale_factor);
+      info->ptMinTrackSize.y = static_cast<LONG>(560 * scale_factor);
+      return 0;
+    }
   }
 
   return DefWindowProc(window_handle_, message, wparam, lparam);

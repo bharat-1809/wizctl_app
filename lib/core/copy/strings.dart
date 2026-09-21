@@ -1,3 +1,7 @@
+import 'package:wizctl/wizctl.dart' show wizPort;
+
+import '../util/plural.dart';
+
 /// Every line the user reads. Second person, sentence case, no "we", no
 /// emoji, no exclamation marks. Control labels are uppercased by widgets.
 class Strings {
@@ -43,6 +47,419 @@ class Strings {
   static const noResponse = 'No response on the local network';
   static const noRoute = 'No route to the light';
 
+  // Command reports (spec §15).
+  static const noResponseAfterTries = 'No response after 3 tries';
+  static const stillNoReply = 'Still no reply';
+  static const checkWallSwitch =
+      'Check the wall switch, then rescan the subnet.';
+  static const noLocalNetwork = 'This device has no local network.';
+
+  // Wrong network (spec §15).
+  static const notOnHomeNetworkTitle = 'Not on the home network';
+  static const joinHomeNetwork = 'Join the home network, then scan again.';
+
+  // Home (spec §10.2).
+  static const allLights = 'All lights';
+  static const allOn = 'All on';
+  static const allOff = 'All off';
+  static const homes = 'Homes';
+
+  /// Home with no active home: a `FinishOnboarding` that failed between the
+  /// home insert and the `activeHomeId` write leaves the app here (P97).
+  static const noHomeSelected = 'No home selected';
+  static const openHomesToPick = 'Open Homes to choose one or add one.';
+  static const newHome = 'New home';
+  static const newHomePlaceholder = 'Studio';
+  static const addHome = 'Add home';
+  static const discoverOnNetwork = 'Discover the lights on this network';
+  static String someOn(int on, int total) => '$on of $total on';
+  static String notAnswering(int n) => '${plural(n, 'light')} not answering';
+  static String roomsAndLights(int rooms, int lights) =>
+      '${plural(rooms, 'room')} · ${plural(lights, 'light')}';
+  static String homeCreated(String name) => '$name created';
+
+  // Rooms (spec §10.6).
+  static const rooms = 'Rooms';
+  static const addRoom = 'Add room';
+  static const addARoom = 'Add a room';
+  static const roomName = 'Room name';
+  static const roomNamePlaceholder = 'Study';
+  static const glyph = 'Glyph';
+  static const saveRoom = 'Save room';
+  static const roomSaved = 'Room saved';
+
+  /// A room write that failed under a view rather than a bloc — the desktop
+  /// grid's Add room key and the save-light sheet's New room key both write
+  /// straight through `AddRoom`.
+  static const roomSaveFailed = 'Could not save the room';
+  static const renameRoom = 'Rename room';
+  static const deleteRoom = 'Delete room';
+  static const moveLightsFirst = 'Move its lights first';
+  static const newRoom = 'New room';
+  static const createRoom = 'Create room';
+  static String lightsOn(int lights, int on) =>
+      '${plural(lights, 'light')} · $on on';
+  static String roomIsEmpty(String name) =>
+      '$name is empty — discover lights for it';
+
+  // Room (spec §10.3).
+  static const brightness = 'Brightness';
+  static const colourTemp = 'Colour temp.';
+  static const wholeRoom = 'Whole room';
+  static const noLightsInRoom = 'No lights in this room';
+  static const discoverThenPlace =
+      'Discover lights on the network, then place them here.';
+  static const discoverThenSave =
+      'Discover lights on the network, then save them into this room.';
+  static const back = 'Back';
+
+  /// The room switch's accessible name: the bar draws the room's name beside
+  /// it, but the switch is its own node and has to say what it switches.
+  static String roomPower(String name) => '$name power';
+
+  // Light modes (spec §10.5, §5.12).
+  static const lightModes = 'Light modes';
+  static const applyScenesTo = 'Apply scenes to';
+  static const colours = 'Colours';
+  static const whites = 'Whites';
+  static const staticTab = 'Static';
+  static const dynamicTab = 'Dynamic';
+  static const dynamicNote = 'Dynamic scenes cycle. Speed runs from 10 to 200.';
+  static const staticNote =
+      'Static scenes hold one look. The bulb ignores speed.';
+  static const noColourBulb = 'No colour bulb here';
+  static const colourNeedsRgb = 'Colour needs an RGB bulb.';
+  static const noWhiteChannel = 'No white channel here';
+  static const bulbsOnlyDim = 'These bulbs only dim.';
+  static const noSceneChannel = 'No scene channel here';
+  static const plugOnlySwitches = 'A plug only switches power.';
+  static const toWholeHome = 'to the whole home';
+  static const lightModeWholeHome = 'Light mode · whole home';
+  static const speed = 'Speed';
+
+  /// The Scenes tab's subtitle counts the kit's own scene table rather than
+  /// repeating a fixed pair of numbers, so the line stays true when the table
+  /// changes.
+  static String modesSubtitle(int staticCount, int dynamicCount) =>
+      'Colour, $staticCount static and $dynamicCount dynamic scenes';
+  static String lightModeFor(String name) => 'Light mode · $name';
+  static String sceneApplied(String name) => '$name applied';
+  static String toTarget(String name) => 'to $name';
+  static String speedFor(String scene) => 'Speed — $scene';
+  static String kelvinLabel(int kelvin) => '${kelvin}K';
+
+  /// The apply-to key's whole accessible name. The key draws "APPLY TO" over
+  /// the target on two lines, but a labelled `WizPressable` is one node and
+  /// excludes the copy it draws, so the label has to carry both or the target
+  /// is never spoken. A key with no target name yet falls back to [applyTo].
+  static String applyToTarget(String name) => 'Apply to $name';
+
+  // Light detail (spec §10.4, §15).
+  static const live = 'Live';
+  static const noReply = 'No reply';
+  static const noReplyFromLight = 'No reply from this light';
+  static const mayBeOffAtWall =
+      'It may be switched off at the wall, or the router changed its address.';
+  static const colourTempTile = 'Colour temp';
+  static const classTile = 'Class';
+  static const power = 'Power';
+  static const intensity = 'Intensity';
+  static const on = 'On';
+  static const off = 'Off';
+  static const plugOnlyNote =
+      'A plug switches power only. It has no brightness, colour or scene channel.';
+  static const dimsNoWhite = 'This bulb dims but has no white channel to tune.';
+  static const device = 'Device';
+  static const address = 'Address';
+  static const mac = 'MAC';
+  static const signal = 'Signal';
+  static const noReplyLower = 'no reply';
+  static const showItAs = 'Show it as';
+  static const showItAsNote =
+      'This only changes how the light is drawn here. It does not change what the bulb supports.';
+  static const rename = 'Rename';
+  static const renameLight = 'Rename light';
+  static const forget = 'Forget';
+  static const alias = 'Alias';
+  static const aliasPlaceholder = 'Bedside bulb';
+  static const saveAlias = 'Save alias';
+  static const forgetBody =
+      'Its alias and room are removed. The bulb keeps working.';
+  static const removedFromConfig = "Removed from this home's config file";
+  static String staticSceneNote(String name) =>
+      '$name is a static scene — the bulb ignores speed.';
+  static String dbm(int rssi) => '$rssi dBm';
+  static String forgetTitle(String name) => 'Forget $name?';
+  static String forgotten(String name) => '$name forgotten';
+  static String roomAndClass(String room, String cls) => '$room · $cls';
+
+  /// What "Show it as" calls each fixture (`fixtureLabelOf`): copy, not the
+  /// domain's own `Fixture.label`. There is no `fixtureLamp` here — the desk
+  /// fixture's label is the word [glyphLamp] already holds, and [all] may not
+  /// carry a value twice.
+  static const fixtureBulb = 'Bulb';
+  static const fixtureCeiling = 'Ceiling light';
+  static const fixtureStrip = 'Light strip';
+  static const fixturePlug = 'Plug';
+
+  // Discovery (spec §10.8, §15). The screen's own title is [discoverLights],
+  // the line the primary key already carries — [all] may not hold a value
+  // twice, so there is no second "Discover lights" here.
+  static const discovery = 'Discovery';
+  static const localNetwork = 'Local network';
+  static const nothingFoundYet = 'Nothing found yet';
+  static const lightsAnswerLocally =
+      'Lights answer on your local network. Make sure they are powered on, then scan the subnet.';
+  static const sweepTheSubnet =
+      'Make sure the lights are powered on, then sweep the subnet one address at a time.';
+  static const discovering = 'Discovering';
+  static const broadcast = 'Broadcast';
+  static const sweepSubnet = 'Sweep subnet';
+  static const saved = 'Saved';
+  static const nameThisLight = 'Name this light';
+  static const room = 'Room';
+  static const saveLight = 'Save light';
+  static const tryAgain = 'Try again';
+
+  /// Kept, and deliberately unreachable (P91). `openBroadcastSocket` binds UDP
+  /// 38899 and falls back to an ephemeral port when it is taken, so a port
+  /// conflict never reaches the app as a failure and nothing renders this pair
+  /// any more. It stays because the hand-over may want the split back, and
+  /// reconstructing settled copy is worse than carrying it.
+  static const portBusyTitle = 'Could not open the discovery port';
+  static const portBusyBody =
+      'Another app is using UDP 38899. Close it, then try again.';
+
+  /// A run that failed for anything but being off the home network (P91). The
+  /// package binds UDP 38899 and falls back to an ephemeral port when it is
+  /// taken, so no failure that reaches the app is a port conflict; what the
+  /// user can act on is the sweep.
+  static const searchFailedTitle = 'Could not search this network';
+  static const searchFailedBody =
+      'The broadcast did not go out. Scan the subnet to try each address in turn.';
+  static const listeningForLights = 'Listening for lights';
+
+  /// A save that failed with no loading toast left to resolve, so there is no
+  /// alias on hand to name it by.
+  static const saveFailed = 'Could not save the light';
+
+  /// A device whose class no discovery reply named. `Light.className` writes
+  /// the same word for a saved light; this is the copy layer's own.
+  static const unknownClass = 'Unknown';
+
+  static String addedToHome(String ip) => '$ip added to this home';
+  static String saving(String alias) => 'Saving $alias';
+  static String aliasSaved(String alias) => '$alias saved';
+
+  /// The title of a failed save: it names the light rather than repeating the
+  /// failure, which is a raw error for anything the domain did not model and
+  /// belongs in the body.
+  static String couldNotSave(String alias) => 'Could not save $alias';
+  static String lightsAnswered(int n) => '${plural(n, 'light')} answered';
+  static String addresses(int probed, int total) =>
+      '$probed of $total addresses';
+  static String sweeping(String subnet) => 'Sweeping $subnet.0/24';
+  static String listeningOn(String subnet) => 'Listening on $subnet.0/24';
+  static String sweptSubnet(String subnet, int total) =>
+      'Swept $subnet.0/24 · $total addresses';
+  static String broadcastOn(String subnet) => 'Broadcast on $subnet.0/24';
+  static String ipAndClass(String ip, String cls) => '$ip · $cls';
+
+  // First run (spec §10.1). The scanning step's title is [discovering], the
+  // word the discovery screen's filament already carries — [all] may not hold
+  // a value twice, so there is no second "Discovering" here.
+  static const wordmark = 'WIZCTL';
+  static const nameThisHome = 'Name this home';
+  static const homeStoredHere =
+      "Rooms and lights are stored in this home's config file on this machine. You can keep several homes here.";
+  static const homeName = 'Home name';
+  static const homeNamePlaceholder = 'Kaverappa House';
+  static const createHome = 'Create home';
+  static const homeRequired =
+      'A home is required. You can add more homes later and switch between them.';
+  static const sweepingSubnet = 'Sweeping subnet';
+  static const nameYourLights = 'Name your lights';
+  static const nameReplacesAddress = 'A name replaces the address';
+  static const finishSetup = 'Finish setup';
+  static const plugPlaceholder = 'Plug by the TV';
+  static const bulbPlaceholder = 'Ceiling dome light';
+
+  /// What the check cap on a found row is called (`KeepRow`): the first run's
+  /// rows are switches, and this is what tapping one does.
+  static const keepLight = 'Keep this light';
+
+  static String saveNLights(int n) => 'Save ${plural(n, 'light')}';
+  static String homeSetUp(String name) => '$name is set up';
+  static String lightsInRooms(int lights, int rooms) =>
+      '${plural(lights, 'light')} in ${plural(rooms, 'room')}';
+
+  // Settings (spec §10.7, §18) and the unreachable banner (spec §15). The
+  // home-name row's meta is [homeName], the words the first run's field label
+  // already carries — [all] may not hold a value twice, and there is no
+  // "Save home" either: the rename sheet's key is [save].
+  static const settings = 'Settings';
+  static const homeLivesOnDevice = 'This home lives on this device';
+  static const homeLivesOnMachine = 'This home lives on this machine';
+  static const discoveryMeta = 'Broadcast, then unicast sweep';
+  static const configFile = 'Config file';
+  static const configFilePath = '~/.config/wizctl/config.json';
+  static const configFileNote =
+      'Aliases and rooms are exported here for the CLI';
+  static const cliParity = 'CLI parity';
+  static const rescanOnLaunch = 'Re-scan on launch';
+  static const soundAndHaptics = 'Sound & haptics';
+
+  /// Shortened to fit a 390-pt `WizListRow` at scale 1.0 without ellipsis (P93):
+  /// the row's meta is single-line by design (P78), and "on every control" did
+  /// not fit. "Control" is kept, so the two variants read as one sentence.
+  static const clicksAndVibration = 'Clicks and vibration, every control';
+  static const clicksOnly = 'Clicks on every control';
+  static const prototypeSwitches = 'Prototype switches';
+  static const wrongNetwork = 'Wrong network';
+  static const showOffline = 'Show the offline state';
+  static const forceTimeout = 'Force command timeout';
+  static const forceTimeoutMeta = 'Every write fails after 1.1s';
+  static const findsNothing = 'Discovery finds nothing';
+  static const findsNothingMeta = 'Scan returns zero lights';
+  static const widgetGallery = 'Widget gallery';
+  static const widgetGalleryMeta = 'Every kit widget, live';
+  static const renameHome = 'Rename home';
+  static const copied = 'Copied to the clipboard';
+  static const couldNotCopy = 'Could not reach the clipboard';
+  static const oneLightDidNotAnswer = 'One light did not answer';
+
+  /// The command the desktop CLI-parity row copies.
+  static String cliCommand(String name) => 'wizctl on -t "$name"';
+
+  /// Two lights or more. One is [oneLightDidNotAnswer], which reads as a
+  /// sentence rather than as "1 light did not answer".
+  static String lightsDidNotAnswer(int n) =>
+      '${plural(n, 'light')} did not answer';
+
+  /// The unreachable banner names the first light that is silent;
+  /// [mayBeOffAtWall] is the same line on a screen that has already named it.
+  static String mayBeOffAtWallNamed(String name) =>
+      '$name may be switched off at the wall, or the router changed its address.';
+
+  /// The About caption: the app's own version, then the version of the
+  /// `wizctl` package that talks to the bulbs.
+  static String version(String app, String package) =>
+      'WizCtl $app · wizctl $package';
+
+  // The shells (spec §9, §10.9). Two of the four tab labels are words
+  // [rooms] and [settings] already carry, and [all] may not hold a value
+  // twice, so `ShellBranch.tabs` reads those two from there.
+  static const tabHome = 'Home';
+  static const tabScenes = 'Scenes';
+
+  /// The window title with no home yet: the first run, before there is
+  /// anything to name it after.
+  static const windowSetup = 'wizctl · setup';
+
+  /// The window title, which on a desktop is what the window list shows.
+  /// Lower case: it is the command the CLI answers to, not a display name.
+  static String windowTitle(String home) => 'wizctl · $home';
+
+  // The desktop rail and grid (spec §10.9). Four of its lines are words this
+  // table already holds and [all] may not hold a value twice, so the rail's
+  // "All lights", "Rooms" and "Scenes" read [allLights], [rooms] and
+  // [tabScenes], and the grid's sub-line is [lightsOn], which already formats
+  // "<n> lights · <k> on" for a room card.
+  static const lightsOnTile = 'Lights on';
+  static const notAnsweringTile = 'Not answering';
+
+  /// The caps label over the grid's cards.
+  static const lights = 'Lights';
+
+  /// The rail's second section: All lights, Scenes, Discovery, Settings.
+  static const railHouse = 'House';
+
+  /// A room id that names nothing — deleted under the window, or a stale deep
+  /// link. The rail is still there, so the grid offers the way on rather than
+  /// leaving.
+  static const noRoom = 'No room';
+  static const createRoomToGroup = 'Create a room to group lights';
+
+  /// The "Lights on" tile: on out of total, the way an instrument reads.
+  static String onOf(int on, int total) => '$on / $total';
+
+  /// The rail's footer: what is lit, and the port every light is reached on.
+  static String railFooter(int on) => '$on on · udp $wizPort';
+
+  // The desktop inspector (spec §10.9).
+  ///
+  /// The medium window's dialog is titled for the panel, not for the light in
+  /// it (P82): the body carries the light's live name as its own heading, so a
+  /// title naming it too would say it twice and go stale on a rename.
+  static const inspector = 'Inspector';
+  static const noLightSelected = 'No light selected';
+  static const pickALight = 'Pick a light on the left to control it.';
+
+  /// The inspector's second stat tile, when the light is showing one.
+  static const scene = 'Scene';
+
+  /// The inspector's device panel, under the MAC: the port every light is
+  /// reached on, and the firmware when the bulb has reported one.
+  static String fw(String? version) =>
+      version == null ? 'udp $wizPort' : 'udp $wizPort · fw $version';
+
+  // Semantics.
+  static const blinkLight = 'Blink this light';
+
+  /// What the screen reader calls each room glyph in the picker
+  /// (`GlyphPicker.labelFor`): the thing drawn, not the enum's name.
+  /// [glyphLamp] names the Lamp fixture in "Show it as" too — one word for one
+  /// drawn thing, and [all] may not carry a value twice.
+  static const glyphSofa = 'Sofa';
+  static const glyphBed = 'Bed';
+  static const glyphKitchen = 'Kitchen';
+  static const glyphBath = 'Bath';
+  static const glyphLamp = 'Lamp';
+  static const glyphTrees = 'Trees';
+
+  /// What the screen reader calls each hue swatch (`SwatchRow.hueNames`), in
+  /// `WizColors.hues` order: the colour a sighted user sees, not the token's
+  /// name.
+  static const hueRed = 'Red';
+  static const hueOrange = 'Orange';
+  static const hueYellow = 'Yellow';
+  static const hueLime = 'Lime';
+  static const hueGreen = 'Green';
+  static const hueTeal = 'Teal';
+  static const hueCyan = 'Cyan';
+  static const hueBlue = 'Blue';
+  static const hueIndigo = 'Indigo';
+  static const hueViolet = 'Violet';
+  static const hueMagenta = 'Magenta';
+  static const huePink = 'Pink';
+
+  /// `<ip>:38899`, the address every device fact and toast body shows.
+  static String udpAddress(String ip) => '$ip:$wizPort';
+  static String didNotAnswer(String ip) =>
+      '$ip did not answer on port $wizPort';
+
+  /// The loading toast for a write to one light, and for a batch of several.
+  /// The toast layer composes its title from these rather than showing
+  /// `CommandPending.description`: every line the user reads lives here.
+  static String sendingTo(String name) => 'Sending to $name';
+
+  /// A batch, and the fallback for a single light whose name could not be
+  /// read; pluralised, so the one-light fallback does not read "1 lights".
+  static String sendingToLights(int n) => 'Sending to ${plural(n, 'light')}';
+
+  /// The loading toast a Retry puts up, for one light and for a batch — a
+  /// retry resends every light that failed under one report at once.
+  static String retrying(String name) => 'Retrying $name';
+  static String retryingLights(int n) => 'Retrying $n lights';
+  static String notOnHomeNetwork(String subnet) =>
+      'This device is not on $subnet.0/24.';
+
+  /// The wrong-network banner's body, and the title of the toast a Retry
+  /// that changed nothing puts up (spec §15).
+  static String deviceOn(String current, String home) =>
+      'This device is on $current.0/24. Lights answer only on $home.0/24.';
+  static String stillOn(String current) => 'Still on $current.0/24';
+
   static const List<String> all = [
     privacy,
     roomsStored,
@@ -70,5 +487,181 @@ class Strings {
     powerOff,
     noResponse,
     noRoute,
+    noResponseAfterTries,
+    stillNoReply,
+    checkWallSwitch,
+    noLocalNetwork,
+    notOnHomeNetworkTitle,
+    joinHomeNetwork,
+    allLights,
+    allOn,
+    allOff,
+    homes,
+    noHomeSelected,
+    openHomesToPick,
+    newHome,
+    newHomePlaceholder,
+    addHome,
+    discoverOnNetwork,
+    rooms,
+    addRoom,
+    addARoom,
+    roomName,
+    roomNamePlaceholder,
+    glyph,
+    saveRoom,
+    roomSaved,
+    roomSaveFailed,
+    renameRoom,
+    deleteRoom,
+    moveLightsFirst,
+    newRoom,
+    createRoom,
+    brightness,
+    colourTemp,
+    wholeRoom,
+    noLightsInRoom,
+    discoverThenPlace,
+    discoverThenSave,
+    back,
+    lightModes,
+    applyScenesTo,
+    colours,
+    whites,
+    staticTab,
+    dynamicTab,
+    dynamicNote,
+    staticNote,
+    noColourBulb,
+    colourNeedsRgb,
+    noWhiteChannel,
+    bulbsOnlyDim,
+    noSceneChannel,
+    plugOnlySwitches,
+    toWholeHome,
+    lightModeWholeHome,
+    speed,
+    live,
+    noReply,
+    noReplyFromLight,
+    mayBeOffAtWall,
+    colourTempTile,
+    classTile,
+    power,
+    intensity,
+    on,
+    off,
+    plugOnlyNote,
+    dimsNoWhite,
+    device,
+    address,
+    mac,
+    signal,
+    noReplyLower,
+    showItAs,
+    showItAsNote,
+    rename,
+    renameLight,
+    forget,
+    alias,
+    aliasPlaceholder,
+    saveAlias,
+    forgetBody,
+    removedFromConfig,
+    fixtureBulb,
+    fixtureCeiling,
+    fixtureStrip,
+    fixturePlug,
+    discovery,
+    localNetwork,
+    nothingFoundYet,
+    lightsAnswerLocally,
+    sweepTheSubnet,
+    discovering,
+    broadcast,
+    sweepSubnet,
+    saved,
+    nameThisLight,
+    room,
+    saveLight,
+    tryAgain,
+    portBusyTitle,
+    portBusyBody,
+    searchFailedTitle,
+    searchFailedBody,
+    listeningForLights,
+    saveFailed,
+    unknownClass,
+    wordmark,
+    nameThisHome,
+    homeStoredHere,
+    homeName,
+    homeNamePlaceholder,
+    createHome,
+    homeRequired,
+    sweepingSubnet,
+    nameYourLights,
+    nameReplacesAddress,
+    finishSetup,
+    plugPlaceholder,
+    bulbPlaceholder,
+    keepLight,
+    settings,
+    homeLivesOnDevice,
+    homeLivesOnMachine,
+    discoveryMeta,
+    configFile,
+    configFilePath,
+    configFileNote,
+    cliParity,
+    rescanOnLaunch,
+    soundAndHaptics,
+    clicksAndVibration,
+    clicksOnly,
+    prototypeSwitches,
+    wrongNetwork,
+    showOffline,
+    forceTimeout,
+    forceTimeoutMeta,
+    findsNothing,
+    findsNothingMeta,
+    widgetGallery,
+    widgetGalleryMeta,
+    renameHome,
+    copied,
+    couldNotCopy,
+    oneLightDidNotAnswer,
+    tabHome,
+    tabScenes,
+    lightsOnTile,
+    notAnsweringTile,
+    lights,
+    railHouse,
+    noRoom,
+    createRoomToGroup,
+    inspector,
+    noLightSelected,
+    pickALight,
+    scene,
+    windowSetup,
+    blinkLight,
+    glyphSofa,
+    glyphBed,
+    glyphKitchen,
+    glyphBath,
+    glyphLamp,
+    glyphTrees,
+    hueRed,
+    hueOrange,
+    hueYellow,
+    hueLime,
+    hueGreen,
+    hueTeal,
+    hueCyan,
+    hueBlue,
+    hueIndigo,
+    hueViolet,
+    hueMagenta,
+    huePink,
   ];
 }

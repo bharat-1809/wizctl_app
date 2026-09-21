@@ -20,9 +20,46 @@ class NetworkMonitor {
 
   String? get current => _current;
 
-  Stream<String?> watchSubnet() async* {
-    if (_known) yield _current;
-    yield* _subnet.stream;
+  /// This device's subnet: what the monitor already knows, if it has read the
+  /// interfaces at least once, and every change after that. One subscription
+  /// per call; it closes when the monitor is disposed.
+  ///
+  /// Deliberately not an `async*` body. A generator suspended in
+  /// `yield* _subnet.stream` is cancelled only once the generator itself has
+  /// run to completion, and inside `flutter_test`'s fake-async zone that
+  /// never happens: `cancel()` — and so the `close()` of any cubit
+  /// subscribed here — waits for ever, with no output and no test timeout,
+  /// because the isolate never yields. A controller cancels its source
+  /// subscription and is done.
+  Stream<String?> watchSubnet() {
+    late StreamController<String?> out;
+    StreamSubscription<String?>? subscription;
+    out = StreamController<String?>(
+      onListen: () {
+        // Both synchronously, in this order: a change written in the same
+        // turn as the `listen` call is then delivered after the replay
+        // rather than lost in the window before the source is subscribed.
+        if (_known) out.add(_current);
+        subscription = _subnet.stream.listen(
+          out.add,
+          onError: out.addError,
+          onDone: out.close,
+        );
+      },
+      // `async`, and the source's own cancel deliberately not awaited: a
+      // broadcast subscription drops its listener synchronously and hands
+      // back the SDK's shared null future, which belongs to the root zone.
+      // Waiting on that — or returning it from here — makes
+      // `await subscription.cancel()` wait for a root-zone microtask, which
+      // never runs while `flutter_test`'s fake-async zone holds the thread.
+      // This closure's own future is created in the canceller's zone, so the
+      // await resumes there.
+      onCancel: () async {
+        subscription?.cancel();
+        subscription = null;
+      },
+    );
+    return out.stream;
   }
 
   bool isOffNetwork(String? homeSubnet) {

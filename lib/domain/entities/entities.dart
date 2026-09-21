@@ -4,6 +4,7 @@ export 'debug_flags.dart';
 export 'device_failure.dart';
 export 'discovered_device.dart';
 export 'discovery_progress.dart';
+export 'found_device.dart';
 export 'home.dart';
 export 'light.dart';
 export 'live_state.dart';

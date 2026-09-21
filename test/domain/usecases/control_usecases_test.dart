@@ -196,4 +196,29 @@ void main() {
     expect(gateway.sends, isEmpty);
     expect(store.of('1').active, isNot(ActiveChannel.scene));
   });
+
+  test(
+    'colour writes coalesce while one is in flight, like a dial drag',
+    () async {
+      gateway.sendLatency = const Duration(milliseconds: 20);
+      var apply = ApplyColour(
+        resolver: resolver,
+        store: store,
+        pipeline: pipeline,
+      );
+      var target = const LightTarget('1');
+      var writes = [
+        apply(target, const Rgb(255, 0, 0)),
+        apply(target, const Rgb(0, 255, 0)),
+        apply(target, const Rgb(0, 0, 255)),
+      ];
+      await Future.wait(writes);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(gateway.sends.map((s) => s.$2.b), [
+        0,
+        255,
+      ], reason: 'the first goes at once; only the latest of the rest follows');
+      expect(store.of('1').rgb, const Rgb(0, 0, 255));
+    },
+  );
 }

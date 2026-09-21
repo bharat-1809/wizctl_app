@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Spec §17: the lights are reached over UDP on the local network. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="wizctl_app"
+        android:label="WizCtl"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

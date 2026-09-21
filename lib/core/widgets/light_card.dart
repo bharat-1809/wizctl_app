@@ -144,8 +144,13 @@ class LightCard extends StatelessWidget {
         // the light's name twice and leave the card button unnamed.
         Semantics(
           container: true,
+          // Last-known `on`, not `lit` (P92). §11.2 asks only for the
+          // unreachable opacity, and a switch that contradicts the "4 of 6 on"
+          // tile beside it — and the room cards, and the inspector — reads as
+          // a bug rather than as "unknown". `lit` still drives the emission
+          // and the glow, which is where "not answering" belongs.
           child: WizToggle(
-            value: lit,
+            value: on,
             onChanged: onToggle,
             enabled: !unreachable && onToggle != null,
             semanticsLabel: name,

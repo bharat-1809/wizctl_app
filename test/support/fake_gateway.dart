@@ -18,6 +18,11 @@ class FakeGateway implements DeviceGateway {
   final List<String?> sweepCalls = [];
   Duration sendLatency = Duration.zero;
 
+  /// How long a read takes to land — the mirror of [sendLatency], for a test
+  /// that has to look at a loader while the refresh it waits on is still
+  /// running.
+  Duration readLatency = Duration.zero;
+
   void _check(String ip) {
     var f = failing[ip];
     if (f != null) throw DeviceException(f);
@@ -25,6 +30,7 @@ class FakeGateway implements DeviceGateway {
 
   @override
   Future<LightState> readState(String ip) async {
+    if (readLatency > Duration.zero) await Future<void>.delayed(readLatency);
     reads.add(ip);
     _check(ip);
     return states[ip] ?? const LightState(isOn: false);

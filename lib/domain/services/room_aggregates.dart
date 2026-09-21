@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:wizctl/wizctl.dart';
 
 import '../entities/entities.dart';
@@ -6,7 +7,10 @@ import 'live_state_mapper.dart';
 import 'mode_summarizer.dart';
 
 /// The whole-room panel's numbers and note (spec §5.4).
-class RoomAggregates {
+///
+/// A value, so the room screen's state can compare by it: two projections of
+/// an unchanged room are equal and the screen does not rebuild.
+class RoomAggregates extends Equatable {
   final int brightness;
   final int kelvin;
   final bool canKelvin;
@@ -64,4 +68,15 @@ class RoomAggregates {
       unreachableCount: lights.where((l) => !l.state.reachable).length,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    brightness,
+    kelvin,
+    canKelvin,
+    kelvinNote,
+    anyOn,
+    onCount,
+    unreachableCount,
+  ];
 }

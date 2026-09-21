@@ -8,9 +8,9 @@ import 'package:wizctl_app/domain/usecases/refresh_states.dart';
 
 import '../../support/fakes.dart';
 
-Light light(String id) => Light(
+Light light(String id, {String homeId = 'h'}) => Light(
   id: id,
-  homeId: 'h',
+  homeId: homeId,
   roomId: 'r',
   name: id,
   ip: '192.168.1.$id',
@@ -94,6 +94,41 @@ void main() {
       });
     },
   );
+
+  test('switching home reads the new home before the first tick', () {
+    fakeAsync((async) {
+      lights.seed([light('9', homeId: 'h2')]);
+      sync.activateHome('h');
+      async.flushMicrotasks();
+      expect(
+        gateway.reads,
+        isEmpty,
+        reason:
+            'the first activation is the cold start, which the '
+            'rescanOnLaunch setting owns',
+      );
+
+      sync.activateHome('h2');
+      async.flushMicrotasks();
+      expect(
+        gateway.reads,
+        ['192.168.1.9'],
+        reason:
+            'without it every light of the new home reads as unreachable '
+            'until the first poll tick (P96)',
+      );
+
+      gateway.reads.clear();
+      sync.activateHome('h2');
+      async.flushMicrotasks();
+      expect(gateway.reads, isEmpty, reason: 'the same id is not a switch');
+
+      sync.activateHome(null);
+      async.flushMicrotasks();
+      expect(gateway.reads, isEmpty, reason: 'no home is nothing to read');
+      sync.dispose();
+    });
+  });
 
   test('refreshLight reads just that light, and nothing for a light that no longer exists', () {
     fakeAsync((async) {

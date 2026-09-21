@@ -238,6 +238,30 @@ void main() {
     expect(fade.opacity.value, greaterThan(0));
     expect(fade.opacity.value, lessThan(1));
   });
+
+  test('wizFadePage spends no time on the fade under reduced motion', () {
+    ({Duration forward, Duration back}) durations(bool reduced) {
+      var page = wizFadePage<void>(
+        key: const ValueKey<String>('screen'),
+        child: const SizedBox(key: Key('body')),
+        motion: motion,
+        reduced: reduced,
+      );
+      return (
+        forward: page.transitionDuration,
+        back: page.reverseTransitionDuration,
+      );
+    }
+
+    // Both ways: a pop under reduced motion has no more business taking
+    // 300 ms than a push does.
+    expect(durations(true), (forward: Duration.zero, back: Duration.zero));
+    expect(durations(false), (
+      forward: motion.screenEnter,
+      back: motion.screenEnter,
+    ));
+  });
+
   testWidgets('reduced motion switched on mid-rise lands the item at rest', (
     tester,
   ) async {

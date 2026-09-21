@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wizctl_app/core/copy/strings.dart';
 
@@ -36,47 +38,42 @@ void main() {
   });
 
   test('Strings.all lists every field, exhaustively', () {
-    // Dart has no reflection here, so this list is maintained by hand
-    // alongside the class's fields. It exists so a field added to the
-    // class but forgotten in `all` shows up as a length mismatch or a
-    // missing entry, rather than silently skipping the copy-rules checks
-    // below.
-    const fields = <String>[
-      Strings.privacy,
-      Strings.roomsStored,
-      Strings.broadcastHint,
-      Strings.staleIp,
-      Strings.dynamicPip,
-      Strings.blinkHint,
-      Strings.cancel,
-      Strings.close,
-      Strings.retry,
-      Strings.rescan,
-      Strings.save,
-      Strings.scanSubnet,
-      Strings.scanAgain,
-      Strings.discoverLights,
-      Strings.dismiss,
-      Strings.lightMode,
-      Strings.applyTo,
-      Strings.wholeHome,
-      Strings.mixed,
-      Strings.nothingSet,
-      Strings.colour,
-      Strings.warmWhite,
-      Strings.powerOn,
-      Strings.powerOff,
-      Strings.noResponse,
-      Strings.noRoute,
-    ];
+    // No reflection here, so this counts the static const string fields in
+    // the source directly rather than maintaining a second, hand-written
+    // mirror of the class: a field added to the class but forgotten in
+    // `all` changes this count without a matching change to `all.length`.
+    var source = File('lib/core/copy/strings.dart').readAsStringSync();
+    var fieldCount = RegExp(
+      r'^\s+static const (?:String )?\w+ =',
+      multiLine: true,
+    ).allMatches(source).length;
     expect(
       Strings.all.length,
-      fields.length,
-      reason: 'Strings.all must list every static const field exactly once',
+      fieldCount,
+      reason:
+          'Strings.all must list every static const string field exactly once',
     );
-    for (var field in fields) {
-      expect(Strings.all, contains(field));
-    }
+    expect(
+      Strings.all.toSet().length,
+      Strings.all.length,
+      reason: 'Strings.all must not list a field twice',
+    );
+  });
+
+  test('templated copy formats addresses and names', () {
+    expect(Strings.udpAddress('192.168.1.115'), '192.168.1.115:38899');
+    expect(
+      Strings.didNotAnswer('192.168.1.115'),
+      '192.168.1.115 did not answer on port 38899',
+    );
+    expect(Strings.sendingTo('Hallway'), 'Sending to Hallway');
+    expect(Strings.sendingToLights(3), 'Sending to 3 lights');
+    expect(Strings.retrying('Hallway'), 'Retrying Hallway');
+    expect(Strings.retryingLights(2), 'Retrying 2 lights');
+    expect(
+      Strings.notOnHomeNetwork('192.168.1'),
+      'This device is not on 192.168.1.0/24.',
+    );
   });
 
   test('copy rules: no emoji, no "we" as a word, none ends with "!"', () {
